@@ -20,7 +20,7 @@ export class HeroicHomePage extends HeroicAppProvider {
     css`
       .hero {
         text-align: center;
-        padding: 48px 20px 32px;
+        padding: 16px 20px 32px;
       }
 
       .hero h1 {
@@ -75,6 +75,7 @@ export class HeroicHomePage extends HeroicAppProvider {
     return html`
       <main>
         <div class="hero">
+          <img src="/logo/logo-512x512.png" alt="Heroic Adventures Logo" width="128" height="128" style="margin-bottom: 16px;" />
           <h1>Heroic Adventures</h1>
           <p>
             Your companion for Heroic Adventures 2nd Edition. Browse chapters, rules, classes, spells, items, and more.
