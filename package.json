@@ -10,7 +10,7 @@
     "serve": "run-p serve:static watch:rollup",
     "serve:static": "serve dist -l 3000",
     "watch:rollup": "rollup -c --watch",
-    "build": "run-s build:tsc build:rollup",
+    "build": "run-s content build:tsc build:rollup",
     "build:rollup": "rollup -c",
     "build:tsc": "tsc",
     "lint": "prettier src --check && eslint src",
