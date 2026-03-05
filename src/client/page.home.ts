@@ -79,6 +79,11 @@ export class HeroicHomePage extends HeroicAppProvider {
           <p>
             Your companion for Heroic Adventures 2nd Edition. Browse chapters, rules, classes, spells, items, and more.
           </p>
+          <div style="margin-top: 18px;">
+            <small style="color: var(--color-primary-text-muted); font-size: 15px;">
+              Want to connect your AI to Heroic Adventures? Take a look at the <a href="https://mcp.heroicadventures.app/" target="_blank" rel="noopener">Heroic Adventures MCP</a>.
+            </small>
+          </div>
         </div>
 
         <div class="search-section">
