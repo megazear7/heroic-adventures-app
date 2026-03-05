@@ -1,0 +1,37 @@
+You will use the Zelt stack to build a web app for the heroic adventures tabletop roleplaying game.
+The content of the website will come from Contentful.
+
+- Read up on the Zelt stack:
+    - https://www.alexlockhart.me/2026/01/introducing-zelt-stack-refining-web.html
+    - https://github.com/megazear7/zelt-stack-template
+    - https://zelt.alexlockhart.me/
+- Understand the requirements of the app:
+    - The app will have a dark theme
+    - It will be interactive and have have nice animations for things like modals, drawers, panels, etc.
+    - Within the app users can search for and view things like:
+        - Chapters
+        - Rules references
+        - Step by step character creation guide
+        - Step by step character level up guide
+        - Races
+        - Classes
+        - Feats
+        - Expertise
+        - Backgrounds
+        - Flaws
+        - Spells (Arcane, Nature, Rune, Divine)
+        - Armor, Shields, Weapons, Potions, Spells, Other Items
+        - Magic item enhancments
+        - Magic items
+        - Monsters
+- Understand the Heroic Adventures tabletop roleplaying game content in Contentful
+    - Use the `Contentful Heroic Adventures` mcp server to understand and pull the content.
+    - All of the content you need is in the entries of the "Rules Reference" content type.
+- Implement the app
+    - The build process should pull the content from Contentful and build `.json` files of this content. These .json files should be gitignored.
+    - These files should be organized into sub directories with a `list.json` that lists all of the entries of that type and a `<name>/entry.json` file for the data of that entry and a `<name>/content.html` html file for the html representation of that entry that the app can load in and display.
+    - For example: `chapters/list.json`, `chapters/chapter-01/entry.json`, `chapters/chapter-01/content.html`
+    - For local development, These files should be pulled from Contentful only once during a `npm run content` command
+    - The app itself should have pages, components, and functionality for all of the different things that users can view and search for as described above.
+    - The results of the search should be loaded from the `list.json` file
+    - To display an entry, use the `<name>/content.html` file.

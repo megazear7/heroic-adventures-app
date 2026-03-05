@@ -1,0 +1,64 @@
+{
+  "name": "heroic-adventures-app",
+  "version": "1.0.0",
+  "description": "Heroic Adventures 2nd Edition companion web app — built with the Zelt stack",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "content": "npx tsx scripts/fetch-content.ts",
+    "start": "run-s build serve",
+    "serve": "run-p serve:static watch:rollup",
+    "serve:static": "serve dist -l 3000",
+    "watch:rollup": "rollup -c --watch",
+    "build": "run-s build:tsc build:rollup",
+    "build:rollup": "rollup -c",
+    "build:tsc": "tsc",
+    "lint": "prettier src --check && eslint src",
+    "fix": "prettier src --write && eslint src --fix",
+    "test": "npx tsx scripts/test.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/megazear7/heroic-adventures-app.git"
+  },
+  "keywords": [
+    "Zod",
+    "Lit",
+    "TypeScript",
+    "Project",
+    "Template"
+  ],
+  "author": "Alex Lockhart",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/megazear7/zelt-template/issues"
+  },
+  "homepage": "https://github.com/megazear7/zelt-template#readme",
+  "dependencies": {
+    "@contentful/rich-text-html-renderer": "^17.1.6",
+    "@contentful/rich-text-types": "^17.2.5",
+    "@lit/context": "^1.1.6",
+    "contentful": "^11.10.5",
+    "dotenv": "^17.2.3",
+    "lit": "^3.3.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-replace": "^6.0.3",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "@types/node": "^24.9.2",
+    "eslint": "^9.39.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.6.2",
+    "rollup": "^4.52.5",
+    "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-watch-globs": "^2.0.1",
+    "serve": "^14.2.5",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2"
+  }
+}

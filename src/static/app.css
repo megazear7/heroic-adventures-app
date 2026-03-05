@@ -1,0 +1,92 @@
+html {
+  /* Brand colors — dark fantasy theme */
+  --color-1: #c9a84c; /* gold accent */
+  --color-2: #7b68ee; /* spell-purple link */
+
+  /* Primary surface colors */
+  --color-primary-surface: #0f0f1a;
+  --color-primary-surface-raised: #16162a;
+  --color-primary-surface-overlay: #1e1e38;
+  --color-primary-text: #e2e0d6;
+  --color-primary-text-muted: #8a8780;
+  --color-primary-text-bold: #c9a84c;
+
+  /* Secondary surface colors */
+  --color-secondary-surface: #1a1a2e;
+  --color-secondary-text: #e2e0d6;
+  --color-secondary-text-muted: #8a8780;
+
+  /* Additional colors */
+  --color-accent: #7b68ee;
+  --color-error: #ff4444;
+  --color-danger: #ff311e;
+  --color-warning: #fdd848;
+  --color-success: #4caf50;
+
+  /* Sizes */
+  --size-8x: 300px;
+  --size-7x: 250px;
+  --size-6x: 200px;
+  --size-5x: 150px;
+  --size-4x: 100px;
+  --size-3x: 60px;
+  --size-2x: 48px;
+  --size-xl: 32px;
+  --size-large: 20px;
+  --size-medium: 12px;
+  --size-small: 8px;
+  --size-tiny: 4px;
+  --size-nano: 2px;
+
+  /* Fonts */
+  --font-xl: 28px;
+  --font-large: 22px;
+  --font-medium: 16px;
+  --font-small: 14px;
+  --font-tiny: 12px;
+  --line-height: 1.6;
+  --font-family: "Inter", sans-serif;
+  --font-family-display: "Cinzel", serif;
+
+  /* Borders */
+  --border-normal: 1px solid rgba(201, 168, 76, 0.15);
+  --border-active: 1px solid var(--color-1);
+  --border-radius-small: 6px;
+  --border-radius-medium: 12px;
+  --border-radius-large: 20px;
+
+  /* Shadows */
+  --shadow-normal: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-active: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 20px rgba(201, 168, 76, 0.15);
+
+  /* Times & Transitions */
+  --time-fast: 200ms;
+  --time-normal: 350ms;
+  --time-slow: 500ms;
+  --transition-all: all var(--time-normal) ease-in-out;
+  --transition-fast: all var(--time-fast) ease-in-out;
+  --transition-shadow: box-shadow var(--time-normal) ease-in-out;
+  --content-width: 1080px;
+  --sidebar-width: 280px;
+
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-primary-surface);
+  scrollbar-color: var(--color-primary-text-muted) var(--color-primary-surface);
+}
+
+body {
+  background-color: var(--color-primary-surface);
+  color: var(--color-primary-text);
+  font-size: var(--font-medium);
+  font-family: var(--font-family);
+  line-height: var(--line-height);
+  margin: 0;
+  padding: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
