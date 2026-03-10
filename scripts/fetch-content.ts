@@ -25,7 +25,6 @@ const CONTENT_DIR = path.resolve("dist/content");
 /* ---------- category → directory slug mapping ---------- */
 
 const CATEGORY_DIR_MAP: Record<string, string> = {
-  agent: "agents",
   background: "backgrounds",
   chapter: "chapters",
   class: "classes",
@@ -34,7 +33,8 @@ const CATEGORY_DIR_MAP: Record<string, string> = {
   flaw: "flaws",
   race: "races",
   rule: "rules",
-  skill: "skills",
+  "agent > skill": "agent-skills",
+  "agent > instruction": "agent-instructions",
   "spell > arcane": "spells-arcane",
   "spell > rune": "spells-rune",
   "spell > nature": "spells-nature",
@@ -48,7 +48,6 @@ const CATEGORY_DIR_MAP: Record<string, string> = {
 
 /* pretty display name for each category */
 const CATEGORY_DISPLAY: Record<string, string> = {
-  agent: "Agents",
   background: "Backgrounds",
   chapter: "Chapters",
   class: "Classes",
@@ -57,7 +56,8 @@ const CATEGORY_DISPLAY: Record<string, string> = {
   flaw: "Flaws",
   race: "Races",
   rule: "Rules",
-  skill: "Skills",
+  "agent > skill": "Agent Skills",
+  "agent > instruction": "Agents",
   "spell > arcane": "Arcane Spells",
   "spell > rune": "Rune Spells",
   "spell > nature": "Nature Spells",

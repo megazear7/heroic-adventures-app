@@ -68,10 +68,10 @@ export class HeroicHomePage extends HeroicAppProvider {
 
   override render(): TemplateResult {
     const categories: ContentCategory[] = this.appContext?.categories ?? [];
-    const core = categories.filter((c) => !c.category.startsWith("spell") && !c.category.startsWith("item") && c.category !== "agent");
+    const core = categories.filter((c) => !c.category.startsWith("spell") && !c.category.startsWith("item") && !c.category.startsWith("agent >"));
     const spells = categories.filter((c) => c.category.startsWith("spell"));
     const items = categories.filter((c) => c.category.startsWith("item"));
-    const other = categories.filter((c) => c.category === "agent");
+    const ai = categories.filter((c) => c.category.startsWith("agent >"));
 
     return html`
       <main>
@@ -132,12 +132,12 @@ export class HeroicHomePage extends HeroicAppProvider {
               </div>
             `
           : ""}
-        ${other.length
+        ${ai.length
           ? html`
               <hr class="section-divider" />
-              <h2 class="section-title">Other</h2>
+              <h2 class="section-title">AI</h2>
               <div class="grid">
-                ${other.map(
+                ${ai.map(
                   (c) => html`
                     <heroic-category-card categoryId=${c.id} name=${c.name} .count=${c.count}></heroic-category-card>
                   `,
