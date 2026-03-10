@@ -11,6 +11,7 @@ export const ContentListItem = z.object({
       alt: z.string(),
     })
     .nullable(),
+  order: z.number(),
 });
 export type ContentListItem = z.infer<typeof ContentListItem>;
 

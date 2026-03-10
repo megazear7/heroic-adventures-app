@@ -214,6 +214,7 @@ async function main() {
       const heroImageRef = heroImageField?.sys?.id;
       const heroImage = heroImageRef ? assetMap[heroImageRef] : null;
       const richText: Document | null = localizedField<Document>(entry.fields.content) ?? null;
+      const order: number = localizedField<number>(entry.fields.order) ?? 0;
 
       /* entry.json */
       const entryData = {
@@ -224,6 +225,7 @@ async function main() {
         categoryDir: dirSlug,
         heroImage: heroImage ? { url: heroImage.url, alt: heroImage.title } : null,
         updatedAt: entry.sys.updatedAt,
+        order,
       };
 
       const entryDir = path.join(catDir, slug);
@@ -246,11 +248,12 @@ async function main() {
         title,
         slug,
         heroImage: heroImage ? { url: heroImage.url, alt: heroImage.title } : null,
+        order,
       });
     }
 
     /* list.json — sorted alphabetically */
-    listItems.sort((a, b) => a.title.localeCompare(b.title));
+    listItems.sort((a, b) => a.order - b.order);
     await fs.writeFile(path.join(catDir, "list.json"), JSON.stringify(listItems, null, 2));
     console.log(`  📁 ${dirSlug}/  (${listItems.length} entries)`);
   }

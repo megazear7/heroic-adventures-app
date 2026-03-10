@@ -131,7 +131,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
     }
     this.results = this.allEntries
       .filter((e) => e.title.toLowerCase().includes(q))
-      .sort((a, b) => a.title.localeCompare(b.title));
+      .sort((a, b) => a.order - b.order);
   }
 
   override render(): TemplateResult {

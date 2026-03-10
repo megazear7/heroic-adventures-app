@@ -87,7 +87,9 @@ export class HeroicCategoryPage extends HeroicAppProvider {
       const res = await fetch(`/content/${this.categoryId}/list.json`);
       if (!res.ok) throw new Error("Not found");
       const data = await res.json();
-      this.items = data.map((item: any) => ContentListItem.parse(item)); // eslint-disable-line @typescript-eslint/no-explicit-any
+      this.items = data
+        .map((item: any) => ContentListItem.parse(item))
+        .sort((a: import("../shared/type.content").ContentListItem, b: import("../shared/type.content").ContentListItem) => a.order - b.order);
       this.filteredItems = this.items;
     } catch {
       this.items = [];
