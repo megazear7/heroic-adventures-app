@@ -20,6 +20,14 @@ export const routes = [
     name: RouteName.enum.search,
     path: "/search",
   },
+  {
+    name: RouteName.enum.favorites,
+    path: "/favorites",
+  },
+  {
+    name: RouteName.enum.recent,
+    path: "/recent",
+  },
 ];
 
 export class ClientService extends AbstractService<NoBodyParams, NoPathParams, string> {

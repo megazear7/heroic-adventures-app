@@ -10,6 +10,8 @@ import "./page.home.js";
 import "./page.category.js";
 import "./page.entry.js";
 import "./page.search.js";
+import "./page.favorites.js";
+import "./page.recent.js";
 import "./page.not-found.js";
 import "./component.nav-drawer.js";
 
@@ -138,6 +140,14 @@ export class HeroicApp extends LitElement {
         return html`
           <heroic-search-page></heroic-search-page>
         `;
+      case RouteName.enum.favorites:
+        return html`
+          <heroic-favorites-page></heroic-favorites-page>
+        `;
+      case RouteName.enum.recent:
+        return html`
+          <heroic-recent-page></heroic-recent-page>
+        `;
       case RouteName.enum.category:
         return html`
           <heroic-category-page></heroic-category-page>
@@ -156,9 +166,15 @@ export class HeroicApp extends LitElement {
   determineRouteName(): RouteConfig | null {
     const pathname = window.location.pathname;
 
-    // Check search first (since /search would also match /:categoryId)
+    // Check search/favorites/recent first (since they would also match /:categoryId)
     if (pathname === "/search" || pathname.startsWith("/search?")) {
       return { name: RouteName.enum.search, path: "/search" };
+    }
+    if (pathname === "/favorites") {
+      return { name: RouteName.enum.favorites, path: "/favorites" };
+    }
+    if (pathname === "/recent") {
+      return { name: RouteName.enum.recent, path: "/recent" };
     }
 
     for (const route of this.routes) {

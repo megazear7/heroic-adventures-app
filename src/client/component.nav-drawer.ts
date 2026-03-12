@@ -1,9 +1,10 @@
 import { html, css, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { globalStyles } from "./styles.global.js";
-import { closeIcon, starFilledIcon } from "./icons.js";
+import { closeIcon, starFilledIcon, clockIcon } from "./icons.js";
 import { ContentCategory } from "../shared/type.content.js";
 import { getFavorites, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
+import { getRecentEntries, RECENTS_CHANGED_EVENT } from "../shared/service.recents.js";
 
 @customElement("heroic-nav-drawer")
 export class HeroicNavDrawer extends LitElement {
@@ -138,6 +139,22 @@ export class HeroicNavDrawer extends LitElement {
         width: 14px;
         height: 14px;
       }
+
+      .recent-link a {
+        color: var(--color-1);
+        font-weight: 500;
+      }
+
+      .recent-link-inner {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .recent-link-inner svg {
+        width: 14px;
+        height: 14px;
+      }
     `,
   ];
 
@@ -148,20 +165,28 @@ export class HeroicNavDrawer extends LitElement {
   categories: ContentCategory[] = [];
 
   @state() private favCount = 0;
+  @state() private recentCount = 0;
 
   private onFavoritesChanged = (): void => {
     this.favCount = getFavorites().length;
   };
 
+  private onRecentsChanged = (): void => {
+    this.recentCount = getRecentEntries().length;
+  };
+
   override connectedCallback(): void {
     super.connectedCallback();
     this.favCount = getFavorites().length;
+    this.recentCount = getRecentEntries().length;
     window.addEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+    window.addEventListener(RECENTS_CHANGED_EVENT, this.onRecentsChanged);
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     window.removeEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+    window.removeEventListener(RECENTS_CHANGED_EVENT, this.onRecentsChanged);
   }
 
   override render(): TemplateResult {
@@ -183,9 +208,19 @@ export class HeroicNavDrawer extends LitElement {
           ${this.favCount > 0
             ? html`
                 <li class="nav-item fav-link">
-                  <a href="/" @click=${this.close}>
+                  <a href="/favorites" @click=${this.close}>
                     <span class="fav-link-inner">${starFilledIcon} Favorites</span>
                     <span class="nav-count">${this.favCount}</span>
+                  </a>
+                </li>
+              `
+            : ""}
+          ${this.recentCount > 0
+            ? html`
+                <li class="nav-item recent-link">
+                  <a href="/recent" @click=${this.close}>
+                    <span class="recent-link-inner">${clockIcon} Recent</span>
+                    <span class="nav-count">${this.recentCount}</span>
                   </a>
                 </li>
               `

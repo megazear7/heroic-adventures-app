@@ -6,11 +6,12 @@ import { globalStyles } from "./styles.global.js";
 import { HeroicAppProvider } from "./provider.app.js";
 import { AppContext, appContext } from "./context.js";
 import { ContentCategory } from "../shared/type.content.js";
-import { getFavorites, FavoriteEntry, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
-import { starIcon } from "./icons.js";
+import { getFavorites, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
+import { getRecentEntries, RECENTS_CHANGED_EVENT } from "../shared/service.recents.js";
+import { starIcon, clockIcon } from "./icons.js";
 import "../client/component.category-card.js";
+import "../client/component.link-card.js";
 import "../client/component.search-bar.js";
-import "../client/component.entry-list-item.js";
 
 @customElement("heroic-home-page")
 export class HeroicHomePage extends HeroicAppProvider {
@@ -18,21 +19,29 @@ export class HeroicHomePage extends HeroicAppProvider {
   @property({ attribute: false })
   override appContext!: AppContext;
 
-  @state() private favorites: FavoriteEntry[] = [];
+  @state() private favCount = 0;
+  @state() private recentCount = 0;
 
   private onFavoritesChanged = (): void => {
-    this.favorites = getFavorites();
+    this.favCount = getFavorites().length;
+  };
+
+  private onRecentsChanged = (): void => {
+    this.recentCount = getRecentEntries().length;
   };
 
   override connectedCallback(): Promise<void> {
-    this.favorites = getFavorites();
+    this.favCount = getFavorites().length;
+    this.recentCount = getRecentEntries().length;
     window.addEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+    window.addEventListener(RECENTS_CHANGED_EVENT, this.onRecentsChanged);
     return super.connectedCallback();
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     window.removeEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+    window.removeEventListener(RECENTS_CHANGED_EVENT, this.onRecentsChanged);
   }
 
   static override styles = [
@@ -83,27 +92,6 @@ export class HeroicHomePage extends HeroicAppProvider {
         margin: 16px 20px;
         max-width: var(--content-width);
       }
-
-      .fav-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .fav-title svg {
-        width: 20px;
-        height: 20px;
-        color: var(--color-1);
-      }
-
-      .fav-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 0 20px;
-        max-width: var(--content-width);
-        margin: 0 auto 32px;
-      }
     `,
   ];
 
@@ -135,22 +123,25 @@ export class HeroicHomePage extends HeroicAppProvider {
             @search-submit=${this.handleSearch}></heroic-search-bar>
         </div>
 
-        ${this.favorites.length
+        ${this.favCount > 0 || this.recentCount > 0
           ? html`
-              <h2 class="section-title"><span class="fav-title">${starIcon} Favorites</span></h2>
-              <div class="fav-list">
-                ${this.favorites.map(
-                  (f) => html`
-                    <heroic-entry-list-item
-                      entryTitle=${f.title}
-                      slug=${f.slug}
-                      categoryId=${f.categoryId}
-                      imageUrl=${f.imageUrl ?? ""}
-                      imageAlt=${f.imageAlt ?? f.title}></heroic-entry-list-item>
-                  `,
-                )}
+              <h2 class="section-title">Your Stuff</h2>
+              <div class="grid">
+                ${this.favCount > 0
+                  ? html`
+                      <heroic-link-card href="/favorites" label="Favorites" .count=${this.favCount}>
+                        <span slot="icon">${starIcon}</span>
+                      </heroic-link-card>
+                    `
+                  : ""}
+                ${this.recentCount > 0
+                  ? html`
+                      <heroic-link-card href="/recent" label="Recently Viewed" .count=${this.recentCount}>
+                        <span slot="icon">${clockIcon}</span>
+                      </heroic-link-card>
+                    `
+                  : ""}
               </div>
-              <hr class="section-divider" />
             `
           : ""}
 

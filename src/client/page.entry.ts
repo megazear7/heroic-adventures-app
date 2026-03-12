@@ -7,6 +7,7 @@ import { AppContext, appContext } from "./context.js";
 import { ContentEntry } from "../shared/type.content.js";
 import { leftArrowIcon, starIcon, starFilledIcon } from "./icons.js";
 import { isFavorite, toggleFavorite, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
+import { recordRecentEntry } from "../shared/service.recents.js";
 import "./component.content-viewer.js";
 
 @customElement("heroic-entry-page")
@@ -137,6 +138,13 @@ export class HeroicEntryPage extends HeroicAppProvider {
       this.entry = ContentEntry.parse(entryData);
       this.contentHtml = contentRes.ok ? await contentRes.text() : "";
       this.favorited = isFavorite(this.categoryId, this.entry.slug);
+      recordRecentEntry({
+        categoryId: this.categoryId,
+        slug: this.entry.slug,
+        title: this.entry.title,
+        imageUrl: this.entry.heroImage?.url,
+        imageAlt: this.entry.heroImage?.alt,
+      });
     } catch {
       this.entry = null;
       this.contentHtml = "";
