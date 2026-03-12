@@ -14,10 +14,23 @@ const APP_SHELL = [
   "/logo/favicon.ico",
 ];
 
-// Install: pre-cache the app shell
+// Install: pre-cache the app shell + all content files
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await cache.addAll(APP_SHELL);
+      // Fetch the content index and cache every content path
+      try {
+        const res = await fetch("/content/index.json");
+        if (res.ok) {
+          const contentPaths = await res.json();
+          await cache.addAll(contentPaths);
+        }
+      } catch {
+        // Content pre-cache is best-effort; app shell is already cached
+        console.warn("SW: could not pre-cache content index");
+      }
+    })
   );
   self.skipWaiting();
 });

@@ -258,6 +258,27 @@ async function main() {
     console.log(`  📁 ${dirSlug}/  (${listItems.length} entries)`);
   }
 
+  /* Build content/index.json — list of all content URL paths for the service worker */
+  const allContentPaths: string[] = ["/content/categories.json"];
+  const walkDir = async (dir: string, urlPrefix: string): Promise<void> => {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const ent of entries) {
+      const fullPath = path.join(dir, ent.name);
+      const urlPath = `${urlPrefix}/${ent.name}`;
+      if (ent.isDirectory()) {
+        await walkDir(fullPath, urlPath);
+      } else if (ent.name !== "index.json") {
+        allContentPaths.push(urlPath);
+      }
+    }
+  };
+  await walkDir(CONTENT_DIR, "/content");
+  await fs.writeFile(
+    path.join(CONTENT_DIR, "index.json"),
+    JSON.stringify(allContentPaths, null, 2),
+  );
+  console.log(`  📋 index.json  (${allContentPaths.length} paths)`);
+
   console.log("\n✅ Content build complete!");
 }
 
