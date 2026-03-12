@@ -1,7 +1,7 @@
 // @ts-nocheck
 /* eslint-disable */
 
-const CACHE_NAME = "heroic-v2";
+const CACHE_NAME = "heroic-v3";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -65,9 +65,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Content JSON/HTML: network-first, fall back to cache
+  // Content JSON/HTML: cache-first, fall back to network
   if (url.pathname.startsWith("/content/")) {
-    event.respondWith(networkFirst(event.request));
+    event.respondWith(cacheFirst(event.request));
     return;
   }
 
@@ -96,10 +96,18 @@ self.addEventListener("fetch", (event) => {
 
 /**
  * Cache-first: return cached response or fetch, cache, and return.
+ * Also checks for .html variant when the original URL has no extension,
+ * since the build caches files with .html but the app fetches without it.
  */
 async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) return cached;
+  // Try .html variant (app fetches /content/.../content, cache has .html)
+  const url = new URL(request.url);
+  if (!url.pathname.endsWith(".html") && !url.pathname.endsWith(".json")) {
+    const htmlCached = await caches.match(request.url + ".html");
+    if (htmlCached) return htmlCached;
+  }
   try {
     const response = await fetch(request);
     if (response.ok) {
@@ -114,8 +122,6 @@ async function cacheFirst(request) {
 
 /**
  * Network-first: try network, cache successful responses, fall back to cache.
- * Also checks for .html variant when the original URL has no extension,
- * since the build caches files with .html but the app fetches without it.
  */
 async function networkFirst(request) {
   try {
@@ -128,12 +134,6 @@ async function networkFirst(request) {
   } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
-    // Try .html variant (app fetches /content/.../content, cache has .html)
-    const url = new URL(request.url);
-    if (!url.pathname.endsWith(".html") && !url.pathname.endsWith(".json")) {
-      const htmlCached = await caches.match(request.url + ".html");
-      if (htmlCached) return htmlCached;
-    }
     return new Response("Offline", { status: 503, statusText: "Offline" });
   }
 }
