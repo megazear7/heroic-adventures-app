@@ -268,7 +268,9 @@ async function main() {
       if (ent.isDirectory()) {
         await walkDir(fullPath, urlPath);
       } else if (ent.name !== "index.json") {
-        allContentPaths.push(urlPath);
+        // Strip .html extension to match the URL paths the app actually fetches
+        const servePath = ent.name.endsWith(".html") ? urlPath.replace(/\.html$/, "") : urlPath;
+        allContentPaths.push(servePath);
       }
     }
   };
