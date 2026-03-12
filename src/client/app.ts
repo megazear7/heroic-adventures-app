@@ -241,9 +241,22 @@ export class HeroicApp extends LitElement {
     ) {
       event.preventDefault();
       const url = new URL(target.href);
+      const previousPath = window.location.pathname;
       window.history.pushState({}, "", url.pathname + url.search);
       this.currentRoute = this.determineRouteName();
       this.requestUpdate();
+
+      // When navigating within the same route type (e.g. entry → entry),
+      // changedProperties won't include currentRoute, so manually reload.
+      if (url.pathname !== previousPath && this.currentRoute) {
+        await this.updateComplete;
+        const tagName = `heroic-${this.currentRoute.name.replace(/_/g, "-")}-page`;
+        const pageElement = this.shadowRoot?.querySelector(tagName);
+        const provider = pageElement as ZeltTemplateAbstractProvider;
+        if (provider?.load) {
+          provider.load().then(() => provider.requestUpdate());
+        }
+      }
     }
   }
 
