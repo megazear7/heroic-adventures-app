@@ -114,6 +114,8 @@ async function cacheFirst(request) {
 
 /**
  * Network-first: try network, cache successful responses, fall back to cache.
+ * Also checks for .html variant when the original URL has no extension,
+ * since the build caches files with .html but the app fetches without it.
  */
 async function networkFirst(request) {
   try {
@@ -126,6 +128,12 @@ async function networkFirst(request) {
   } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
+    // Try .html variant (app fetches /content/.../content, cache has .html)
+    const url = new URL(request.url);
+    if (!url.pathname.endsWith(".html") && !url.pathname.endsWith(".json")) {
+      const htmlCached = await caches.match(request.url + ".html");
+      if (htmlCached) return htmlCached;
+    }
     return new Response("Offline", { status: 503, statusText: "Offline" });
   }
 }
