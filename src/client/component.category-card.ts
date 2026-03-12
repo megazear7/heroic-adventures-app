@@ -19,6 +19,7 @@ export class HeroicCategoryCard extends LitElement {
         align-items: center;
         justify-content: space-between;
         cursor: pointer;
+        min-height: 48px;
       }
 
       .card-body {
