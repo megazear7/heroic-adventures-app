@@ -1,19 +1,39 @@
 import { css, html, TemplateResult } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, state } from "lit/decorators.js";
 import { consume } from "@lit/context";
 import { property } from "lit/decorators.js";
 import { globalStyles } from "./styles.global.js";
 import { HeroicAppProvider } from "./provider.app.js";
 import { AppContext, appContext } from "./context.js";
 import { ContentCategory } from "../shared/type.content.js";
+import { getFavorites, FavoriteEntry, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
+import { starIcon } from "./icons.js";
 import "../client/component.category-card.js";
 import "../client/component.search-bar.js";
+import "../client/component.entry-list-item.js";
 
 @customElement("heroic-home-page")
 export class HeroicHomePage extends HeroicAppProvider {
   @consume({ context: appContext, subscribe: true })
   @property({ attribute: false })
   override appContext!: AppContext;
+
+  @state() private favorites: FavoriteEntry[] = [];
+
+  private onFavoritesChanged = (): void => {
+    this.favorites = getFavorites();
+  };
+
+  override connectedCallback(): Promise<void> {
+    this.favorites = getFavorites();
+    window.addEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+    return super.connectedCallback();
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+  }
 
   static override styles = [
     globalStyles,
@@ -63,6 +83,27 @@ export class HeroicHomePage extends HeroicAppProvider {
         margin: 16px 20px;
         max-width: var(--content-width);
       }
+
+      .fav-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .fav-title svg {
+        width: 20px;
+        height: 20px;
+        color: var(--color-1);
+      }
+
+      .fav-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 0 20px;
+        max-width: var(--content-width);
+        margin: 0 auto 32px;
+      }
     `,
   ];
 
@@ -93,6 +134,25 @@ export class HeroicHomePage extends HeroicAppProvider {
             placeholder="Search rules, spells, items…"
             @search-submit=${this.handleSearch}></heroic-search-bar>
         </div>
+
+        ${this.favorites.length
+          ? html`
+              <h2 class="section-title"><span class="fav-title">${starIcon} Favorites</span></h2>
+              <div class="fav-list">
+                ${this.favorites.map(
+                  (f) => html`
+                    <heroic-entry-list-item
+                      entryTitle=${f.title}
+                      slug=${f.slug}
+                      categoryId=${f.categoryId}
+                      imageUrl=${f.imageUrl ?? ""}
+                      imageAlt=${f.imageAlt ?? f.title}></heroic-entry-list-item>
+                  `,
+                )}
+              </div>
+              <hr class="section-divider" />
+            `
+          : ""}
 
         ${core.length
           ? html`

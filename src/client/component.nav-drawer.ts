@@ -1,8 +1,9 @@
 import { html, css, LitElement, TemplateResult } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { globalStyles } from "./styles.global.js";
-import { closeIcon } from "./icons.js";
+import { closeIcon, starFilledIcon } from "./icons.js";
 import { ContentCategory } from "../shared/type.content.js";
+import { getFavorites, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
 
 @customElement("heroic-nav-drawer")
 export class HeroicNavDrawer extends LitElement {
@@ -121,6 +122,22 @@ export class HeroicNavDrawer extends LitElement {
         color: var(--color-1);
         font-weight: 500;
       }
+
+      .fav-link a {
+        color: var(--color-1);
+        font-weight: 500;
+      }
+
+      .fav-link-inner {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .fav-link-inner svg {
+        width: 14px;
+        height: 14px;
+      }
     `,
   ];
 
@@ -129,6 +146,23 @@ export class HeroicNavDrawer extends LitElement {
 
   @property({ type: Array })
   categories: ContentCategory[] = [];
+
+  @state() private favCount = 0;
+
+  private onFavoritesChanged = (): void => {
+    this.favCount = getFavorites().length;
+  };
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.favCount = getFavorites().length;
+    window.addEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+  }
 
   override render(): TemplateResult {
     const core = this.categories.filter((c) => !c.category.startsWith("spell") && !c.category.startsWith("item"));
@@ -146,6 +180,16 @@ export class HeroicNavDrawer extends LitElement {
           <li class="nav-item home-link">
             <a href="/" @click=${this.close}>Home</a>
           </li>
+          ${this.favCount > 0
+            ? html`
+                <li class="nav-item fav-link">
+                  <a href="/" @click=${this.close}>
+                    <span class="fav-link-inner">${starFilledIcon} Favorites</span>
+                    <span class="nav-count">${this.favCount}</span>
+                  </a>
+                </li>
+              `
+            : ""}
           <li class="nav-item">
             <a href="/search" @click=${this.close}>Search All</a>
           </li>

@@ -5,7 +5,8 @@ import { globalStyles } from "./styles.global.js";
 import { HeroicAppProvider } from "./provider.app.js";
 import { AppContext, appContext } from "./context.js";
 import { ContentEntry } from "../shared/type.content.js";
-import { leftArrowIcon } from "./icons.js";
+import { leftArrowIcon, starIcon, starFilledIcon } from "./icons.js";
+import { isFavorite, toggleFavorite, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
 import "./component.content-viewer.js";
 
 @customElement("heroic-entry-page")
@@ -18,6 +19,7 @@ export class HeroicEntryPage extends HeroicAppProvider {
   @state() private contentHtml = "";
   @state() private loading = true;
   @state() private categoryId = "";
+  @state() private favorited = false;
 
   static override styles = [
     globalStyles,
@@ -55,6 +57,34 @@ export class HeroicEntryPage extends HeroicAppProvider {
         margin-top: 4px;
       }
 
+      .entry-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+
+      .favorite-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 6px;
+        color: var(--color-primary-text-muted);
+        display: flex;
+        align-items: center;
+        transition: color var(--time-fast) ease, transform var(--time-fast) ease;
+        flex-shrink: 0;
+      }
+
+      .favorite-btn:hover {
+        color: var(--color-1);
+        transform: scale(1.15);
+      }
+
+      .favorite-btn.active {
+        color: var(--color-1);
+      }
+
       .content-card {
         background: var(--color-primary-surface-raised);
         border: var(--border-normal);
@@ -69,6 +99,22 @@ export class HeroicEntryPage extends HeroicAppProvider {
       }
     `,
   ];
+
+  private onFavoritesChanged = (): void => {
+    if (this.entry) {
+      this.favorited = isFavorite(this.categoryId, this.entry.slug);
+    }
+  };
+
+  override connectedCallback(): Promise<void> {
+    window.addEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+    return super.connectedCallback();
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+  }
 
   override async load(): Promise<void> {
     await super.load();
@@ -90,6 +136,7 @@ export class HeroicEntryPage extends HeroicAppProvider {
       const entryData = await entryRes.json();
       this.entry = ContentEntry.parse(entryData);
       this.contentHtml = contentRes.ok ? await contentRes.text() : "";
+      this.favorited = isFavorite(this.categoryId, this.entry.slug);
     } catch {
       this.entry = null;
       this.contentHtml = "";
@@ -119,7 +166,16 @@ export class HeroicEntryPage extends HeroicAppProvider {
 
     return html`
       <main>
-        <a href="/${this.categoryId}" class="back-link">${leftArrowIcon} ${catName}</a>
+        <div class="entry-header">
+          <a href="/${this.categoryId}" class="back-link">${leftArrowIcon} ${catName}</a>
+          <button
+            class="favorite-btn ${this.favorited ? "active" : ""}"
+            @click=${this.handleToggleFavorite}
+            title=${this.favorited ? "Remove from favorites" : "Add to favorites"}
+            aria-label=${this.favorited ? "Remove from favorites" : "Add to favorites"}>
+            ${this.favorited ? starFilledIcon : starIcon}
+          </button>
+        </div>
 
         ${this.entry.heroImage
           ? html`
@@ -132,5 +188,16 @@ export class HeroicEntryPage extends HeroicAppProvider {
         </div>
       </main>
     `;
+  }
+
+  private handleToggleFavorite(): void {
+    if (!this.entry) return;
+    this.favorited = toggleFavorite({
+      categoryId: this.categoryId,
+      slug: this.entry.slug,
+      title: this.entry.title,
+      imageUrl: this.entry.heroImage?.url,
+      imageAlt: this.entry.heroImage?.alt,
+    });
   }
 }

@@ -1,6 +1,8 @@
 import { html, css, LitElement, TemplateResult } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { globalStyles } from "./styles.global.js";
+import { starIcon, starFilledIcon } from "./icons.js";
+import { isFavorite, toggleFavorite, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
 
 @customElement("heroic-entry-list-item")
 export class HeroicEntryListItem extends LitElement {
@@ -45,10 +47,50 @@ export class HeroicEntryListItem extends LitElement {
         font-weight: 500;
         color: var(--color-primary-text);
         transition: color var(--time-fast) ease;
+        flex: 1;
       }
 
       .item:hover .title {
         color: var(--color-1);
+      }
+
+      .fav-indicator {
+        color: var(--color-1);
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .fav-indicator svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .fav-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 6px;
+        color: var(--color-primary-text-muted);
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        transition: color var(--time-fast) ease, transform var(--time-fast) ease;
+        z-index: 1;
+      }
+
+      .fav-btn:hover {
+        color: var(--color-1);
+        transform: scale(1.15);
+      }
+
+      .fav-btn.active {
+        color: var(--color-1);
+      }
+
+      .fav-btn svg {
+        width: 16px;
+        height: 16px;
       }
     `,
   ];
@@ -58,6 +100,22 @@ export class HeroicEntryListItem extends LitElement {
   @property({ type: String }) categoryId = "";
   @property({ type: String }) imageUrl = "";
   @property({ type: String }) imageAlt = "";
+  @state() private favorited = false;
+
+  private onFavoritesChanged = (): void => {
+    this.favorited = isFavorite(this.categoryId, this.slug);
+  };
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    this.favorited = isFavorite(this.categoryId, this.slug);
+    window.addEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+  }
 
   override render(): TemplateResult {
     return html`
@@ -69,8 +127,27 @@ export class HeroicEntryListItem extends LitElement {
               `
             : ""}
           <span class="title">${this.entryTitle}</span>
+          <button
+            class="fav-btn ${this.favorited ? "active" : ""}"
+            @click=${this.handleToggleFavorite}
+            title=${this.favorited ? "Remove from favorites" : "Add to favorites"}
+            aria-label=${this.favorited ? "Remove from favorites" : "Add to favorites"}>
+            ${this.favorited ? starFilledIcon : starIcon}
+          </button>
         </div>
       </a>
     `;
+  }
+
+  private handleToggleFavorite(e: Event): void {
+    e.preventDefault();
+    e.stopPropagation();
+    this.favorited = toggleFavorite({
+      categoryId: this.categoryId,
+      slug: this.slug,
+      title: this.entryTitle,
+      imageUrl: this.imageUrl || undefined,
+      imageAlt: this.imageAlt || undefined,
+    });
   }
 }

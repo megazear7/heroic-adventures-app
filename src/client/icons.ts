@@ -41,3 +41,25 @@ export const chevronRightIcon: TemplateResult = html`
       d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"></path>
   </svg>
 `;
+
+export const starIcon = html`
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+    <polygon
+      points="12,2 15.1,8.3 22,9.2 17,14 18.2,21 12,17.8 5.8,21 7,14 2,9.2 8.9,8.3"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linejoin="round" />
+  </svg>
+`;
+
+export const starFilledIcon = html`
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+    <polygon
+      points="12,2 15.1,8.3 22,9.2 17,14 18.2,21 12,17.8 5.8,21 7,14 2,9.2 8.9,8.3"
+      fill="currentColor"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linejoin="round" />
+  </svg>
+`;
