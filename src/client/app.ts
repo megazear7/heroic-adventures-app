@@ -14,6 +14,7 @@ import "./page.favorites.js";
 import "./page.recent.js";
 import "./page.not-found.js";
 import "./component.nav-drawer.js";
+import "./component.bookmark-bar.js";
 
 @customElement("heroic-app")
 export class HeroicApp extends LitElement {
@@ -90,6 +91,7 @@ export class HeroicApp extends LitElement {
 
       .page-container {
         animation: fadeIn var(--time-normal) ease;
+        padding-bottom: 72px;
       }
 
       @keyframes fadeIn {
@@ -149,6 +151,8 @@ export class HeroicApp extends LitElement {
       </div>
 
       <div class="page-container" .key=${this.currentRoute?.name ?? "not-found"}>${pageContent}</div>
+
+      <heroic-bookmark-bar></heroic-bookmark-bar>
     `;
   }
 

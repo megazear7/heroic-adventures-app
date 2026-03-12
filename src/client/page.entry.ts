@@ -5,8 +5,9 @@ import { globalStyles } from "./styles.global.js";
 import { HeroicAppProvider } from "./provider.app.js";
 import { AppContext, appContext } from "./context.js";
 import { ContentEntry } from "../shared/type.content.js";
-import { leftArrowIcon, starIcon, starFilledIcon } from "./icons.js";
+import { leftArrowIcon, starIcon, starFilledIcon, pinIcon, pinFilledIcon } from "./icons.js";
 import { isFavorite, toggleFavorite, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
+import { isBookmarked, toggleBookmark, BOOKMARKS_CHANGED_EVENT } from "../shared/service.bookmarks.js";
 import { recordRecentEntry } from "../shared/service.recents.js";
 import "./component.content-viewer.js";
 
@@ -21,6 +22,7 @@ export class HeroicEntryPage extends HeroicAppProvider {
   @state() private loading = true;
   @state() private categoryId = "";
   @state() private favorited = false;
+  @state() private bookmarked = false;
 
   static override styles = [
     globalStyles,
@@ -86,6 +88,33 @@ export class HeroicEntryPage extends HeroicAppProvider {
         color: var(--color-1);
       }
 
+      .pin-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 6px;
+        color: var(--color-primary-text-muted);
+        display: flex;
+        align-items: center;
+        transition: color var(--time-fast) ease, transform var(--time-fast) ease;
+        flex-shrink: 0;
+      }
+
+      .pin-btn:hover {
+        color: var(--color-1);
+        transform: scale(1.15);
+      }
+
+      .pin-btn.active {
+        color: var(--color-1);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
       .content-card {
         background: var(--color-primary-surface-raised);
         border: var(--border-normal);
@@ -107,14 +136,22 @@ export class HeroicEntryPage extends HeroicAppProvider {
     }
   };
 
+  private onBookmarksChanged = (): void => {
+    if (this.entry) {
+      this.bookmarked = isBookmarked(this.categoryId, this.entry.slug);
+    }
+  };
+
   override connectedCallback(): Promise<void> {
     window.addEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+    window.addEventListener(BOOKMARKS_CHANGED_EVENT, this.onBookmarksChanged);
     return super.connectedCallback();
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     window.removeEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+    window.removeEventListener(BOOKMARKS_CHANGED_EVENT, this.onBookmarksChanged);
   }
 
   override async load(): Promise<void> {
@@ -138,6 +175,7 @@ export class HeroicEntryPage extends HeroicAppProvider {
       this.entry = ContentEntry.parse(entryData);
       this.contentHtml = contentRes.ok ? await contentRes.text() : "";
       this.favorited = isFavorite(this.categoryId, this.entry.slug);
+      this.bookmarked = isBookmarked(this.categoryId, this.entry.slug);
       recordRecentEntry({
         categoryId: this.categoryId,
         slug: this.entry.slug,
@@ -176,13 +214,22 @@ export class HeroicEntryPage extends HeroicAppProvider {
       <main>
         <div class="entry-header">
           <a href="/${this.categoryId}" class="back-link">${leftArrowIcon} ${catName}</a>
-          <button
-            class="favorite-btn ${this.favorited ? "active" : ""}"
-            @click=${this.handleToggleFavorite}
-            title=${this.favorited ? "Remove from favorites" : "Add to favorites"}
-            aria-label=${this.favorited ? "Remove from favorites" : "Add to favorites"}>
-            ${this.favorited ? starFilledIcon : starIcon}
-          </button>
+          <div class="header-actions">
+            <button
+              class="pin-btn ${this.bookmarked ? "active" : ""}"
+              @click=${this.handleToggleBookmark}
+              title=${this.bookmarked ? "Unpin from quick reference" : "Pin to quick reference"}
+              aria-label=${this.bookmarked ? "Unpin from quick reference" : "Pin to quick reference"}>
+              ${this.bookmarked ? pinFilledIcon : pinIcon}
+            </button>
+            <button
+              class="favorite-btn ${this.favorited ? "active" : ""}"
+              @click=${this.handleToggleFavorite}
+              title=${this.favorited ? "Remove from favorites" : "Add to favorites"}
+              aria-label=${this.favorited ? "Remove from favorites" : "Add to favorites"}>
+              ${this.favorited ? starFilledIcon : starIcon}
+            </button>
+          </div>
         </div>
 
         ${this.entry.heroImage
@@ -201,6 +248,17 @@ export class HeroicEntryPage extends HeroicAppProvider {
   private handleToggleFavorite(): void {
     if (!this.entry) return;
     this.favorited = toggleFavorite({
+      categoryId: this.categoryId,
+      slug: this.entry.slug,
+      title: this.entry.title,
+      imageUrl: this.entry.heroImage?.url,
+      imageAlt: this.entry.heroImage?.alt,
+    });
+  }
+
+  private handleToggleBookmark(): void {
+    if (!this.entry) return;
+    this.bookmarked = toggleBookmark({
       categoryId: this.categoryId,
       slug: this.entry.slug,
       title: this.entry.title,

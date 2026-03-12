@@ -1,8 +1,9 @@
 import { html, css, LitElement, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { globalStyles } from "./styles.global.js";
-import { starIcon, starFilledIcon } from "./icons.js";
+import { starIcon, starFilledIcon, pinIcon, pinFilledIcon } from "./icons.js";
 import { isFavorite, toggleFavorite, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
+import { isBookmarked, toggleBookmark, BOOKMARKS_CHANGED_EVENT } from "../shared/service.bookmarks.js";
 
 @customElement("heroic-entry-list-item")
 export class HeroicEntryListItem extends LitElement {
@@ -92,6 +93,33 @@ export class HeroicEntryListItem extends LitElement {
         width: 16px;
         height: 16px;
       }
+
+      .pin-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 6px;
+        color: var(--color-primary-text-muted);
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+        transition: color var(--time-fast) ease, transform var(--time-fast) ease;
+        z-index: 1;
+      }
+
+      .pin-btn:hover {
+        color: var(--color-1);
+        transform: scale(1.15);
+      }
+
+      .pin-btn.active {
+        color: var(--color-1);
+      }
+
+      .pin-btn svg {
+        width: 14px;
+        height: 14px;
+      }
     `,
   ];
 
@@ -101,20 +129,28 @@ export class HeroicEntryListItem extends LitElement {
   @property({ type: String }) imageUrl = "";
   @property({ type: String }) imageAlt = "";
   @state() private favorited = false;
+  @state() private bookmarked = false;
 
   private onFavoritesChanged = (): void => {
     this.favorited = isFavorite(this.categoryId, this.slug);
   };
 
+  private onBookmarksChanged = (): void => {
+    this.bookmarked = isBookmarked(this.categoryId, this.slug);
+  };
+
   override connectedCallback(): void {
     super.connectedCallback();
     this.favorited = isFavorite(this.categoryId, this.slug);
+    this.bookmarked = isBookmarked(this.categoryId, this.slug);
     window.addEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+    window.addEventListener(BOOKMARKS_CHANGED_EVENT, this.onBookmarksChanged);
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     window.removeEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
+    window.removeEventListener(BOOKMARKS_CHANGED_EVENT, this.onBookmarksChanged);
   }
 
   override render(): TemplateResult {
@@ -127,6 +163,13 @@ export class HeroicEntryListItem extends LitElement {
               `
             : ""}
           <span class="title">${this.entryTitle}</span>
+          <button
+            class="pin-btn ${this.bookmarked ? "active" : ""}"
+            @click=${this.handleToggleBookmark}
+            title=${this.bookmarked ? "Unpin from quick reference" : "Pin to quick reference"}
+            aria-label=${this.bookmarked ? "Unpin from quick reference" : "Pin to quick reference"}>
+            ${this.bookmarked ? pinFilledIcon : pinIcon}
+          </button>
           <button
             class="fav-btn ${this.favorited ? "active" : ""}"
             @click=${this.handleToggleFavorite}
@@ -143,6 +186,18 @@ export class HeroicEntryListItem extends LitElement {
     e.preventDefault();
     e.stopPropagation();
     this.favorited = toggleFavorite({
+      categoryId: this.categoryId,
+      slug: this.slug,
+      title: this.entryTitle,
+      imageUrl: this.imageUrl || undefined,
+      imageAlt: this.imageAlt || undefined,
+    });
+  }
+
+  private handleToggleBookmark(e: Event): void {
+    e.preventDefault();
+    e.stopPropagation();
+    this.bookmarked = toggleBookmark({
       categoryId: this.categoryId,
       slug: this.slug,
       title: this.entryTitle,
