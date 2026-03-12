@@ -1,7 +1,7 @@
 // @ts-nocheck
 /* eslint-disable */
 
-const CACHE_NAME = "heroic-v3";
+const CACHE_NAME = "heroic-v4";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -14,20 +14,48 @@ const APP_SHELL = [
   "/logo/favicon.ico",
 ];
 
+/**
+ * Pre-cache an array of URL paths in small batches.
+ * Each URL is cached individually so one failure doesn't block the rest.
+ * For .html paths, we also store the response under the extensionless URL
+ * (the app fetches /content/.../content, NOT /content/.../content.html).
+ */
+async function precacheUrls(cache, urls, batchSize) {
+  for (let i = 0; i < urls.length; i += batchSize) {
+    const batch = urls.slice(i, i + batchSize);
+    await Promise.all(
+      batch.map(async (url) => {
+        try {
+          const response = await fetch(url);
+          if (response.ok) {
+            await cache.put(new Request(url), response.clone());
+            // Also cache under the extensionless path so the app can find it
+            if (url.endsWith(".html")) {
+              const extensionless = url.replace(/\.html$/, "");
+              await cache.put(new Request(extensionless), response.clone());
+            }
+          }
+        } catch {
+          // Skip this URL — don't block the rest
+        }
+      })
+    );
+  }
+}
+
 // Install: pre-cache the app shell + all content files
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
       await cache.addAll(APP_SHELL);
-      // Fetch the content index and cache every content path
+      // Fetch the content index and cache every content path in batches
       try {
         const res = await fetch("/content/index.json");
         if (res.ok) {
           const contentPaths = await res.json();
-          await cache.addAll(contentPaths);
+          await precacheUrls(cache, contentPaths, 50);
         }
       } catch {
-        // Content pre-cache is best-effort; app shell is already cached
         console.warn("SW: could not pre-cache content index");
       }
     })
@@ -56,7 +84,7 @@ self.addEventListener("fetch", (event) => {
   // Only handle GET requests
   if (event.request.method !== "GET") return;
 
-  // Google Fonts: cache-first (they're immutable)
+  // Google Fonts: cache-first
   if (
     url.hostname === "fonts.googleapis.com" ||
     url.hostname === "fonts.gstatic.com"
@@ -65,7 +93,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Content JSON/HTML: cache-first, fall back to network
+  // Content JSON/HTML: cache-first
   if (url.pathname.startsWith("/content/")) {
     event.respondWith(cacheFirst(event.request));
     return;
@@ -85,7 +113,9 @@ self.addEventListener("fetch", (event) => {
     // For navigation requests, serve the cached index.html (SPA)
     if (event.request.mode === "navigate") {
       event.respondWith(
-        caches.match("/index.html").then((cached) => cached || fetch(event.request))
+        caches
+          .match("/index.html", { ignoreVary: true })
+          .then((cached) => cached || fetch(event.request))
       );
       return;
     }
@@ -95,19 +125,12 @@ self.addEventListener("fetch", (event) => {
 });
 
 /**
- * Cache-first: return cached response or fetch, cache, and return.
- * Also checks for .html variant when the original URL has no extension,
- * since the build caches files with .html but the app fetches without it.
+ * Cache-first with ignoreVary to avoid Vary header mismatch issues.
+ * Falls back to network, caching successful responses for future use.
  */
 async function cacheFirst(request) {
-  const cached = await caches.match(request);
+  const cached = await caches.match(request, { ignoreVary: true });
   if (cached) return cached;
-  // Try .html variant (app fetches /content/.../content, cache has .html)
-  const url = new URL(request.url);
-  if (!url.pathname.endsWith(".html") && !url.pathname.endsWith(".json")) {
-    const htmlCached = await caches.match(request.url + ".html");
-    if (htmlCached) return htmlCached;
-  }
   try {
     const response = await fetch(request);
     if (response.ok) {
@@ -116,24 +139,6 @@ async function cacheFirst(request) {
     }
     return response;
   } catch {
-    return new Response("Offline", { status: 503, statusText: "Offline" });
-  }
-}
-
-/**
- * Network-first: try network, cache successful responses, fall back to cache.
- */
-async function networkFirst(request) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch {
-    const cached = await caches.match(request);
-    if (cached) return cached;
     return new Response("Offline", { status: 503, statusText: "Offline" });
   }
 }
