@@ -5,7 +5,7 @@ import { parseRouteParams } from "../shared/util.route-params.js";
 import { routes } from "../shared/service.client.js";
 import { ContentCategory } from "../shared/type.content.js";
 import { ZeltTemplateAbstractProvider } from "./provider.abstract.js";
-import { menuIcon } from "./icons.js";
+import { menuIcon, wifiOffIcon } from "./icons.js";
 import "./page.home.js";
 import "./page.category.js";
 import "./page.entry.js";
@@ -64,6 +64,30 @@ export class HeroicApp extends LitElement {
         color: #d4b555;
       }
 
+      .offline-badge {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: auto;
+        padding: 4px 10px;
+        border-radius: 12px;
+        background: rgba(201, 168, 76, 0.15);
+        color: var(--color-primary-text-muted);
+        font-size: 0.75rem;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        opacity: 0;
+        transform: translateY(-4px);
+        transition:
+          opacity var(--time-normal) ease,
+          transform var(--time-normal) ease;
+      }
+
+      .offline-badge.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
       .page-container {
         animation: fadeIn var(--time-normal) ease;
       }
@@ -88,7 +112,7 @@ export class HeroicApp extends LitElement {
 
   @state() private drawerOpen = false;
   @state() private categories: ContentCategory[] = [];
-
+  @state() private isOffline = !navigator.onLine;
   override async connectedCallback(): Promise<void> {
     super.connectedCallback();
     document.addEventListener("click", this.navigate.bind(this));
@@ -96,6 +120,9 @@ export class HeroicApp extends LitElement {
       this.currentRoute = this.determineRouteName();
       this.requestUpdate();
     });
+
+    window.addEventListener("online", () => (this.isOffline = false));
+    window.addEventListener("offline", () => (this.isOffline = true));
 
     // Load categories for the drawer
     try {
@@ -118,6 +145,7 @@ export class HeroicApp extends LitElement {
       <div class="top-bar">
         <button class="menu-btn" @click=${() => (this.drawerOpen = true)}>${menuIcon}</button>
         <a href="/" class="brand">Heroic Adventures</a>
+        <span class="offline-badge ${this.isOffline ? "visible" : ""}">${wifiOffIcon} Offline</span>
       </div>
 
       <div class="page-container" .key=${this.currentRoute?.name ?? "not-found"}>${pageContent}</div>
