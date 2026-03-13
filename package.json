@@ -1,7 +1,7 @@
 {
   "name": "heroic-adventures-app",
   "version": "1.0.0",
-  "description": "Heroic Adventures 2nd Edition companion web app — built with the Zelt stack",
+  "description": "Heroic Adventures 2nd Edition companion web app",
   "type": "module",
   "main": "index.js",
   "scripts": {
@@ -31,9 +31,9 @@
   "author": "Alex Lockhart",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/megazear7/zelt-template/issues"
+    "url": "https://github.com/megazear7/heroic-adventures-app/issues"
   },
-  "homepage": "https://github.com/megazear7/zelt-template#readme",
+  "homepage": "https://github.com/megazear7/heroic-adventures-app#readme",
   "dependencies": {
     "@contentful/rich-text-html-renderer": "^17.1.6",
     "@contentful/rich-text-types": "^17.2.5",

@@ -2,7 +2,7 @@
 
 Heroic Adventures App is a **client-only static web app** for browsing Heroic Adventures 2nd Edition content (chapters, rules, races, classes, feats, spells, items, and more).
 
-It uses the Zelt stack style (Zod + Lit + TypeScript) and pulls published content from Contentful Content Delivery API.
+It uses the Zelt stack (Zod + Lit + TypeScript) and pulls published content from Contentful Content Delivery API.
 
 ## Requirements
 

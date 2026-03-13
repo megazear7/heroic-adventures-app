@@ -4,7 +4,7 @@ import { RouteConfig, RouteName } from "../shared/type.routes.js";
 import { parseRouteParams } from "../shared/util.route-params.js";
 import { routes } from "../shared/service.client.js";
 import { ContentCategory } from "../shared/type.content.js";
-import { ZeltTemplateAbstractProvider } from "./provider.abstract.js";
+import { HeroicAbstractProvider } from "./provider.abstract.js";
 import { menuIcon, wifiOffIcon } from "./icons.js";
 import "./page.home.js";
 import "./page.category.js";
@@ -252,7 +252,7 @@ export class HeroicApp extends LitElement {
         await this.updateComplete;
         const tagName = `heroic-${this.currentRoute.name.replace(/_/g, "-")}-page`;
         const pageElement = this.shadowRoot?.querySelector(tagName);
-        const provider = pageElement as ZeltTemplateAbstractProvider;
+        const provider = pageElement as HeroicAbstractProvider;
         if (provider?.load) {
           provider.load().then(() => provider.requestUpdate());
         }
@@ -265,7 +265,7 @@ export class HeroicApp extends LitElement {
     if (this.currentRoute != null && changedProperties.has("currentRoute")) {
       const tagName = `heroic-${this.currentRoute.name.replace(/_/g, "-")}-page`;
       const pageElement = this.shadowRoot?.querySelector(tagName);
-      const provider = pageElement as ZeltTemplateAbstractProvider;
+      const provider = pageElement as HeroicAbstractProvider;
       if (provider?.load) {
         provider.load().then(() => provider.requestUpdate());
       }

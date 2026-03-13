@@ -3,9 +3,9 @@ import { property } from "lit/decorators.js";
 import { AppContext, appContext } from "./context.js";
 import { LoadingStatus } from "../shared/type.loading.js";
 import { ContentCategory } from "../shared/type.content.js";
-import { ZeltTemplateAbstractProvider } from "./provider.abstract.js";
+import { HeroicAbstractProvider } from "./provider.abstract.js";
 
-export abstract class HeroicAppProvider extends ZeltTemplateAbstractProvider {
+export abstract class HeroicAppProvider extends HeroicAbstractProvider {
   @provide({ context: appContext })
   @property({ attribute: false })
   appContext: AppContext = {

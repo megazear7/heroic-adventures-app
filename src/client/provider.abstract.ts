@@ -1,5 +1,5 @@
 import { LitElement } from "lit";
 
-export abstract class ZeltTemplateAbstractProvider extends LitElement {
+export abstract class HeroicAbstractProvider extends LitElement {
   abstract load(): Promise<void>;
 }
