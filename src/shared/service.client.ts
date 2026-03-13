@@ -28,6 +28,10 @@ export const routes = [
     name: RouteName.enum.recent,
     path: "/recent",
   },
+  {
+    name: RouteName.enum.settings,
+    path: "/settings",
+  },
 ];
 
 export class ClientService extends AbstractService<NoBodyParams, NoPathParams, string> {

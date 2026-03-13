@@ -1,6 +1,10 @@
 import z from "zod";
+import { getActiveProfileId } from "./service.profile.js";
 
-const STORAGE_KEY = "heroic-recent";
+function storageKey(): string {
+  const id = getActiveProfileId();
+  return id ? `heroic-recent-${id}` : "heroic-recent";
+}
 const MAX_RECENT = 10;
 
 /** A single recently viewed entry reference */
@@ -17,7 +21,7 @@ export type RecentEntry = z.infer<typeof RecentEntry>;
 /** Read all recent entries from localStorage, newest first */
 export function getRecentEntries(): RecentEntry[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey());
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return z
@@ -35,7 +39,7 @@ export function recordRecentEntry(entry: Omit<RecentEntry, "viewedAt">): void {
     (r) => !(r.categoryId === entry.categoryId && r.slug === entry.slug),
   );
   recents.unshift({ ...entry, viewedAt: Date.now() });
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(recents.slice(0, MAX_RECENT)));
+  localStorage.setItem(storageKey(), JSON.stringify(recents.slice(0, MAX_RECENT)));
   dispatchRecentsChanged();
 }
 

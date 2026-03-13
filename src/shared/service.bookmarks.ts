@@ -1,6 +1,10 @@
 import z from "zod";
+import { getActiveProfileId } from "./service.profile.js";
 
-const STORAGE_KEY = "heroic-bookmarks";
+function storageKey(): string {
+  const id = getActiveProfileId();
+  return id ? `heroic-bookmarks-${id}` : "heroic-bookmarks";
+}
 const MAX_BOOKMARKS = 5;
 
 /** A single bookmark entry reference */
@@ -16,7 +20,7 @@ export type BookmarkEntry = z.infer<typeof BookmarkEntry>;
 /** Read all bookmarks from sessionStorage */
 export function getBookmarks(): BookmarkEntry[] {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(storageKey());
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return z.array(BookmarkEntry).parse(parsed);
@@ -40,7 +44,7 @@ export function addBookmark(entry: BookmarkEntry): boolean {
     return false; // at capacity
   }
   bookmarks.push(entry);
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
+  sessionStorage.setItem(storageKey(), JSON.stringify(bookmarks));
   dispatchBookmarksChanged();
   return true;
 }
@@ -48,7 +52,7 @@ export function addBookmark(entry: BookmarkEntry): boolean {
 /** Remove an entry from bookmarks */
 export function removeBookmark(categoryId: string, slug: string): void {
   const bookmarks = getBookmarks().filter((b) => !(b.categoryId === categoryId && b.slug === slug));
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(bookmarks));
+  sessionStorage.setItem(storageKey(), JSON.stringify(bookmarks));
   dispatchBookmarksChanged();
 }
 
@@ -64,7 +68,7 @@ export function toggleBookmark(entry: BookmarkEntry): boolean {
 
 /** Remove all bookmarks */
 export function clearAllBookmarks(): void {
-  sessionStorage.removeItem(STORAGE_KEY);
+  sessionStorage.removeItem(storageKey());
   dispatchBookmarksChanged();
 }
 

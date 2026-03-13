@@ -1,4 +1,4 @@
-import { css, html, LitElement, PropertyValues, TemplateResult } from "lit";
+import { css, html, LitElement, PropertyValues, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { RouteConfig, RouteName } from "../shared/type.routes.js";
 import { parseRouteParams } from "../shared/util.route-params.js";
@@ -6,15 +6,19 @@ import { routes } from "../shared/service.client.js";
 import { ContentCategory } from "../shared/type.content.js";
 import { HeroicAbstractProvider } from "./provider.abstract.js";
 import { menuIcon, wifiOffIcon } from "./icons.js";
+import { getActiveProfile, PROFILE_CHANGED_EVENT, UserProfile } from "../shared/service.profile.js";
 import "./page.home.js";
 import "./page.category.js";
 import "./page.entry.js";
 import "./page.search.js";
 import "./page.favorites.js";
 import "./page.recent.js";
+import "./page.settings.js";
 import "./page.not-found.js";
 import "./component.nav-drawer.js";
 import "./component.bookmark-bar.js";
+import "./component.profile-modal.js";
+import "./component.profile-menu.js";
 
 @customElement("heroic-app")
 export class HeroicApp extends LitElement {
@@ -115,6 +119,9 @@ export class HeroicApp extends LitElement {
   @state() private drawerOpen = false;
   @state() private categories: ContentCategory[] = [];
   @state() private isOffline = !navigator.onLine;
+  @state() private activeProfile: UserProfile | null = getActiveProfile();
+  @state() private showProfileModal = false;
+  @state() private showProfileModalExisting = false;
   override async connectedCallback(): Promise<void> {
     super.connectedCallback();
     document.addEventListener("click", this.navigate.bind(this));
@@ -126,6 +133,41 @@ export class HeroicApp extends LitElement {
 
     window.addEventListener("online", () => (this.isOffline = false));
     window.addEventListener("offline", () => (this.isOffline = true));
+
+    // Show welcome modal if no profile exists
+    if (!this.activeProfile) {
+      this.showProfileModal = true;
+      this.showProfileModalExisting = false;
+    }
+
+    // Listen for profile changes
+    window.addEventListener(PROFILE_CHANGED_EVENT, () => {
+      this.activeProfile = getActiveProfile();
+    });
+
+    // Listen for switch-profile request from the menu
+    this.addEventListener("profile-switch-request", () => {
+      this.showProfileModal = true;
+      this.showProfileModalExisting = true;
+    });
+
+    // Listen for profile modal events
+    this.addEventListener("profile-created", () => {
+      this.activeProfile = getActiveProfile();
+      this.showProfileModal = false;
+      this.requestUpdate();
+    });
+    this.addEventListener("profile-switched", () => {
+      this.activeProfile = getActiveProfile();
+      this.showProfileModal = false;
+      this.requestUpdate();
+    });
+    this.addEventListener("profile-modal-close", () => {
+      // Only allow closing if a profile exists
+      if (this.activeProfile) {
+        this.showProfileModal = false;
+      }
+    });
 
     // Load categories for the drawer
     try {
@@ -149,7 +191,12 @@ export class HeroicApp extends LitElement {
         <button class="menu-btn" @click=${() => (this.drawerOpen = true)}>${menuIcon}</button>
         <a href="/" class="brand">Heroic Adventures</a>
         <span class="offline-badge ${this.isOffline ? "visible" : ""}">${wifiOffIcon} Offline</span>
+        ${this.activeProfile ? html`<heroic-profile-menu .profile=${this.activeProfile}></heroic-profile-menu>` : nothing}
       </div>
+
+      <heroic-profile-modal
+        .open=${this.showProfileModal}
+        .showExisting=${this.showProfileModalExisting}></heroic-profile-modal>
 
       <div class="page-container" .key=${this.currentRoute?.name ?? "not-found"}>${pageContent}</div>
 
@@ -189,6 +236,10 @@ export class HeroicApp extends LitElement {
         return html`
           <heroic-entry-page></heroic-entry-page>
         `;
+      case RouteName.enum.settings:
+        return html`
+          <heroic-settings-page></heroic-settings-page>
+        `;
       default:
         return html`
           <heroic-not-found-page></heroic-not-found-page>
@@ -208,6 +259,9 @@ export class HeroicApp extends LitElement {
     }
     if (pathname === "/recent") {
       return { name: RouteName.enum.recent, path: "/recent" };
+    }
+    if (pathname === "/settings") {
+      return { name: RouteName.enum.settings, path: "/settings" };
     }
 
     for (const route of this.routes) {

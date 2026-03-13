@@ -1,6 +1,10 @@
 import z from "zod";
+import { getActiveProfileId } from "./service.profile.js";
 
-const STORAGE_KEY = "heroic-favorites";
+function storageKey(): string {
+  const id = getActiveProfileId();
+  return id ? `heroic-favorites-${id}` : "heroic-favorites";
+}
 
 /** A single favorite entry reference */
 export const FavoriteEntry = z.object({
@@ -15,7 +19,7 @@ export type FavoriteEntry = z.infer<typeof FavoriteEntry>;
 /** Read all favorites from localStorage */
 export function getFavorites(): FavoriteEntry[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey());
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return z.array(FavoriteEntry).parse(parsed);
@@ -34,7 +38,7 @@ export function addFavorite(entry: FavoriteEntry): void {
   const favorites = getFavorites();
   if (!favorites.some((f) => f.categoryId === entry.categoryId && f.slug === entry.slug)) {
     favorites.push(entry);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites));
+    localStorage.setItem(storageKey(), JSON.stringify(favorites));
     dispatchFavoritesChanged();
   }
 }
@@ -42,7 +46,7 @@ export function addFavorite(entry: FavoriteEntry): void {
 /** Remove an entry from favorites */
 export function removeFavorite(categoryId: string, slug: string): void {
   const favorites = getFavorites().filter((f) => !(f.categoryId === categoryId && f.slug === slug));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites));
+  localStorage.setItem(storageKey(), JSON.stringify(favorites));
   dispatchFavoritesChanged();
 }
 
