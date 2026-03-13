@@ -7,6 +7,9 @@ import { ContentCategory } from "../shared/type.content.js";
 import { HeroicAbstractProvider } from "./provider.abstract.js";
 import { menuIcon, wifiOffIcon } from "./icons.js";
 import { getActiveProfile, PROFILE_CHANGED_EVENT, UserProfile } from "../shared/service.profile.js";
+import { FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
+import { BOOKMARKS_CHANGED_EVENT } from "../shared/service.bookmarks.js";
+import { RECENTS_CHANGED_EVENT } from "../shared/service.recents.js";
 import "./page.home.js";
 import "./page.category.js";
 import "./page.entry.js";
@@ -155,11 +158,13 @@ export class HeroicApp extends LitElement {
     this.addEventListener("profile-created", () => {
       this.activeProfile = getActiveProfile();
       this.showProfileModal = false;
+      this.dispatchDataChangedEvents();
       this.requestUpdate();
     });
     this.addEventListener("profile-switched", () => {
       this.activeProfile = getActiveProfile();
       this.showProfileModal = false;
+      this.dispatchDataChangedEvents();
       this.requestUpdate();
     });
     this.addEventListener("profile-modal-close", () => {
@@ -346,5 +351,12 @@ export class HeroicApp extends LitElement {
         provider.load().then(() => provider.requestUpdate());
       }
     }
+  }
+
+  /** Notify all data-dependent components that the underlying profile changed */
+  private dispatchDataChangedEvents(): void {
+    window.dispatchEvent(new CustomEvent(FAVORITES_CHANGED_EVENT));
+    window.dispatchEvent(new CustomEvent(BOOKMARKS_CHANGED_EVENT));
+    window.dispatchEvent(new CustomEvent(RECENTS_CHANGED_EVENT));
   }
 }
