@@ -118,6 +118,7 @@ export class HeroicApp extends LitElement {
   override async connectedCallback(): Promise<void> {
     super.connectedCallback();
     document.addEventListener("click", this.navigate.bind(this));
+    this.addEventListener("NavigationEvent", (e: Event) => this.handleNavigationEvent(e as CustomEvent));
     window.addEventListener("popstate", () => {
       this.currentRoute = this.determineRouteName();
       this.requestUpdate();
@@ -221,6 +222,27 @@ export class HeroicApp extends LitElement {
     }
 
     return null;
+  }
+
+  async handleNavigationEvent(event: CustomEvent): Promise<void> {
+    const path: string = event.detail?.path;
+    if (!path) return;
+
+    const url = new URL(path, window.location.origin);
+    const previousPath = window.location.pathname;
+    window.history.pushState({}, "", url.pathname + url.search);
+    this.currentRoute = this.determineRouteName();
+    this.requestUpdate();
+
+    if (url.pathname !== previousPath && this.currentRoute) {
+      await this.updateComplete;
+      const tagName = `heroic-${this.currentRoute.name.replace(/_/g, "-")}-page`;
+      const pageElement = this.shadowRoot?.querySelector(tagName);
+      const provider = pageElement as HeroicAbstractProvider;
+      if (provider?.load) {
+        provider.load().then(() => provider.requestUpdate());
+      }
+    }
   }
 
   async navigate(event: Event): Promise<void> {

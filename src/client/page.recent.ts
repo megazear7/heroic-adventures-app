@@ -101,6 +101,7 @@ export class HeroicRecentPage extends HeroicAppProvider {
                       entryTitle=${r.title}
                       slug=${r.slug}
                       categoryId=${r.categoryId}
+                      categoryName=${this.getCategoryName(r.categoryId)}
                       imageUrl=${r.imageUrl ?? ""}
                       imageAlt=${r.imageAlt ?? r.title}></heroic-entry-list-item>
                   `,
@@ -109,5 +110,10 @@ export class HeroicRecentPage extends HeroicAppProvider {
             `}
       </main>
     `;
+  }
+
+  private getCategoryName(categoryId: string): string {
+    const categories = this.appContext?.categories ?? [];
+    return categories.find((c) => c.id === categoryId)?.name ?? "";
   }
 }

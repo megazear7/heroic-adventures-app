@@ -5,10 +5,11 @@ import { property } from "lit/decorators.js";
 import { globalStyles } from "./styles.global.js";
 import { HeroicAppProvider } from "./provider.app.js";
 import { AppContext, appContext } from "./context.js";
-import { ContentCategory } from "../shared/type.content.js";
+import { ContentCategory, ContentListItem } from "../shared/type.content.js";
 import { getFavorites, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
 import { getRecentEntries, RECENTS_CHANGED_EVENT } from "../shared/service.recents.js";
 import { starIcon, clockIcon } from "./icons.js";
+import { SearchSuggestion } from "./component.search-bar.js";
 import "../client/component.category-card.js";
 import "../client/component.link-card.js";
 import "../client/component.search-bar.js";
@@ -21,6 +22,9 @@ export class HeroicHomePage extends HeroicAppProvider {
 
   @state() private favCount = 0;
   @state() private recentCount = 0;
+  @state() private suggestions: SearchSuggestion[] = [];
+  private allEntries: { title: string; categoryId: string; categoryName: string; slug: string; imageUrl?: string; imageAlt?: string }[] = [];
+  private entriesLoaded = false;
 
   private onFavoritesChanged = (): void => {
     this.favCount = getFavorites().length;
@@ -42,6 +46,62 @@ export class HeroicHomePage extends HeroicAppProvider {
     super.disconnectedCallback();
     window.removeEventListener(FAVORITES_CHANGED_EVENT, this.onFavoritesChanged);
     window.removeEventListener(RECENTS_CHANGED_EVENT, this.onRecentsChanged);
+  }
+
+  private async loadAllEntries(): Promise<void> {
+    if (this.entriesLoaded) return;
+    const categories: ContentCategory[] = this.appContext?.categories ?? [];
+    const entries: typeof this.allEntries = [];
+
+    await Promise.all(
+      categories.map(async (cat) => {
+        try {
+          const res = await fetch(`/content/${cat.id}/list.json`);
+          if (!res.ok) return;
+          const items = await res.json();
+          for (const item of items) {
+            const parsed = ContentListItem.parse(item);
+            entries.push({
+              title: parsed.title,
+              categoryId: cat.id,
+              categoryName: cat.name,
+              slug: parsed.slug,
+              imageUrl: parsed.heroImage?.url,
+              imageAlt: parsed.heroImage?.alt,
+            });
+          }
+        } catch {
+          // skip
+        }
+      }),
+    );
+
+    this.allEntries = entries;
+    this.entriesLoaded = true;
+  }
+
+  private async handleSearchInput(e: CustomEvent): Promise<void> {
+    const query: string = e.detail.value?.trim() ?? "";
+    if (query.length < 1) {
+      this.suggestions = [];
+      return;
+    }
+
+    if (!this.entriesLoaded) {
+      await this.loadAllEntries();
+    }
+
+    const q = query.toLowerCase();
+    this.suggestions = this.allEntries
+      .filter((entry) => entry.title.toLowerCase().includes(q))
+      .slice(0, 5)
+      .map((entry) => ({
+        title: entry.title,
+        href: `/${entry.categoryId}/${entry.slug}`,
+        imageUrl: entry.imageUrl,
+        imageAlt: entry.imageAlt,
+        categoryName: entry.categoryName,
+      }));
   }
 
   static override styles = [
@@ -120,7 +180,10 @@ export class HeroicHomePage extends HeroicAppProvider {
         <div class="search-section">
           <heroic-search-bar
             placeholder="Search rules, spells, items…"
-            @search-submit=${this.handleSearch}></heroic-search-bar>
+            .suggestions=${this.suggestions}
+            @search-input=${this.handleSearchInput}
+            @search-submit=${this.handleSearch}
+            @search-navigate=${this.handleSearchNavigate}></heroic-search-bar>
         </div>
 
         ${this.favCount > 0 || this.recentCount > 0
@@ -209,6 +272,20 @@ export class HeroicHomePage extends HeroicAppProvider {
           bubbles: true,
           composed: true,
           detail: { path: `/search?q=${encodeURIComponent(query)}` },
+        }),
+      );
+    }
+  }
+
+  private handleSearchNavigate(e: CustomEvent): void {
+    const href: string = e.detail.href;
+    if (href) {
+      window.history.pushState({}, "", href);
+      this.dispatchEvent(
+        new CustomEvent("NavigationEvent", {
+          bubbles: true,
+          composed: true,
+          detail: { path: href },
         }),
       );
     }

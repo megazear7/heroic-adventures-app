@@ -176,6 +176,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
                               entryTitle="${item.title}"
                               slug=${item.slug}
                               categoryId=${item.categoryId}
+                              categoryName=${item.categoryName}
                               imageUrl=${item.heroImage?.url ?? ""}
                               imageAlt=${item.heroImage?.alt ?? item.title}></heroic-entry-list-item>
                           `,

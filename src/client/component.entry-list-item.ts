@@ -1,4 +1,4 @@
-import { html, css, LitElement, TemplateResult } from "lit";
+import { html, css, LitElement, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { globalStyles } from "./styles.global.js";
 import { starIcon, starFilledIcon, pinIcon, pinFilledIcon } from "./icons.js";
@@ -43,12 +43,24 @@ export class HeroicEntryListItem extends LitElement {
         flex-shrink: 0;
       }
 
+      .info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        flex: 1;
+        min-width: 0;
+      }
+
       .title {
         font-size: var(--font-medium);
         font-weight: 500;
         color: var(--color-primary-text);
         transition: color var(--time-fast) ease;
-        flex: 1;
+      }
+
+      .category-label {
+        font-size: var(--font-tiny);
+        color: var(--color-primary-text-muted);
       }
 
       .item:hover .title {
@@ -128,6 +140,7 @@ export class HeroicEntryListItem extends LitElement {
   @property({ type: String }) categoryId = "";
   @property({ type: String }) imageUrl = "";
   @property({ type: String }) imageAlt = "";
+  @property({ type: String }) categoryName = "";
   @state() private favorited = false;
   @state() private bookmarked = false;
 
@@ -162,7 +175,12 @@ export class HeroicEntryListItem extends LitElement {
                 <img class="thumb" src="${this.imageUrl}" alt="${this.imageAlt}" loading="lazy" />
               `
             : ""}
-          <span class="title">${this.entryTitle}</span>
+          <span class="info">
+            <span class="title">${this.entryTitle}</span>
+            ${this.categoryName
+              ? html`<span class="category-label">${this.categoryName}</span>`
+              : nothing}
+          </span>
           <button
             class="pin-btn ${this.bookmarked ? "active" : ""}"
             @click=${this.handleToggleBookmark}
