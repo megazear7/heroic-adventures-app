@@ -62,6 +62,12 @@ export function toggleBookmark(entry: BookmarkEntry): boolean {
   }
 }
 
+/** Remove all bookmarks */
+export function clearAllBookmarks(): void {
+  sessionStorage.removeItem(STORAGE_KEY);
+  dispatchBookmarksChanged();
+}
+
 /** Custom event name components can listen for */
 export const BOOKMARKS_CHANGED_EVENT = "heroic-bookmarks-changed";
 

@@ -5,6 +5,7 @@ import { closeIcon } from "./icons.js";
 import {
   getBookmarks,
   removeBookmark,
+  clearAllBookmarks,
   BookmarkEntry,
   BOOKMARKS_CHANGED_EVENT,
 } from "../shared/service.bookmarks.js";
@@ -126,6 +127,34 @@ export class HeroicBookmarkBar extends LitElement {
         width: 10px;
         height: 10px;
       }
+
+      .clear-all-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        align-self: center;
+        border-radius: 50%;
+        border: 1px solid rgba(201, 168, 76, 0.15);
+        background: var(--color-primary-surface-overlay);
+        color: var(--color-primary-text-muted);
+        cursor: pointer;
+        padding: 0;
+        transition: var(--transition-fast);
+      }
+
+      .clear-all-btn:hover {
+        background: var(--color-1);
+        color: var(--color-primary-surface);
+        border-color: rgba(201, 168, 76, 0.35);
+      }
+
+      .clear-all-btn svg {
+        width: 14px;
+        height: 14px;
+      }
     `,
   ];
 
@@ -170,8 +199,21 @@ export class HeroicBookmarkBar extends LitElement {
             </div>
           `,
         )}
+        <button
+          class="clear-all-btn"
+          @click=${this.handleClearAll}
+          title="Remove all pins"
+          aria-label="Remove all pins">
+          ${closeIcon}
+        </button>
       </div>
     `;
+  }
+
+  private handleClearAll(e: Event): void {
+    e.preventDefault();
+    e.stopPropagation();
+    clearAllBookmarks();
   }
 
   private handleRemove(e: Event, bookmark: BookmarkEntry): void {
