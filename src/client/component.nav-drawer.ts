@@ -225,8 +225,13 @@ export class HeroicNavDrawer extends LitElement {
                 </li>
               `
             : ""}
+
           <li class="nav-item">
             <a href="/search" @click=${this.close}>Search All</a>
+          </li>
+
+          <li class="nav-item">
+            <a href="/characters" @click=${this.close}>Characters</a>
           </li>
 
           <li class="nav-section">Core</li>

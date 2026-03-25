@@ -112,6 +112,21 @@ Recommended deployment flow:
 - **Missing category `list.json` in tests**
    - Categories with zero published entries won’t have generated per-category content.
 
+## Characters Feature
+
+A new **Characters** feature lets users create and manage custom characters for Heroic Adventures 2E. Access it via the navigation or at `/characters`.
+
+- Create a character by choosing one race, one class, one background, one flaw, and selecting one or more spells, features, feats, and expertise.
+- All fields are validated and required fields must be filled.
+- Created characters are stored in localStorage and persist across sessions.
+- The character creation form and display are mobile-friendly and accessible.
+- Characters are displayed in a simple card format for easy use during play.
+
+### Technical Notes
+- UI is implemented with Lit components in `src/client/feature.characters/`.
+- Types and validation schemas are in `src/shared/type.character.ts`.
+- No backend is required; all data is client-side.
+
 ## License
 
 ISC

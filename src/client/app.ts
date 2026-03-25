@@ -18,6 +18,7 @@ import "./page.favorites.js";
 import "./page.recent.js";
 import "./page.settings.js";
 import "./page.not-found.js";
+import "./feature.characters/page.characters.js";
 import "./component.nav-drawer.js";
 import "./component.bookmark-bar.js";
 import "./component.profile-modal.js";
@@ -244,6 +245,10 @@ export class HeroicApp extends LitElement {
       case RouteName.enum.settings:
         return html`
           <heroic-settings-page></heroic-settings-page>
+        `;
+      case RouteName.enum.characters:
+        return html`
+          <page-characters></page-characters>
         `;
       default:
         return html`
