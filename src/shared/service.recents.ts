@@ -14,6 +14,7 @@ export const RecentEntry = z.object({
   title: z.string(),
   imageUrl: z.string().optional(),
   imageAlt: z.string().optional(),
+  subcategory: z.string().nullable().optional(),
   viewedAt: z.number(),
 });
 export type RecentEntry = z.infer<typeof RecentEntry>;

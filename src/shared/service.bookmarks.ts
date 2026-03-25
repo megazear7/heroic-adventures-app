@@ -14,6 +14,7 @@ export const BookmarkEntry = z.object({
   title: z.string(),
   imageUrl: z.string().optional(),
   imageAlt: z.string().optional(),
+  subcategory: z.string().nullable().optional(),
 });
 export type BookmarkEntry = z.infer<typeof BookmarkEntry>;
 

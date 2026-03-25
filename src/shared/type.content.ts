@@ -5,6 +5,7 @@ export const ContentListItem = z.object({
   id: z.string(),
   title: z.string(),
   slug: z.string(),
+  subcategory: z.string().nullable().optional(),
   heroImage: z
     .object({
       url: z.string(),
@@ -22,6 +23,7 @@ export const ContentEntry = z.object({
   slug: z.string(),
   category: z.string(),
   categoryDir: z.string(),
+  subcategory: z.string().nullable().optional(),
   heroImage: z
     .object({
       url: z.string(),

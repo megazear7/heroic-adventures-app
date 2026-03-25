@@ -102,6 +102,7 @@ export class HeroicFavoritesPage extends HeroicAppProvider {
                       slug=${f.slug}
                       categoryId=${f.categoryId}
                       categoryName=${this.getCategoryName(f.categoryId)}
+                      subcategoryName=${f.subcategory ?? ""}
                       imageUrl=${f.imageUrl ?? ""}
                       imageAlt=${f.imageAlt ?? f.title}></heroic-entry-list-item>
                   `,

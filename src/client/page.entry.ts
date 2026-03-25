@@ -182,6 +182,7 @@ export class HeroicEntryPage extends HeroicAppProvider {
         title: this.entry.title,
         imageUrl: this.entry.heroImage?.url,
         imageAlt: this.entry.heroImage?.alt,
+        subcategory: this.entry.subcategory,
       });
     } catch {
       this.entry = null;
@@ -239,6 +240,7 @@ export class HeroicEntryPage extends HeroicAppProvider {
           : ""}
 
         <div class="content-card">
+          ${this.entry.subcategory ? html`<div class="entry-meta">${this.entry.subcategory}</div>` : ""}
           <heroic-content-viewer .contentHtml=${this.contentHtml}></heroic-content-viewer>
         </div>
       </main>
@@ -253,6 +255,7 @@ export class HeroicEntryPage extends HeroicAppProvider {
       title: this.entry.title,
       imageUrl: this.entry.heroImage?.url,
       imageAlt: this.entry.heroImage?.alt,
+      subcategory: this.entry.subcategory,
     });
   }
 
@@ -264,6 +267,7 @@ export class HeroicEntryPage extends HeroicAppProvider {
       title: this.entry.title,
       imageUrl: this.entry.heroImage?.url,
       imageAlt: this.entry.heroImage?.alt,
+      subcategory: this.entry.subcategory,
     });
   }
 }

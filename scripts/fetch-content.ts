@@ -30,6 +30,7 @@ const CATEGORY_DIR_MAP: Record<string, string> = {
   class: "classes",
   expertise: "expertise",
   feat: "feats",
+  feature: "features",
   flaw: "flaws",
   race: "races",
   rule: "rules",
@@ -53,6 +54,7 @@ const CATEGORY_DISPLAY: Record<string, string> = {
   class: "Classes",
   expertise: "Expertise",
   feat: "Feats",
+  feature: "Features",
   flaw: "Flaws",
   race: "Races",
   rule: "Rules",
@@ -215,6 +217,7 @@ async function main() {
       const heroImage = heroImageRef ? assetMap[heroImageRef] : null;
       const richText: Document | null = localizedField<Document>(entry.fields.content) ?? null;
       const order: number = localizedField<number>(entry.fields.order) ?? 0;
+      const subcategory: string | null = localizedField<string>(entry.fields.subcategory) ?? null;
 
       /* entry.json */
       const entryData = {
@@ -223,6 +226,7 @@ async function main() {
         slug,
         category: cat,
         categoryDir: dirSlug,
+        subcategory,
         heroImage: heroImage ? { url: heroImage.url, alt: heroImage.title } : null,
         updatedAt: entry.sys.updatedAt,
         order,
@@ -247,6 +251,7 @@ async function main() {
         id: entry.sys.id,
         title,
         slug,
+        subcategory,
         heroImage: heroImage ? { url: heroImage.url, alt: heroImage.title } : null,
         order,
       });

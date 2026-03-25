@@ -23,7 +23,7 @@ export class HeroicHomePage extends HeroicAppProvider {
   @state() private favCount = 0;
   @state() private recentCount = 0;
   @state() private suggestions: SearchSuggestion[] = [];
-  private allEntries: { title: string; categoryId: string; categoryName: string; slug: string; imageUrl?: string; imageAlt?: string }[] = [];
+  private allEntries: { title: string; categoryId: string; categoryName: string; slug: string; imageUrl?: string; imageAlt?: string; subcategory?: string | null }[] = [];
   private entriesLoaded = false;
 
   private onFavoritesChanged = (): void => {
@@ -68,6 +68,7 @@ export class HeroicHomePage extends HeroicAppProvider {
               slug: parsed.slug,
               imageUrl: parsed.heroImage?.url,
               imageAlt: parsed.heroImage?.alt,
+              subcategory: parsed.subcategory,
             });
           }
         } catch {
@@ -101,6 +102,7 @@ export class HeroicHomePage extends HeroicAppProvider {
         imageUrl: entry.imageUrl,
         imageAlt: entry.imageAlt,
         categoryName: entry.categoryName,
+        subcategoryName: entry.subcategory ?? undefined,
       }));
   }
 

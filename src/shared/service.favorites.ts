@@ -13,6 +13,7 @@ export const FavoriteEntry = z.object({
   title: z.string(),
   imageUrl: z.string().optional(),
   imageAlt: z.string().optional(),
+  subcategory: z.string().nullable().optional(),
 });
 export type FavoriteEntry = z.infer<typeof FavoriteEntry>;
 

@@ -9,6 +9,7 @@ export interface SearchSuggestion {
   imageUrl?: string;
   imageAlt?: string;
   categoryName?: string;
+  subcategoryName?: string;
 }
 
 @customElement("heroic-search-bar")
@@ -162,8 +163,8 @@ export class HeroicSearchBar extends LitElement {
                       : nothing}
                     <span class="suggestion-text">
                       <span class="suggestion-title">${s.title}</span>
-                      ${s.categoryName
-                        ? html`<span class="suggestion-category">${s.categoryName}</span>`
+                      ${s.categoryName || s.subcategoryName
+                        ? html`<span class="suggestion-category">${s.categoryName}${s.categoryName && s.subcategoryName ? " · " : ""}${s.subcategoryName ?? ""}</span>`
                         : nothing}
                     </span>
                   </a>

@@ -141,6 +141,7 @@ export class HeroicEntryListItem extends LitElement {
   @property({ type: String }) imageUrl = "";
   @property({ type: String }) imageAlt = "";
   @property({ type: String }) categoryName = "";
+  @property({ type: String }) subcategoryName = "";
   @state() private favorited = false;
   @state() private bookmarked = false;
 
@@ -177,8 +178,8 @@ export class HeroicEntryListItem extends LitElement {
             : ""}
           <span class="info">
             <span class="title">${this.entryTitle}</span>
-            ${this.categoryName
-              ? html`<span class="category-label">${this.categoryName}</span>`
+            ${this.categoryName || this.subcategoryName
+              ? html`<span class="category-label">${this.categoryName}${this.categoryName && this.subcategoryName ? " · " : ""}${this.subcategoryName}</span>`
               : nothing}
           </span>
           <button
@@ -209,6 +210,7 @@ export class HeroicEntryListItem extends LitElement {
       title: this.entryTitle,
       imageUrl: this.imageUrl || undefined,
       imageAlt: this.imageAlt || undefined,
+      subcategory: this.subcategoryName || undefined,
     });
   }
 
@@ -221,6 +223,7 @@ export class HeroicEntryListItem extends LitElement {
       title: this.entryTitle,
       imageUrl: this.imageUrl || undefined,
       imageAlt: this.imageAlt || undefined,
+      subcategory: this.subcategoryName || undefined,
     });
   }
 }

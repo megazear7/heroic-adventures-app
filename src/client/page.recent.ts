@@ -102,6 +102,7 @@ export class HeroicRecentPage extends HeroicAppProvider {
                       slug=${r.slug}
                       categoryId=${r.categoryId}
                       categoryName=${this.getCategoryName(r.categoryId)}
+                      subcategoryName=${r.subcategory ?? ""}
                       imageUrl=${r.imageUrl ?? ""}
                       imageAlt=${r.imageAlt ?? r.title}></heroic-entry-list-item>
                   `,

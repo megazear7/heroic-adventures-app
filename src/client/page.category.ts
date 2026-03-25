@@ -134,6 +134,7 @@ export class HeroicCategoryPage extends HeroicAppProvider {
                         entryTitle=${item.title}
                         slug=${item.slug}
                         categoryId=${this.categoryId}
+                        subcategoryName=${item.subcategory ?? ""}
                         imageUrl=${item.heroImage?.url ?? ""}
                         imageAlt=${item.heroImage?.alt ?? item.title}></heroic-entry-list-item>
                     `,
