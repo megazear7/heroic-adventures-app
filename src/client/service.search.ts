@@ -4,6 +4,7 @@ export interface SearchIndexedEntry extends ContentSearchIndexEntry {
   normalizedTitle: string;
   normalizedContent: string;
   searchTokens: string[];
+  searchTokenSet: Set<string>;
 }
 
 export interface SearchFilters {
@@ -14,6 +15,7 @@ export interface SearchFilters {
 
 const WORD_SPLIT_REGEX = /[^a-z0-9]+/g;
 const MAX_TAGS_PER_ENTRY = 20;
+const MAX_FUZZY_CANDIDATE_CHECKS = 60;
 
 let cachedIndexPromise: Promise<SearchIndexedEntry[]> | null = null;
 
@@ -112,6 +114,7 @@ function toIndexedEntry(entry: ContentSearchIndexEntry): SearchIndexedEntry {
     normalizedTitle,
     normalizedContent,
     searchTokens: tokens,
+    searchTokenSet: new Set(tokens),
   };
 }
 
@@ -180,12 +183,12 @@ export async function loadSearchIndex(): Promise<SearchIndexedEntry[]> {
   return cachedIndexPromise;
 }
 
-function limitedLevenshteinDistance(a: string, b: string, limit = 2): number {
+function computeLimitedLevenshteinDistance(a: string, b: string, limit = 2): number {
   if (Math.abs(a.length - b.length) > limit) return limit + 1;
   if (a === b) return 0;
 
-  const previous = new Array(b.length + 1);
-  const current = new Array(b.length + 1);
+  const previous = new Array<number>(b.length + 1);
+  const current = new Array<number>(b.length + 1);
   for (let j = 0; j <= b.length; j++) {
     previous[j] = j;
   }
@@ -256,7 +259,7 @@ export function scoreSearchEntry(query: string, entry: SearchIndexedEntry): numb
   if (queryTokens.length === 0) return score;
 
   for (const token of queryTokens) {
-    if (entry.searchTokens.includes(token)) {
+    if (entry.searchTokenSet.has(token)) {
       score += 120;
       continue;
     }
@@ -268,9 +271,14 @@ export function scoreSearchEntry(query: string, entry: SearchIndexedEntry): numb
     }
 
     let fuzzyMatched = false;
+    let checkedCandidates = 0;
     for (const candidate of entry.searchTokens) {
       if (Math.abs(candidate.length - token.length) > 2) continue;
-      if (limitedLevenshteinDistance(token, candidate, 2) <= 2) {
+      checkedCandidates++;
+      if (checkedCandidates > MAX_FUZZY_CANDIDATE_CHECKS) {
+        break;
+      }
+      if (computeLimitedLevenshteinDistance(token, candidate, 2) <= 2) {
         score += 35;
         fuzzyMatched = true;
         break;

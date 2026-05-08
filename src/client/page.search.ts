@@ -40,7 +40,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
   @state() private selectedTags = new Set<string>();
   @state() private filtersOpen = false;
 
-  private allEntries: SearchIndexedEntry[] = [];
+  private loadedSearchIndex: SearchIndexedEntry[] = [];
   private loaded = false;
 
   static override styles = [
@@ -199,8 +199,8 @@ export class HeroicSearchPage extends HeroicAppProvider {
 
   private async loadAllEntries(): Promise<void> {
     this.loading = true;
-    this.allEntries = await loadSearchIndex();
-    const options = buildFilterOptions(this.allEntries);
+    this.loadedSearchIndex = await loadSearchIndex();
+    const options = buildFilterOptions(this.loadedSearchIndex);
     this.availableLevels = options.levels;
     this.availableClasses = options.classes;
     this.availableTags = options.tags;
@@ -223,7 +223,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
       tags: this.selectedTags,
     };
 
-    this.results = this.allEntries
+    this.results = this.loadedSearchIndex
       .filter((entry) => matchesFilters(entry, filters))
       .map((entry) => ({ ...entry, score: scoreSearchEntry(q, entry) }))
       .filter((entry) => entry.score > 0)
@@ -314,7 +314,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
                     </div>
                     ${this.results.length === 0
                       ? html`
-                          <div class="empty">No results found. Try another query or adjust filters.</div>
+                          <div class="empty">No results found. Try a different query or adjust filters.</div>
                         `
                       : html`
                           <div class="list">
@@ -372,9 +372,9 @@ export class HeroicSearchPage extends HeroicAppProvider {
   }
 
   private clearFilters(): void {
-    this.selectedLevels = new Set<number>();
-    this.selectedClasses = new Set<string>();
-    this.selectedTags = new Set<string>();
+    this.selectedLevels = new Set();
+    this.selectedClasses = new Set();
+    this.selectedTags = new Set();
     this.search(this.query);
   }
 
