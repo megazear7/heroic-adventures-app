@@ -1,7 +1,7 @@
 // @ts-nocheck
 /* eslint-disable */
 
-const CACHE_NAME = "heroic-v4";
+const CACHE_NAME = "heroic-v5";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -11,6 +11,10 @@ const APP_SHELL = [
   "/logo/logo-512x512.png",
   "/logo/logo-256x256.png",
   "/logo/logo-128x128.png",
+  "/logo/logo-64x64.png",
+  "/logo/logo-32x32.png",
+  "/logo/logo-24x24.png",
+  "/logo/logo-16x16.png",
   "/logo/favicon.ico",
 ];
 
@@ -47,11 +51,12 @@ async function precacheUrls(cache, urls, batchSize) {
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      await cache.addAll(APP_SHELL);
+      await precacheUrls(cache, APP_SHELL, APP_SHELL.length);
       // Fetch the content index and cache every content path in batches
       try {
         const res = await fetch("/content/index.json");
         if (res.ok) {
+          await cache.put(new Request("/content/index.json"), res.clone());
           const contentPaths = await res.json();
           await precacheUrls(cache, contentPaths, 50);
         }
@@ -108,15 +113,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // App shell & same-origin assets: cache-first
+  // App shell & same-origin assets
   if (url.origin === self.location.origin) {
-    // For navigation requests, serve the cached index.html (SPA)
+    // For navigation requests, use network-first with cached shell fallback.
+    // This keeps deep links working offline and refreshes shell when online.
     if (event.request.mode === "navigate") {
-      event.respondWith(
-        caches
-          .match("/index.html", { ignoreVary: true })
-          .then((cached) => cached || fetch(event.request))
-      );
+      event.respondWith(navigationRequest(event.request));
       return;
     }
     event.respondWith(cacheFirst(event.request));
@@ -139,6 +141,21 @@ async function cacheFirst(request) {
     }
     return response;
   } catch {
+    return new Response("Offline", { status: 503, statusText: "Offline" });
+  }
+}
+
+async function navigationRequest(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put("/index.html", response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await caches.match("/index.html", { ignoreVary: true });
+    if (cached) return cached;
     return new Response("Offline", { status: 503, statusText: "Offline" });
   }
 }
