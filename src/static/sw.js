@@ -56,8 +56,9 @@ self.addEventListener("install", (event) => {
       try {
         const res = await fetch("/content/index.json");
         if (res.ok) {
-          await cache.put(new Request("/content/index.json"), res.clone());
+          const indexClone = res.clone();
           const contentPaths = await res.json();
+          await cache.put(new Request("/content/index.json"), indexClone);
           await precacheUrls(cache, contentPaths, 50);
         }
       } catch {

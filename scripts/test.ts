@@ -148,7 +148,9 @@ async function testPwaStaticConfig(): Promise<void> {
     const manifestRaw = await fs.readFile("src/static/manifest.json", "utf-8");
     const manifest = JSON.parse(manifestRaw);
     const shortcuts = Array.isArray(manifest.shortcuts) ? manifest.shortcuts : [];
-    const urls = shortcuts.map((shortcut: { url?: string }) => shortcut.url);
+    const urls = shortcuts
+      .map((shortcut: { url?: string }) => shortcut.url)
+      .filter((url: string | undefined): url is string => Boolean(url));
     for (const expected of ["/characters", "/search", "/spells-arcane"]) {
       if (!urls.includes(expected)) {
         throw new Error(`Missing shortcut for ${expected}`);
@@ -161,7 +163,7 @@ async function testPwaStaticConfig(): Promise<void> {
     if (!sw.includes("navigationRequest(event.request)")) {
       throw new Error("Expected navigationRequest handler in fetch event");
     }
-    if (!sw.includes('caches.match("/index.html"')) {
+    if (!sw.includes('caches.match("/index.html",')) {
       throw new Error("Expected /index.html fallback for offline navigation");
     }
   });
