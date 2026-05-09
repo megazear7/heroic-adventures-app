@@ -84,16 +84,27 @@ interface AssetMap {
   [id: string]: { url: string; title: string; description: string };
 }
 
+interface SearchIndexItem {
+  id: string;
+  title: string;
+  slug: string;
+  categoryId: string;
+  categoryName: string;
+  subcategory: string | null;
+  heroImage: { url: string; alt: string } | null;
+  level: number | null;
+  className: string | null;
+  tags: string[];
+  contentText: string;
+  order: number;
+}
+
 function localizedField<T>(value: T | Record<string, T> | undefined): T | undefined {
   if (value == null) {
     return undefined;
   }
 
-  if (
-    typeof value === "object" &&
-    !Array.isArray(value) &&
-    "en-US" in (value as Record<string, unknown>)
-  ) {
+  if (typeof value === "object" && !Array.isArray(value) && "en-US" in (value as Record<string, unknown>)) {
     return (value as Record<string, T>)["en-US"];
   }
 
@@ -119,6 +130,46 @@ function buildRichTextOptions(assets: AssetMap) {
       [INLINES.EMBEDDED_ENTRY]: () => "",
     },
   };
+}
+
+function normalizeText(value: string): string {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function stripHtml(html: string): string {
+  return normalizeText(html.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " "));
+}
+
+function parseLevel(value: string): number | null {
+  const levelMatch = value.match(/\b(?:level|lvl)\s*(\d{1,2})\b/i);
+  if (levelMatch) return Number(levelMatch[1]);
+  const ordinalMatch = value.match(/\b(\d{1,2})(?:st|nd|rd|th)\s+level\b/i);
+  if (ordinalMatch) return Number(ordinalMatch[1]);
+  return null;
+}
+
+function parseClassName(value: string): string | null {
+  const classMatch = value.match(/\bclass(?:es)?\s*[:\-]\s*([a-zA-Z ,/]+)/i);
+  if (!classMatch) return null;
+  return (
+    classMatch[1]
+      .split(/[,/]/)
+      .map((item) => item.trim())
+      .find(Boolean) ?? null
+  );
+}
+
+function parseTags(value: string): string[] {
+  const tagMatch = value.match(/\b(?:tags?|keywords?)\s*[:\-]\s*([^\n]+)/i);
+  if (!tagMatch) return [];
+  return Array.from(
+    new Set(
+      tagMatch[1]
+        .split(/[,/|]/)
+        .map((item) => item.trim().toLowerCase())
+        .filter((item) => item.length > 1),
+    ),
+  );
 }
 
 /* ---------- main ---------- */
@@ -186,6 +237,7 @@ async function main() {
   await fs.mkdir(CONTENT_DIR, { recursive: true });
 
   const renderOpts = buildRichTextOptions(assetMap);
+  const searchIndexItems: SearchIndexItem[] = [];
 
   /* Write a master categories.json */
   const categories = Object.entries(CATEGORY_DIR_MAP).map(([key, dir]) => ({
@@ -246,6 +298,22 @@ async function main() {
         }
       }
       await fs.writeFile(path.join(entryDir, "content.html"), html);
+      const plainText = stripHtml(html);
+      const metadataText = [title, subcategory ?? "", plainText].join("\n");
+      searchIndexItems.push({
+        id: entry.sys.id,
+        title,
+        slug,
+        categoryId: dirSlug,
+        categoryName: CATEGORY_DISPLAY[cat] ?? cat,
+        subcategory,
+        heroImage: heroImage ? { url: heroImage.url, alt: heroImage.title } : null,
+        level: parseLevel(metadataText),
+        className: parseClassName(metadataText),
+        tags: parseTags(metadataText),
+        contentText: plainText,
+        order,
+      });
 
       listItems.push({
         id: entry.sys.id,
@@ -278,11 +346,11 @@ async function main() {
     }
   };
   await walkDir(CONTENT_DIR, "/content");
-  await fs.writeFile(
-    path.join(CONTENT_DIR, "index.json"),
-    JSON.stringify(allContentPaths, null, 2),
-  );
+  await fs.writeFile(path.join(CONTENT_DIR, "index.json"), JSON.stringify(allContentPaths, null, 2));
   console.log(`  📋 index.json  (${allContentPaths.length} paths)`);
+
+  await fs.writeFile(path.join(CONTENT_DIR, "search-index.json"), JSON.stringify(searchIndexItems, null, 2));
+  console.log(`  🔎 search-index.json  (${searchIndexItems.length} entries)`);
 
   console.log("\n✅ Content build complete!");
 }

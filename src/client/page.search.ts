@@ -4,14 +4,14 @@ import { consume } from "@lit/context";
 import { globalStyles } from "./styles.global.js";
 import { HeroicAppProvider } from "./provider.app.js";
 import { AppContext, appContext } from "./context.js";
-import { ContentCategory, ContentListItem } from "../shared/type.content.js";
 import { leftArrowIcon } from "./icons.js";
+import { loadSearchIndex, scoreSearchEntry, SearchIndexedEntry } from "./service.search.js";
+import { SearchSuggestion } from "./component.search-bar.js";
 import "./component.search-bar.js";
 import "./component.entry-list-item.js";
 
-interface SearchResult extends ContentListItem {
-  categoryId: string;
-  categoryName: string;
+interface SearchResult extends SearchIndexedEntry {
+  score: number;
 }
 
 @customElement("heroic-search-page")
@@ -24,7 +24,10 @@ export class HeroicSearchPage extends HeroicAppProvider {
   @state() private results: SearchResult[] = [];
   @state() private loading = false;
   @state() private hasSearched = false;
-  private allEntries: SearchResult[] = [];
+  @state() private suggestions: SearchSuggestion[] = [];
+  @state() private sidebarOpen = false;
+
+  private loadedSearchIndex: SearchIndexedEntry[] = [];
   private loaded = false;
 
   static override styles = [
@@ -46,7 +49,53 @@ export class HeroicSearchPage extends HeroicAppProvider {
       }
 
       .search-section {
-        margin-bottom: 24px;
+        margin-bottom: 16px;
+      }
+
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+
+      .sidebar-toggle {
+        border: 1px solid rgba(201, 168, 76, 0.3);
+        background: rgba(201, 168, 76, 0.1);
+        color: var(--color-primary-text);
+        border-radius: var(--border-radius-small);
+        padding: 8px 12px;
+        font-size: var(--font-small);
+        cursor: pointer;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(220px, 280px) 1fr;
+        gap: 20px;
+      }
+
+      .sidebar {
+        background: var(--color-primary-surface-raised);
+        border: var(--border-normal);
+        border-radius: var(--border-radius-medium);
+        padding: 16px;
+        max-height: calc(100vh - 170px);
+        overflow: auto;
+        position: sticky;
+        top: 86px;
+      }
+
+      .sidebar h3 {
+        margin: 0 0 8px 0;
+        color: var(--color-1);
+        font-size: var(--font-small);
+      }
+
+      .sidebar p {
+        margin: 0 0 12px 0;
+        color: var(--color-primary-text-muted);
+        font-size: var(--font-small);
       }
 
       .results-info {
@@ -59,6 +108,10 @@ export class HeroicSearchPage extends HeroicAppProvider {
         display: flex;
         flex-direction: column;
         gap: 8px;
+      }
+
+      .results {
+        min-width: 0;
       }
 
       .empty {
@@ -75,6 +128,22 @@ export class HeroicSearchPage extends HeroicAppProvider {
         padding: 2px 8px;
         border-radius: 10px;
         margin-left: 8px;
+      }
+
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .sidebar {
+          position: static;
+          max-height: none;
+          display: none;
+        }
+
+        .sidebar.open {
+          display: block;
+        }
       }
     `,
   ];
@@ -96,42 +165,34 @@ export class HeroicSearchPage extends HeroicAppProvider {
 
   private async loadAllEntries(): Promise<void> {
     this.loading = true;
-    const categories: ContentCategory[] = this.appContext?.categories ?? [];
-    const allEntries: SearchResult[] = [];
-
-    const fetches = categories.map(async (cat) => {
-      try {
-        const res = await fetch(`/content/${cat.id}/list.json`);
-        if (!res.ok) return;
-        const items = await res.json();
-        for (const item of items) {
-          allEntries.push({
-            ...ContentListItem.parse(item),
-            categoryId: cat.id,
-            categoryName: cat.name,
-          });
-        }
-      } catch {
-        // skip category
-      }
-    });
-
-    await Promise.all(fetches);
-    this.allEntries = allEntries;
+    this.loadedSearchIndex = await loadSearchIndex();
     this.loaded = true;
     this.loading = false;
   }
 
   private search(query: string): void {
     this.hasSearched = true;
-    const q = query.toLowerCase().trim();
+    const q = query.trim();
     if (!q) {
       this.results = [];
+      this.suggestions = [];
       return;
     }
-    this.results = this.allEntries
-      .filter((e) => e.title.toLowerCase().includes(q))
-      .sort((a, b) => a.order - b.order);
+
+    this.results = this.loadedSearchIndex
+      .map((entry) => ({ ...entry, score: scoreSearchEntry(q, entry) }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score || a.order - b.order)
+      .slice(0, 250);
+
+    this.suggestions = this.results.slice(0, 6).map((item) => ({
+      title: item.title,
+      href: `/${item.categoryId}/${item.slug}`,
+      imageUrl: item.heroImage?.url,
+      imageAlt: item.heroImage?.alt,
+      categoryName: item.categoryName,
+      subcategoryName: item.subcategory ?? undefined,
+    }));
   }
 
   override render(): TemplateResult {
@@ -144,8 +205,15 @@ export class HeroicSearchPage extends HeroicAppProvider {
           <heroic-search-bar
             .value=${this.query}
             placeholder="Search all content…"
+            .suggestions=${this.suggestions}
             @search-input=${this.handleInput}
-            @search-submit=${this.handleSubmit}></heroic-search-bar>
+            @search-submit=${this.handleSubmit}
+            @search-navigate=${this.handleSearchNavigate}></heroic-search-bar>
+        </div>
+
+        <div class="toolbar">
+          <div class="results-info">Fuzzy full-text search across rules, chapters, classes, spells, and items.</div>
+          <button class="sidebar-toggle" @click=${this.toggleSidebar}>Search Tips</button>
         </div>
 
         ${this.loading
@@ -154,36 +222,46 @@ export class HeroicSearchPage extends HeroicAppProvider {
             `
           : this.hasSearched
             ? html`
-                <div class="results-info">
-                  ${this.results.length} result${this.results.length !== 1 ? "s" : ""}
-                  ${this.query
-                    ? html`
-                        for "
-                        <strong>${this.query}</strong>
-                        "
-                      `
-                    : ""}
+                <div class="layout">
+                  <aside class="sidebar ${this.sidebarOpen ? "open" : ""}">
+                    <h3>Search Tips</h3>
+                    <p>Try short keywords, full titles, or misspelled names for fuzzy matches.</p>
+                    <p>Use this for quick rule lookups across all indexed content.</p>
+                  </aside>
+
+                  <section class="results">
+                    <div class="results-info">
+                      ${this.results.length} result${this.results.length !== 1 ? "s" : ""}
+                      ${this.query
+                        ? html`
+                            for "
+                            <strong>${this.query}</strong>
+                            "
+                          `
+                        : ""}
+                    </div>
+                    ${this.results.length === 0
+                      ? html`
+                          <div class="empty">No results found. Try a different query.</div>
+                        `
+                      : html`
+                          <div class="list">
+                            ${this.results.map(
+                              (item) => html`
+                                <heroic-entry-list-item
+                                  entryTitle="${item.title}"
+                                  slug=${item.slug}
+                                  categoryId=${item.categoryId}
+                                  categoryName=${item.categoryName}
+                                  subcategoryName=${item.subcategory ?? ""}
+                                  imageUrl=${item.heroImage?.url ?? ""}
+                                  imageAlt=${item.heroImage?.alt ?? item.title}></heroic-entry-list-item>
+                              `,
+                            )}
+                          </div>
+                        `}
+                  </section>
                 </div>
-                ${this.results.length === 0
-                  ? html`
-                      <div class="empty">No results found. Try a different search term.</div>
-                    `
-                  : html`
-                      <div class="list">
-                        ${this.results.map(
-                          (item) => html`
-                            <heroic-entry-list-item
-                              entryTitle="${item.title}"
-                              slug=${item.slug}
-                              categoryId=${item.categoryId}
-                              categoryName=${item.categoryName}
-                              subcategoryName=${item.subcategory ?? ""}
-                              imageUrl=${item.heroImage?.url ?? ""}
-                              imageAlt=${item.heroImage?.alt ?? item.title}></heroic-entry-list-item>
-                          `,
-                        )}
-                      </div>
-                    `}
               `
             : html`
                 <div class="empty">Type a search term to find rules, spells, items, and more.</div>
@@ -202,5 +280,22 @@ export class HeroicSearchPage extends HeroicAppProvider {
     this.search(this.query);
     const url = this.query ? `/search?q=${encodeURIComponent(this.query)}` : "/search";
     window.history.replaceState({}, "", url);
+  }
+
+  private handleSearchNavigate(e: CustomEvent): void {
+    const href: string = e.detail.href;
+    if (!href) return;
+    window.history.pushState({}, "", href);
+    this.dispatchEvent(
+      new CustomEvent("NavigationEvent", {
+        bubbles: true,
+        composed: true,
+        detail: { path: href },
+      }),
+    );
+  }
+
+  private toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
   }
 }

@@ -5,11 +5,12 @@ import { property } from "lit/decorators.js";
 import { globalStyles } from "./styles.global.js";
 import { HeroicAppProvider } from "./provider.app.js";
 import { AppContext, appContext } from "./context.js";
-import { ContentCategory, ContentListItem } from "../shared/type.content.js";
+import { ContentCategory } from "../shared/type.content.js";
 import { getFavorites, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
 import { getRecentEntries, RECENTS_CHANGED_EVENT } from "../shared/service.recents.js";
 import { starIcon, clockIcon } from "./icons.js";
 import { SearchSuggestion } from "./component.search-bar.js";
+import { loadSearchIndex, scoreSearchEntry, SearchIndexedEntry } from "./service.search.js";
 import "../client/component.category-card.js";
 import "../client/component.link-card.js";
 import "../client/component.search-bar.js";
@@ -23,7 +24,7 @@ export class HeroicHomePage extends HeroicAppProvider {
   @state() private favCount = 0;
   @state() private recentCount = 0;
   @state() private suggestions: SearchSuggestion[] = [];
-  private allEntries: { title: string; categoryId: string; categoryName: string; slug: string; imageUrl?: string; imageAlt?: string; subcategory?: string | null }[] = [];
+  private allEntries: SearchIndexedEntry[] = [];
   private entriesLoaded = false;
 
   private onFavoritesChanged = (): void => {
@@ -50,34 +51,7 @@ export class HeroicHomePage extends HeroicAppProvider {
 
   private async loadAllEntries(): Promise<void> {
     if (this.entriesLoaded) return;
-    const categories: ContentCategory[] = this.appContext?.categories ?? [];
-    const entries: typeof this.allEntries = [];
-
-    await Promise.all(
-      categories.map(async (cat) => {
-        try {
-          const res = await fetch(`/content/${cat.id}/list.json`);
-          if (!res.ok) return;
-          const items = await res.json();
-          for (const item of items) {
-            const parsed = ContentListItem.parse(item);
-            entries.push({
-              title: parsed.title,
-              categoryId: cat.id,
-              categoryName: cat.name,
-              slug: parsed.slug,
-              imageUrl: parsed.heroImage?.url,
-              imageAlt: parsed.heroImage?.alt,
-              subcategory: parsed.subcategory,
-            });
-          }
-        } catch {
-          // skip
-        }
-      }),
-    );
-
-    this.allEntries = entries;
+    this.allEntries = await loadSearchIndex();
     this.entriesLoaded = true;
   }
 
@@ -92,15 +66,16 @@ export class HeroicHomePage extends HeroicAppProvider {
       await this.loadAllEntries();
     }
 
-    const q = query.toLowerCase();
     this.suggestions = this.allEntries
-      .filter((entry) => entry.title.toLowerCase().includes(q))
+      .map((entry) => ({ entry, score: scoreSearchEntry(query, entry) }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score || a.entry.order - b.entry.order)
       .slice(0, 5)
-      .map((entry) => ({
+      .map(({ entry }) => ({
         title: entry.title,
         href: `/${entry.categoryId}/${entry.slug}`,
-        imageUrl: entry.imageUrl,
-        imageAlt: entry.imageAlt,
+        imageUrl: entry.heroImage?.url,
+        imageAlt: entry.heroImage?.alt,
         categoryName: entry.categoryName,
         subcategoryName: entry.subcategory ?? undefined,
       }));
@@ -159,7 +134,9 @@ export class HeroicHomePage extends HeroicAppProvider {
 
   override render(): TemplateResult {
     const categories: ContentCategory[] = this.appContext?.categories ?? [];
-    const core = categories.filter((c) => !c.category.startsWith("spell") && !c.category.startsWith("item") && !c.category.startsWith("agent >"));
+    const core = categories.filter(
+      (c) => !c.category.startsWith("spell") && !c.category.startsWith("item") && !c.category.startsWith("agent >"),
+    );
     const spells = categories.filter((c) => c.category.startsWith("spell"));
     const items = categories.filter((c) => c.category.startsWith("item"));
     const ai = categories.filter((c) => c.category.startsWith("agent >"));
@@ -167,14 +144,21 @@ export class HeroicHomePage extends HeroicAppProvider {
     return html`
       <main>
         <div class="hero">
-          <img src="/logo/logo-512x512.png" alt="Heroic Adventures Logo" width="128" height="128" style="margin-bottom: 16px;" />
+          <img
+            src="/logo/logo-512x512.png"
+            alt="Heroic Adventures Logo"
+            width="128"
+            height="128"
+            style="margin-bottom: 16px;" />
           <h1>Heroic Adventures</h1>
           <p>
             Your companion for Heroic Adventures 2nd Edition. Browse chapters, rules, classes, spells, items, and more.
           </p>
           <div style="margin-top: 18px;">
             <small style="color: var(--color-primary-text-muted); font-size: 15px;">
-              Want to connect your AI to Heroic Adventures? Take a look at the <a href="https://mcp.heroicadventures.app/" target="_blank" rel="noopener">Heroic Adventures MCP</a>.
+              Want to connect your AI to Heroic Adventures? Take a look at the
+              <a href="https://mcp.heroicadventures.app/" target="_blank" rel="noopener">Heroic Adventures MCP</a>
+              .
             </small>
           </div>
         </div>
@@ -209,7 +193,6 @@ export class HeroicHomePage extends HeroicAppProvider {
               </div>
             `
           : ""}
-
         ${core.length
           ? html`
               <h2 class="section-title">Core Rules</h2>
