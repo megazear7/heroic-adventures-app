@@ -49,9 +49,12 @@ The script in `scripts/fetch-content.ts`:
 Output layout:
 
 - `dist/content/categories.json`
+- `dist/content/search-index.json`
 - `dist/content/<category>/list.json`
 - `dist/content/<category>/<slug>/entry.json`
 - `dist/content/<category>/<slug>/content.html`
+
+`search-index.json` powers fast fuzzy full-text search in the client.
 
 ### 2) App Build (`npm run build`)
 
@@ -106,11 +109,11 @@ Recommended deployment flow:
 ## Troubleshooting
 
 - **`0 entries fetched` during `npm run content`**
-   - Your delivery token is valid, but entries may not be published yet in Contentful.
+  - Your delivery token is valid, but entries may not be published yet in Contentful.
 - **`AccessTokenInvalid`**
-   - Verify `CONTENTFUL_DELIVERY_TOKEN` and confirm it belongs to the expected space.
+  - Verify `CONTENTFUL_DELIVERY_TOKEN` and confirm it belongs to the expected space.
 - **Missing category `list.json` in tests**
-   - Categories with zero published entries won’t have generated per-category content.
+  - Categories with zero published entries won’t have generated per-category content.
 
 ## Characters Feature
 
@@ -123,6 +126,7 @@ A new **Characters** feature lets users create and manage custom characters for 
 - Characters are displayed in a simple card format for easy use during play.
 
 ### Technical Notes
+
 - UI is implemented with Lit components in `src/client/feature.characters/`.
 - Types and validation schemas are in `src/shared/type.character.ts`.
 - No backend is required; all data is client-side.

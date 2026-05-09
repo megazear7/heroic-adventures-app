@@ -4,14 +4,14 @@ import { consume } from "@lit/context";
 import { globalStyles } from "./styles.global.js";
 import { HeroicAppProvider } from "./provider.app.js";
 import { AppContext, appContext } from "./context.js";
-import { ContentCategory, ContentListItem } from "../shared/type.content.js";
 import { leftArrowIcon } from "./icons.js";
+import { loadSearchIndex, scoreSearchEntry, SearchIndexedEntry } from "./service.search.js";
+import { SearchSuggestion } from "./component.search-bar.js";
 import "./component.search-bar.js";
 import "./component.entry-list-item.js";
 
-interface SearchResult extends ContentListItem {
-  categoryId: string;
-  categoryName: string;
+interface SearchResult extends SearchIndexedEntry {
+  score: number;
 }
 
 @customElement("heroic-search-page")
@@ -24,7 +24,8 @@ export class HeroicSearchPage extends HeroicAppProvider {
   @state() private results: SearchResult[] = [];
   @state() private loading = false;
   @state() private hasSearched = false;
-  private allEntries: SearchResult[] = [];
+  @state() private suggestions: SearchSuggestion[] = [];
+  private loadedSearchIndex: SearchIndexedEntry[] = [];
   private loaded = false;
 
   static override styles = [
@@ -46,7 +47,13 @@ export class HeroicSearchPage extends HeroicAppProvider {
       }
 
       .search-section {
-        margin-bottom: 24px;
+        margin-bottom: 16px;
+      }
+
+      .results-summary {
+        color: var(--color-primary-text-muted);
+        font-size: var(--font-small);
+        margin-bottom: 16px;
       }
 
       .results-info {
@@ -65,16 +72,6 @@ export class HeroicSearchPage extends HeroicAppProvider {
         text-align: center;
         padding: 2rem;
         color: var(--color-primary-text-muted);
-      }
-
-      .category-badge {
-        display: inline-block;
-        font-size: var(--font-tiny);
-        color: var(--color-1);
-        background: rgba(201, 168, 76, 0.1);
-        padding: 2px 8px;
-        border-radius: 10px;
-        margin-left: 8px;
       }
     `,
   ];
@@ -96,42 +93,34 @@ export class HeroicSearchPage extends HeroicAppProvider {
 
   private async loadAllEntries(): Promise<void> {
     this.loading = true;
-    const categories: ContentCategory[] = this.appContext?.categories ?? [];
-    const allEntries: SearchResult[] = [];
-
-    const fetches = categories.map(async (cat) => {
-      try {
-        const res = await fetch(`/content/${cat.id}/list.json`);
-        if (!res.ok) return;
-        const items = await res.json();
-        for (const item of items) {
-          allEntries.push({
-            ...ContentListItem.parse(item),
-            categoryId: cat.id,
-            categoryName: cat.name,
-          });
-        }
-      } catch {
-        // skip category
-      }
-    });
-
-    await Promise.all(fetches);
-    this.allEntries = allEntries;
+    this.loadedSearchIndex = await loadSearchIndex();
     this.loaded = true;
     this.loading = false;
   }
 
   private search(query: string): void {
     this.hasSearched = true;
-    const q = query.toLowerCase().trim();
+    const q = query.trim();
     if (!q) {
       this.results = [];
+      this.suggestions = [];
       return;
     }
-    this.results = this.allEntries
-      .filter((e) => e.title.toLowerCase().includes(q))
-      .sort((a, b) => a.order - b.order);
+
+    this.results = this.loadedSearchIndex
+      .map((entry) => ({ ...entry, score: scoreSearchEntry(q, entry) }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score || a.order - b.order)
+      .slice(0, 250);
+
+    this.suggestions = this.results.slice(0, 6).map((item) => ({
+      title: item.title,
+      href: `/${item.categoryId}/${item.slug}`,
+      imageUrl: item.heroImage?.url,
+      imageAlt: item.heroImage?.alt,
+      categoryName: item.categoryName,
+      subcategoryName: item.subcategory ?? undefined,
+    }));
   }
 
   override render(): TemplateResult {
@@ -144,9 +133,13 @@ export class HeroicSearchPage extends HeroicAppProvider {
           <heroic-search-bar
             .value=${this.query}
             placeholder="Search all content…"
+            .suggestions=${this.suggestions}
             @search-input=${this.handleInput}
-            @search-submit=${this.handleSubmit}></heroic-search-bar>
+            @search-submit=${this.handleSubmit}
+            @search-navigate=${this.handleSearchNavigate}></heroic-search-bar>
         </div>
+
+        <div class="results-summary">Fuzzy full-text search across rules, chapters, classes, spells, and items.</div>
 
         ${this.loading
           ? html`
@@ -166,7 +159,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
                 </div>
                 ${this.results.length === 0
                   ? html`
-                      <div class="empty">No results found. Try a different search term.</div>
+                      <div class="empty">No results found. Try a different query.</div>
                     `
                   : html`
                       <div class="list">
@@ -202,5 +195,18 @@ export class HeroicSearchPage extends HeroicAppProvider {
     this.search(this.query);
     const url = this.query ? `/search?q=${encodeURIComponent(this.query)}` : "/search";
     window.history.replaceState({}, "", url);
+  }
+
+  private handleSearchNavigate(e: CustomEvent): void {
+    const href: string = e.detail.href;
+    if (!href) return;
+    window.history.pushState({}, "", href);
+    this.dispatchEvent(
+      new CustomEvent("NavigationEvent", {
+        bubbles: true,
+        composed: true,
+        detail: { path: href },
+      }),
+    );
   }
 }

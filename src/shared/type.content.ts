@@ -34,6 +34,25 @@ export const ContentEntry = z.object({
 });
 export type ContentEntry = z.infer<typeof ContentEntry>;
 
+/** A normalized entry in content/search-index.json for fast client-side search */
+export const ContentSearchIndexEntry = z.object({
+  id: z.string(),
+  title: z.string(),
+  slug: z.string(),
+  categoryId: z.string(),
+  categoryName: z.string(),
+  subcategory: z.string().nullable().optional(),
+  heroImage: z
+    .object({
+      url: z.string(),
+      alt: z.string(),
+    })
+    .nullable(),
+  contentText: z.string().optional(),
+  order: z.number(),
+});
+export type ContentSearchIndexEntry = z.infer<typeof ContentSearchIndexEntry>;
+
 /** Single category in categories.json */
 export const ContentCategory = z.object({
   id: z.string(),

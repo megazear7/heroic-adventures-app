@@ -47,6 +47,20 @@ async function testContentFiles(): Promise<void> {
     }
   });
 
+  await assert("search-index.json exists with searchable entries", async () => {
+    const data = await fs.readFile("dist/content/search-index.json", "utf-8");
+    const index = JSON.parse(data);
+    if (!Array.isArray(index) || index.length === 0) {
+      throw new Error("search-index.json should be a non-empty array");
+    }
+    const sample = index[0];
+    for (const key of ["id", "title", "slug", "categoryId", "categoryName", "order"]) {
+      if (!(key in sample)) {
+        throw new Error(`search index entry missing required key: ${key}`);
+      }
+    }
+  });
+
   await assert("each category dir has list.json", async () => {
     const data = await fs.readFile("dist/content/categories.json", "utf-8");
     const categories = JSON.parse(data);
