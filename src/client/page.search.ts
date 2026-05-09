@@ -5,14 +5,7 @@ import { globalStyles } from "./styles.global.js";
 import { HeroicAppProvider } from "./provider.app.js";
 import { AppContext, appContext } from "./context.js";
 import { leftArrowIcon } from "./icons.js";
-import {
-  buildFilterOptions,
-  loadSearchIndex,
-  matchesFilters,
-  scoreSearchEntry,
-  SearchFilters,
-  SearchIndexedEntry,
-} from "./service.search.js";
+import { loadSearchIndex, scoreSearchEntry, SearchIndexedEntry } from "./service.search.js";
 import { SearchSuggestion } from "./component.search-bar.js";
 import "./component.search-bar.js";
 import "./component.entry-list-item.js";
@@ -32,13 +25,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
   @state() private loading = false;
   @state() private hasSearched = false;
   @state() private suggestions: SearchSuggestion[] = [];
-  @state() private availableLevels: number[] = [];
-  @state() private availableClasses: string[] = [];
-  @state() private availableTags: string[] = [];
-  @state() private selectedLevels = new Set<number>();
-  @state() private selectedClasses = new Set<string>();
-  @state() private selectedTags = new Set<string>();
-  @state() private filtersOpen = false;
+  @state() private sidebarOpen = false;
 
   private loadedSearchIndex: SearchIndexedEntry[] = [];
   private loaded = false;
@@ -72,7 +59,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
         margin-bottom: 20px;
       }
 
-      .filter-toggle {
+      .sidebar-toggle {
         border: 1px solid rgba(201, 168, 76, 0.3);
         background: rgba(201, 168, 76, 0.1);
         color: var(--color-primary-text);
@@ -88,7 +75,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
         gap: 20px;
       }
 
-      .filters {
+      .sidebar {
         background: var(--color-primary-surface-raised);
         border: var(--border-normal);
         border-radius: var(--border-radius-medium);
@@ -99,37 +86,16 @@ export class HeroicSearchPage extends HeroicAppProvider {
         top: 86px;
       }
 
-      .filter-group + .filter-group {
-        margin-top: 16px;
-      }
-
-      .filter-group h3 {
-        margin: 0 0 10px;
-        font-size: var(--font-small);
+      .sidebar h3 {
+        margin: 0 0 8px 0;
         color: var(--color-1);
+        font-size: var(--font-small);
       }
 
-      .filter-option {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.85rem;
-        margin-bottom: 6px;
-        text-transform: capitalize;
-      }
-
-      .filter-option input {
-        margin: 0;
-      }
-
-      .clear-filters {
-        margin-top: 10px;
-        border: none;
-        background: none;
+      .sidebar p {
+        margin: 0 0 12px 0;
         color: var(--color-primary-text-muted);
-        cursor: pointer;
-        padding: 0;
-        font-size: 0.8rem;
+        font-size: var(--font-small);
       }
 
       .results-info {
@@ -169,13 +135,13 @@ export class HeroicSearchPage extends HeroicAppProvider {
           grid-template-columns: 1fr;
         }
 
-        .filters {
+        .sidebar {
           position: static;
           max-height: none;
           display: none;
         }
 
-        .filters.open {
+        .sidebar.open {
           display: block;
         }
       }
@@ -200,10 +166,6 @@ export class HeroicSearchPage extends HeroicAppProvider {
   private async loadAllEntries(): Promise<void> {
     this.loading = true;
     this.loadedSearchIndex = await loadSearchIndex();
-    const options = buildFilterOptions(this.loadedSearchIndex);
-    this.availableLevels = options.levels;
-    this.availableClasses = options.classes;
-    this.availableTags = options.tags;
     this.loaded = true;
     this.loading = false;
   }
@@ -217,14 +179,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
       return;
     }
 
-    const filters: SearchFilters = {
-      levels: this.selectedLevels,
-      classes: this.selectedClasses,
-      tags: this.selectedTags,
-    };
-
     this.results = this.loadedSearchIndex
-      .filter((entry) => matchesFilters(entry, filters))
       .map((entry) => ({ ...entry, score: scoreSearchEntry(q, entry) }))
       .filter((entry) => entry.score > 0)
       .sort((a, b) => b.score - a.score || a.order - b.order)
@@ -241,8 +196,6 @@ export class HeroicSearchPage extends HeroicAppProvider {
   }
 
   override render(): TemplateResult {
-    const selectedFilterCount = this.selectedLevels.size + this.selectedClasses.size + this.selectedTags.size;
-
     return html`
       <main>
         <a href="/" class="back-link">${leftArrowIcon} Home</a>
@@ -260,9 +213,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
 
         <div class="toolbar">
           <div class="results-info">Fuzzy full-text search across rules, chapters, classes, spells, and items.</div>
-          <button class="filter-toggle" @click=${this.toggleFilters}>
-            Filters${selectedFilterCount > 0 ? ` (${selectedFilterCount})` : ""}
-          </button>
+          <button class="sidebar-toggle" @click=${this.toggleSidebar}>Search Tips</button>
         </div>
 
         ${this.loading
@@ -272,33 +223,10 @@ export class HeroicSearchPage extends HeroicAppProvider {
           : this.hasSearched
             ? html`
                 <div class="layout">
-                  <aside class="filters ${this.filtersOpen ? "open" : ""}">
-                    ${this.renderFilterSection(
-                      "Level",
-                      this.availableLevels.map((level) => String(level)),
-                      this.selectedLevels,
-                      (value) => Number(value),
-                      (value) => this.toggleLevel(value as number),
-                    )}
-                    ${this.renderFilterSection(
-                      "Class",
-                      this.availableClasses,
-                      this.selectedClasses,
-                      (value) => value,
-                      (value) => this.toggleClass(value as string),
-                    )}
-                    ${this.renderFilterSection(
-                      "Tags",
-                      this.availableTags,
-                      this.selectedTags,
-                      (value) => value,
-                      (value) => this.toggleTag(value as string),
-                    )}
-                    ${selectedFilterCount > 0
-                      ? html`
-                          <button class="clear-filters" @click=${this.clearFilters}>Clear all filters</button>
-                        `
-                      : ""}
+                  <aside class="sidebar ${this.sidebarOpen ? "open" : ""}">
+                    <h3>Search Tips</h3>
+                    <p>Try short keywords, full titles, or misspelled names for fuzzy matches.</p>
+                    <p>Use this for quick rule lookups across all indexed content.</p>
                   </aside>
 
                   <section class="results">
@@ -314,7 +242,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
                     </div>
                     ${this.results.length === 0
                       ? html`
-                          <div class="empty">No results found. Try a different query or adjust filters.</div>
+                          <div class="empty">No results found. Try a different query.</div>
                         `
                       : html`
                           <div class="list">
@@ -367,74 +295,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
     );
   }
 
-  private toggleFilters(): void {
-    this.filtersOpen = !this.filtersOpen;
-  }
-
-  private clearFilters(): void {
-    this.selectedLevels = new Set();
-    this.selectedClasses = new Set();
-    this.selectedTags = new Set();
-    this.search(this.query);
-  }
-
-  private toggleLevel(value: number): void {
-    const updated = new Set(this.selectedLevels);
-    if (updated.has(value)) {
-      updated.delete(value);
-    } else {
-      updated.add(value);
-    }
-    this.selectedLevels = updated;
-    this.search(this.query);
-  }
-
-  private toggleClass(value: string): void {
-    const updated = new Set(this.selectedClasses);
-    if (updated.has(value)) {
-      updated.delete(value);
-    } else {
-      updated.add(value);
-    }
-    this.selectedClasses = updated;
-    this.search(this.query);
-  }
-
-  private toggleTag(value: string): void {
-    const updated = new Set(this.selectedTags);
-    if (updated.has(value)) {
-      updated.delete(value);
-    } else {
-      updated.add(value);
-    }
-    this.selectedTags = updated;
-    this.search(this.query);
-  }
-
-  private renderFilterSection<T extends string | number>(
-    title: string,
-    options: string[],
-    selected: Set<T>,
-    transform: (value: string) => T,
-    onToggle: (value: T) => void,
-  ): TemplateResult {
-    if (options.length === 0) {
-      return html``;
-    }
-
-    return html`
-      <section class="filter-group">
-        <h3>${title}</h3>
-        ${options.map((option) => {
-          const transformed = transform(option);
-          return html`
-            <label class="filter-option">
-              <input type="checkbox" .checked=${selected.has(transformed)} @change=${() => onToggle(transformed)} />
-              <span>${option}</span>
-            </label>
-          `;
-        })}
-      </section>
-    `;
+  private toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
   }
 }

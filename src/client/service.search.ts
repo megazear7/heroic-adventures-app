@@ -7,12 +7,6 @@ export interface SearchIndexedEntry extends ContentSearchIndexEntry {
   searchTokenSet: Set<string>;
 }
 
-export interface SearchFilters {
-  levels: Set<number>;
-  classes: Set<string>;
-  tags: Set<string>;
-}
-
 const WORD_SPLIT_REGEX = /[^a-z0-9]+/g;
 const MAX_TAGS_PER_ENTRY = 20;
 const MAX_FUZZY_CANDIDATE_CHECKS = 60;
@@ -32,44 +26,6 @@ function tokenize(value: string): string[] {
 
 function uniqueSorted(values: Iterable<string>): string[] {
   return Array.from(new Set(Array.from(values).filter(Boolean))).sort((a, b) => a.localeCompare(b));
-}
-
-function parseLevelFromText(value: string): number | null {
-  const levelMatch = value.match(/\b(?:level|lvl)\s*(\d{1,2})\b/i);
-  if (levelMatch) {
-    return Number(levelMatch[1]);
-  }
-
-  const ordinalMatch = value.match(/\b(\d{1,2})(?:st|nd|rd|th)\s+level\b/i);
-  if (ordinalMatch) {
-    return Number(ordinalMatch[1]);
-  }
-
-  return null;
-}
-
-function parseClassFromText(value: string): string | null {
-  const classMatch = value.match(/\bclass(?:es)?\s*[:\-]\s*([a-zA-Z ,/]+)/i);
-  if (!classMatch) return null;
-  return (
-    classMatch[1]
-      .split(/[,/]/)
-      .map((item) => item.trim())
-      .find(Boolean) ?? null
-  );
-}
-
-function parseTagsFromText(value: string): string[] {
-  const explicitTagLine = value.match(/\b(?:tags?|keywords?)\s*[:\-]\s*([^\n]+)/i);
-  if (explicitTagLine) {
-    return uniqueSorted(
-      explicitTagLine[1]
-        .split(/[,/|]/)
-        .map((item) => item.trim().toLowerCase())
-        .filter((item) => item.length > 1),
-    );
-  }
-  return [];
 }
 
 function buildDerivedTags(entry: ContentSearchIndexEntry): string[] {
@@ -135,7 +91,6 @@ async function loadFallbackIndex(): Promise<SearchIndexedEntry[]> {
         if (!listRes.ok) return;
         const list = (await listRes.json()).map((item: unknown) => ContentListItem.parse(item));
         for (const item of list) {
-          const combined = `${item.title}\n${item.subcategory ?? ""}`;
           results.push(
             toIndexedEntry({
               id: item.id,
@@ -145,9 +100,9 @@ async function loadFallbackIndex(): Promise<SearchIndexedEntry[]> {
               categoryName: category.name,
               subcategory: item.subcategory ?? null,
               heroImage: item.heroImage,
-              level: parseLevelFromText(combined),
-              className: parseClassFromText(combined),
-              tags: parseTagsFromText(combined),
+              level: null,
+              className: null,
+              tags: [],
               contentText: "",
               order: item.order,
             }),
@@ -217,33 +172,6 @@ function computeLimitedLevenshteinDistance(a: string, b: string, limit = 2): num
   return previous[b.length];
 }
 
-export function matchesFilters(entry: SearchIndexedEntry, filters: SearchFilters): boolean {
-  if (filters.levels.size > 0 && (!entry.level || !filters.levels.has(entry.level))) {
-    return false;
-  }
-
-  if (filters.classes.size > 0) {
-    const className = (entry.className ?? "").toLowerCase();
-    if (!className || !filters.classes.has(className)) {
-      return false;
-    }
-  }
-
-  if (filters.tags.size > 0) {
-    const entryTags = new Set((entry.tags ?? []).map((tag) => tag.toLowerCase()));
-    let hasAnyTag = false;
-    for (const selectedTag of filters.tags) {
-      if (entryTags.has(selectedTag)) {
-        hasAnyTag = true;
-        break;
-      }
-    }
-    if (!hasAnyTag) return false;
-  }
-
-  return true;
-}
-
 export function scoreSearchEntry(query: string, entry: SearchIndexedEntry): number {
   const normalizedQuery = normalizeText(query);
   if (!normalizedQuery) return 0;
@@ -292,32 +220,4 @@ export function scoreSearchEntry(query: string, entry: SearchIndexedEntry): numb
   score += Math.max(0, 40 - Math.min(entry.order, 40));
 
   return score;
-}
-
-export function buildFilterOptions(entries: SearchIndexedEntry[]): {
-  levels: number[];
-  classes: string[];
-  tags: string[];
-} {
-  const levels = new Set<number>();
-  const classes = new Set<string>();
-  const tags = new Set<string>();
-
-  for (const entry of entries) {
-    if (entry.level && Number.isInteger(entry.level)) {
-      levels.add(entry.level);
-    }
-    if (entry.className) {
-      classes.add(entry.className.toLowerCase());
-    }
-    for (const tag of entry.tags ?? []) {
-      tags.add(tag.toLowerCase());
-    }
-  }
-
-  return {
-    levels: Array.from(levels).sort((a, b) => a - b),
-    classes: uniqueSorted(classes),
-    tags: uniqueSorted(tags).slice(0, 80),
-  };
 }
