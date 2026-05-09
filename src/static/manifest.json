@@ -1,6 +1,7 @@
 {
   "name": "Heroic Adventures",
   "short_name": "Heroic Adventures",
+  "description": "Heroic Adventures 2nd Edition companion app with offline rules and character tools.",
   "start_url": "/",
   "scope": "/",
   "id": "/",
@@ -20,10 +21,51 @@
       "src": "/logo/logo-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ],
-  "theme_color": "#1e90ff",
-  "background_color": "#2c2f33",
+  "shortcuts": [
+    {
+      "name": "Characters",
+      "short_name": "Characters",
+      "description": "Open character management",
+      "url": "/characters",
+      "icons": [
+        {
+          "src": "/logo/logo-128x128.png",
+          "sizes": "128x128",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "short_name": "Search",
+      "description": "Search all rules and entries",
+      "url": "/search",
+      "icons": [
+        {
+          "src": "/logo/logo-128x128.png",
+          "sizes": "128x128",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Spell List",
+      "short_name": "Spells",
+      "description": "Browse spell categories",
+      "url": "/spells-arcane",
+      "icons": [
+        {
+          "src": "/logo/logo-128x128.png",
+          "sizes": "128x128",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "theme_color": "#1a1a2e",
+  "background_color": "#1a1a2e",
   "display": "standalone"
 }

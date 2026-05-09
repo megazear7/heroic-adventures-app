@@ -139,6 +139,36 @@ async function testBuildOutput(): Promise<void> {
   });
 }
 
+/* ---------- PWA static config tests ---------- */
+
+async function testPwaStaticConfig(): Promise<void> {
+  console.log("\n📱 PWA static config tests:");
+
+  await assert("manifest includes app shortcuts", async () => {
+    const manifestRaw = await fs.readFile("src/static/manifest.json", "utf-8");
+    const manifest = JSON.parse(manifestRaw);
+    const shortcuts = Array.isArray(manifest.shortcuts) ? manifest.shortcuts : [];
+    const urls = shortcuts
+      .map((shortcut: { url?: string }) => shortcut.url)
+      .filter((url: string | undefined): url is string => Boolean(url));
+    for (const expected of ["/characters", "/search", "/spells-arcane"]) {
+      if (!urls.includes(expected)) {
+        throw new Error(`Missing shortcut for ${expected}`);
+      }
+    }
+  });
+
+  await assert("service worker has offline navigation fallback", async () => {
+    const sw = await fs.readFile("src/static/sw.js", "utf-8");
+    if (!sw.includes("navigationRequest(event.request)")) {
+      throw new Error("Expected navigationRequest handler in fetch event");
+    }
+    if (!sw.includes('caches.match("/index.html",')) {
+      throw new Error("Expected /index.html fallback for offline navigation");
+    }
+  });
+}
+
 /* ---------- Main ---------- */
 
 async function main(): Promise<void> {
@@ -148,6 +178,7 @@ async function main(): Promise<void> {
   const serverMode = args.includes("--server");
 
   await testBuildOutput();
+  await testPwaStaticConfig();
   await testContentFiles();
 
   if (serverMode) {
