@@ -141,6 +141,8 @@ export class AdventureLogCreateForm extends LitElement {
     );
     this.form = {};
     this.tagsRaw = "";
+    // Explicitly reset the form element to clear browser-native state
+    (e.target as HTMLFormElement).reset();
   }
 
   override render() {
