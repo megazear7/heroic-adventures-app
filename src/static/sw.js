@@ -103,7 +103,12 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Contentful CDN images: cache-first
-  if (url.hostname.includes("ctfassets.net") || url.hostname.includes("contentful.com")) {
+  if (
+    url.hostname === "ctfassets.net" ||
+    url.hostname.endsWith(".ctfassets.net") ||
+    url.hostname === "contentful.com" ||
+    url.hostname.endsWith(".contentful.com")
+  ) {
     event.respondWith(cacheFirst(event.request));
     return;
   }
