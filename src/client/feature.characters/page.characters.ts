@@ -1,8 +1,10 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import { Character } from '../../shared/type.character';
+import { Character, CharacterSchema } from '../../shared/type.character';
 import './component.character-create-form';
 import './component.character-card';
+
+const STORAGE_KEY = 'ha-characters';
 
 @customElement('page-characters')
 export class PageCharacters extends LitElement {
@@ -12,6 +14,14 @@ export class PageCharacters extends LitElement {
       padding: 1rem;
       min-height: 100vh;
       background: var(--ha-bg, #f7f7fa);
+    }
+    h1 {
+      margin-bottom: 0.25rem;
+    }
+    .subtitle {
+      margin: 0 0 1rem;
+      color: #666;
+      font-size: 0.9rem;
     }
     .characters-list {
       margin-top: 2rem;
@@ -34,12 +44,17 @@ export class PageCharacters extends LitElement {
   }
 
   private loadCharacters() {
-    const raw = localStorage.getItem('ha-characters');
-    this.characters = raw ? JSON.parse(raw) : [];
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      this.characters = Array.isArray(parsed) ? parsed.filter((c) => CharacterSchema.safeParse(c).success) : [];
+    } catch {
+      this.characters = [];
+    }
   }
 
   private saveCharacters() {
-    localStorage.setItem('ha-characters', JSON.stringify(this.characters));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(this.characters));
   }
 
   private handleCharacterCreated(e: CustomEvent) {
@@ -49,10 +64,11 @@ export class PageCharacters extends LitElement {
 
   override render() {
     return html`
-      <h1>Create Character</h1>
+      <h1>Character Builder</h1>
+      <p class="subtitle">Build in steps, auto-save drafts locally, and keep read-only sheets handy for mobile play.</p>
       <character-create-form @character-created=${this.handleCharacterCreated}></character-create-form>
       <div class="characters-list">
-        ${this.characters.length === 0 ? html`<p>No characters yet.</p>` : this.characters.map(c => html`<character-card .character=${c}></character-card>`) }
+        ${this.characters.length === 0 ? html`<p>No characters yet.</p>` : this.characters.map(c => html`<character-card .character=${c}></character-card>`)}
       </div>
     `;
   }
