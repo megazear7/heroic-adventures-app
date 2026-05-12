@@ -165,7 +165,7 @@ async function testPwaStaticConfig(): Promise<void> {
     const urls = shortcuts
       .map((shortcut: { url?: string }) => shortcut.url)
       .filter((url: string | undefined): url is string => Boolean(url));
-    for (const expected of ["/characters", "/search", "/spells-arcane"]) {
+    for (const expected of ["/characters", "/adventure-log", "/search", "/spells-arcane"]) {
       if (!urls.includes(expected)) {
         throw new Error(`Missing shortcut for ${expected}`);
       }

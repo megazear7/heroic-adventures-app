@@ -42,7 +42,7 @@ async function precacheUrls(cache, urls, batchSize) {
         } catch {
           // Skip this URL — don't block the rest
         }
-      })
+      }),
     );
   }
 }
@@ -64,7 +64,7 @@ self.addEventListener("install", (event) => {
       } catch {
         console.warn("SW: could not pre-cache content index");
       }
-    })
+    }),
   );
   self.skipWaiting();
 });
@@ -76,14 +76,18 @@ self.addEventListener("activate", (event) => {
       Promise.all(
         keys
           .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
-    )
+          .map((key) => caches.delete(key)),
+      ),
+    ),
   );
   self.clients.claim();
 });
 
 // Fetch: routing strategy per request type
+// Note: character sheets (/characters) and adventure logs (/adventure-log) are
+// stored in localStorage and are therefore fully available offline. The service
+// worker ensures the app shell is always cached so these pages can load without
+// a network connection.
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
@@ -91,10 +95,7 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   // Google Fonts: cache-first
-  if (
-    url.hostname === "fonts.googleapis.com" ||
-    url.hostname === "fonts.gstatic.com"
-  ) {
+  if (url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com") {
     event.respondWith(cacheFirst(event.request));
     return;
   }
@@ -107,8 +108,10 @@ self.addEventListener("fetch", (event) => {
 
   // Contentful CDN images: cache-first
   if (
-    url.hostname.includes("ctfassets.net") ||
-    url.hostname.includes("contentful.com")
+    url.hostname === "ctfassets.net" ||
+    url.hostname.endsWith(".ctfassets.net") ||
+    url.hostname === "contentful.com" ||
+    url.hostname.endsWith(".contentful.com")
   ) {
     event.respondWith(cacheFirst(event.request));
     return;

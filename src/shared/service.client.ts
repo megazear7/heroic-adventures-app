@@ -36,6 +36,10 @@ export const routes = [
     name: RouteName.enum.characters,
     path: "/characters",
   },
+  {
+    name: RouteName.enum.adventure_log,
+    path: "/adventure-log",
+  },
 ];
 
 export class ClientService extends AbstractService<NoBodyParams, NoPathParams, string> {

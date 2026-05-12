@@ -19,6 +19,7 @@ import "./page.recent.js";
 import "./page.settings.js";
 import "./page.not-found.js";
 import "./feature.characters/page.characters.js";
+import "./feature.adventure-log/page.adventure-log.js";
 import "./component.nav-drawer.js";
 import "./component.bookmark-bar.js";
 import "./component.profile-modal.js";
@@ -197,7 +198,11 @@ export class HeroicApp extends LitElement {
         <button class="menu-btn" @click=${() => (this.drawerOpen = true)}>${menuIcon}</button>
         <a href="/" class="brand">Heroic Adventures</a>
         <span class="offline-badge ${this.isOffline ? "visible" : ""}">${wifiOffIcon} Offline</span>
-        ${this.activeProfile ? html`<heroic-profile-menu .profile=${this.activeProfile}></heroic-profile-menu>` : nothing}
+        ${this.activeProfile
+          ? html`
+              <heroic-profile-menu .profile=${this.activeProfile}></heroic-profile-menu>
+            `
+          : nothing}
       </div>
 
       <heroic-profile-modal
@@ -250,6 +255,10 @@ export class HeroicApp extends LitElement {
         return html`
           <page-characters></page-characters>
         `;
+      case RouteName.enum.adventure_log:
+        return html`
+          <page-adventure-log></page-adventure-log>
+        `;
       default:
         return html`
           <heroic-not-found-page></heroic-not-found-page>
@@ -272,6 +281,9 @@ export class HeroicApp extends LitElement {
     }
     if (pathname === "/settings") {
       return { name: RouteName.enum.settings, path: "/settings" };
+    }
+    if (pathname === "/adventure-log") {
+      return { name: RouteName.enum.adventure_log, path: "/adventure-log" };
     }
 
     for (const route of this.routes) {

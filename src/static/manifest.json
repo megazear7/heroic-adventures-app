@@ -39,6 +39,19 @@
       ]
     },
     {
+      "name": "Adventure Log",
+      "short_name": "Log",
+      "description": "View and add adventure log entries",
+      "url": "/adventure-log",
+      "icons": [
+        {
+          "src": "/logo/logo-128x128.png",
+          "sizes": "128x128",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
       "name": "Search",
       "short_name": "Search",
       "description": "Search all rules and entries",
@@ -67,5 +80,8 @@
   ],
   "theme_color": "#1a1a2e",
   "background_color": "#1a1a2e",
-  "display": "standalone"
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "categories": ["games", "entertainment", "utilities"]
 }
