@@ -53,6 +53,10 @@ export class CharacterCreateForm extends LitElement {
       background: #f5efe2;
       font-weight: 600;
     }
+    .tab:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
     fieldset {
       border: 1px solid #ddd;
       border-radius: 8px;
@@ -108,8 +112,7 @@ export class CharacterCreateForm extends LitElement {
   private feats = ['Sharpshooter', 'Tough', 'Alert', 'Resilient'];
   private expertise = ['Stealth', 'Arcana', 'Athletics', 'Persuasion'];
 
-  override connectedCallback() {
-    super.connectedCallback();
+  override firstUpdated() {
     this.loadDraft();
   }
 
@@ -199,6 +202,14 @@ export class CharacterCreateForm extends LitElement {
   private goBack() {
     this.error = null;
     this.step = Math.max(0, this.step - 1);
+  }
+
+  private canAccessStep(targetStep: number) {
+    if (targetStep <= this.step) return true;
+    for (let stepIndex = 0; stepIndex < targetStep; stepIndex += 1) {
+      if (!this.canMoveNext(stepIndex)) return false;
+    }
+    return true;
   }
 
   private renderCheckboxOptions(name: keyof Character, options: string[], selected: string[] = []) {
@@ -304,7 +315,17 @@ export class CharacterCreateForm extends LitElement {
     return html`
       <form @submit=${this.handleSubmit} autocomplete="off">
         <div class="tabs">
-          ${STEPS.map((label, index) => html`<button type="button" class="tab ${index === this.step ? 'active' : ''}" @click=${() => (this.step = index)}>${label}</button>`)}
+          ${STEPS.map((label, index) => html`
+            <button
+              type="button"
+              class="tab ${index === this.step ? 'active' : ''}"
+              @click=${() => {
+                if (this.canAccessStep(index)) this.step = index;
+              }}
+              ?disabled=${!this.canAccessStep(index)}>
+              ${label}
+            </button>
+          `)}
         </div>
         ${this.renderStepContent()}
         ${this.error ? html`<div style="color: red;">${this.error}</div>` : ''}

@@ -87,14 +87,13 @@ export class CharacterCard extends LitElement {
     }
   }
 
-  private shareCharacter() {
+  private async shareCharacter() {
     const text = `${this.character.name} • ${this.character.race} ${this.character.class}`;
-    const share = (navigator as Navigator & { share?: (data: ShareData) => Promise<void> }).share;
-    if (!share) {
-      this.copyCharacter();
+    if (!('share' in navigator)) {
+      await this.copyCharacter();
       return;
     }
-    share({
+    navigator.share({
       title: `Heroic Adventures Character: ${this.character.name}`,
       text,
     }).catch(() => {
@@ -102,13 +101,24 @@ export class CharacterCard extends LitElement {
     });
   }
 
+  private sanitizeFileName(name: string) {
+    if (!name.trim()) return 'character';
+    return name
+      .replace(/[^a-z0-9-_]+/gi, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .toLowerCase() || 'character';
+  }
+
   private exportCharacter() {
     const blob = new Blob([JSON.stringify(this.character, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${this.character.name.replace(/[^a-z0-9-_]+/gi, '-').toLowerCase() || 'character'}.json`;
+    a.download = `${this.sanitizeFileName(this.character.name)}.json`;
+    document.body.appendChild(a);
     a.click();
+    a.remove();
     URL.revokeObjectURL(url);
     this.feedback = 'Character exported.';
   }
