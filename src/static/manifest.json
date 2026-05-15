@@ -52,6 +52,19 @@
       ]
     },
     {
+      "name": "Encounter Tracker",
+      "short_name": "Encounter",
+      "description": "Track initiative, HP, and turns in combat encounters",
+      "url": "/encounter-tracker",
+      "icons": [
+        {
+          "src": "/logo/logo-128x128.png",
+          "sizes": "128x128",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
       "name": "Search",
       "short_name": "Search",
       "description": "Search all rules and entries",
