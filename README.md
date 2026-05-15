@@ -120,10 +120,11 @@ Recommended deployment flow:
 A new **Characters** feature lets users create and manage custom characters for Heroic Adventures 2E. Access it via the navigation or at `/characters`.
 
 - Create a character by choosing one race, one class, one background, one flaw, and selecting one or more spells, features, feats, and expertise.
+- Use a multi-step builder flow (Identity, Story, Build, Review) to guide character creation.
 - All fields are validated and required fields must be filled.
-- Created characters are stored in localStorage and persist across sessions.
-- The character creation form and display are mobile-friendly and accessible.
-- Characters are displayed in a simple card format for easy use during play.
+- Character drafts and completed characters are stored in localStorage and persist across sessions/offline use.
+- Read-only character sheets are mobile-friendly for at-table play.
+- Character sheets include share/export/copy actions for quick handoff.
 
 ### Technical Notes
 

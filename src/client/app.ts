@@ -287,6 +287,9 @@ export class HeroicApp extends LitElement {
     if (pathname === "/settings") {
       return { name: RouteName.enum.settings, path: "/settings" };
     }
+    if (pathname === "/characters") {
+      return { name: RouteName.enum.characters, path: "/characters" };
+    }
     if (pathname === "/adventure-log") {
       return { name: RouteName.enum.adventure_log, path: "/adventure-log" };
     }

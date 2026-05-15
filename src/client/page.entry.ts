@@ -9,7 +9,9 @@ import { leftArrowIcon, starIcon, starFilledIcon, pinIcon, pinFilledIcon } from 
 import { isFavorite, toggleFavorite, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
 import { isBookmarked, toggleBookmark, BOOKMARKS_CHANGED_EVENT } from "../shared/service.bookmarks.js";
 import { recordRecentEntry } from "../shared/service.recents.js";
+import { createCharacterContentLink, isCharacterAssignableCategory } from "../shared/service.characters.js";
 import "./component.content-viewer.js";
+import "./feature.characters/component.character-entry-assigner.js";
 
 @customElement("heroic-entry-page")
 export class HeroicEntryPage extends HeroicAppProvider {
@@ -75,7 +77,9 @@ export class HeroicEntryPage extends HeroicAppProvider {
         color: var(--color-primary-text-muted);
         display: flex;
         align-items: center;
-        transition: color var(--time-fast) ease, transform var(--time-fast) ease;
+        transition:
+          color var(--time-fast) ease,
+          transform var(--time-fast) ease;
         flex-shrink: 0;
       }
 
@@ -96,7 +100,9 @@ export class HeroicEntryPage extends HeroicAppProvider {
         color: var(--color-primary-text-muted);
         display: flex;
         align-items: center;
-        transition: color var(--time-fast) ease, transform var(--time-fast) ease;
+        transition:
+          color var(--time-fast) ease,
+          transform var(--time-fast) ease;
         flex-shrink: 0;
       }
 
@@ -238,9 +244,14 @@ export class HeroicEntryPage extends HeroicAppProvider {
               <img class="hero-image" src="${this.entry.heroImage.url}" alt="${this.entry.heroImage.alt}" />
             `
           : ""}
+        ${this.renderCharacterAssigner(catName)}
 
         <div class="content-card">
-          ${this.entry.subcategory ? html`<div class="entry-meta">${this.entry.subcategory}</div>` : ""}
+          ${this.entry.subcategory
+            ? html`
+                <div class="entry-meta">${this.entry.subcategory}</div>
+              `
+            : ""}
           <heroic-content-viewer .contentHtml=${this.contentHtml}></heroic-content-viewer>
         </div>
       </main>
@@ -257,6 +268,34 @@ export class HeroicEntryPage extends HeroicAppProvider {
       imageAlt: this.entry.heroImage?.alt,
       subcategory: this.entry.subcategory,
     });
+  }
+
+  private renderCharacterAssigner(categoryName: string): TemplateResult | string {
+    if (!this.entry || !isCharacterAssignableCategory(this.categoryId)) {
+      return "";
+    }
+
+    return html`
+      <character-entry-assigner
+        .entry=${createCharacterContentLink({
+          id: this.entry.id,
+          title: this.entry.title,
+          slug: this.entry.slug,
+          categoryId: this.categoryId,
+          categoryName,
+          subcategory: this.entry.subcategory,
+          heroImage: this.entry.heroImage,
+          excerpt: this.toExcerpt(this.contentHtml),
+        })}></character-entry-assigner>
+    `;
+  }
+
+  private toExcerpt(value: string): string {
+    return value
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 180);
   }
 
   private handleToggleBookmark(): void {
