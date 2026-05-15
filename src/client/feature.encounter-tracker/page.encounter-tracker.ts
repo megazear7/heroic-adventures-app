@@ -47,6 +47,40 @@ function participantsForCard(participants: Participant[], card: InitiativeCard):
   });
 }
 
+/**
+ * Determines the effective action type for the currently drawn card.
+ *
+ * Rules (Heroic Adventures 2e):
+ * - Minor/heroic card → always "minor"
+ * - First card drawn, OR current tier > previous tier → "bonus" (Bonus Action)
+ * - Current tier ≤ previous tier, OR previous was minor/heroic → "major"
+ */
+function computeActionType(enc: Encounter): "bonus" | "major" | "minor" {
+  const cardIndex = enc.currentCardIndex;
+  if (cardIndex < 0) return "major";
+
+  const card = cardById(enc.deck[cardIndex]);
+  if (!card) return "major";
+
+  // Minor/heroic card → stays minor regardless
+  if (card.actionType === "minor") return "minor";
+
+  // First card of the round → bonus action
+  if (cardIndex === 0) return "bonus";
+
+  // Check the previous card
+  const prevCard = cardById(enc.deck[cardIndex - 1]);
+  if (!prevCard) return "major";
+
+  // Previous card was a minor/heroic card → major action only
+  if (prevCard.actionType === "minor") return "major";
+
+  // Compare initiative tiers: ascending (current > previous) → bonus action
+  // At this point both cards are "major" actionType, so minInit is guaranteed non-null
+  if (card.minInit === null || prevCard.minInit === null) return "major";
+  return card.minInit > prevCard.minInit ? "bonus" : "major";
+}
+
 @customElement("page-encounter-tracker")
 export class PageEncounterTracker extends LitElement {
   static override styles = css`
@@ -156,6 +190,9 @@ export class PageEncounterTracker extends LitElement {
     }
     .card-action-type.major {
       color: var(--color-1, #c9a84c);
+    }
+    .card-action-type.bonus {
+      color: #a8e6a0;
     }
     .card-action-type.minor {
       color: #88ccff;
@@ -439,11 +476,16 @@ export class PageEncounterTracker extends LitElement {
       this.startNewRound();
       return;
     }
-    this.encounter = { ...enc, currentCardIndex: nextIdx };
+    const updatedEnc = { ...enc, currentCardIndex: nextIdx };
+    this.encounter = updatedEnc;
     this.saveEncounter();
     const card = cardById(enc.deck[nextIdx]);
     if (card) {
-      const action = card.actionType === "major" ? "Major Action" : "Minor or Heroic Action";
+      const actionType = computeActionType(updatedEnc);
+      const action =
+        actionType === "bonus" ? "Bonus Action" :
+        actionType === "minor" ? "Minor or Heroic Action" :
+        "Major Action";
       this.showToast(`${card.label} — ${action}`);
     }
   }
@@ -548,13 +590,18 @@ export class PageEncounterTracker extends LitElement {
   private buildTextSummary(): string {
     const e = this.encounter;
     const card = this.currentCard();
+    const actionType = computeActionType(e);
     const active = card ? participantsForCard(e.participants, card) : [];
     const activeIds = new Set(active.map((p) => p.id));
+    const cardActionLabel =
+      actionType === "bonus" ? "Bonus Action" :
+      actionType === "minor" ? "Minor or Heroic Action" :
+      "Major Action";
     const lines = [
       `Encounter: ${e.name}`,
       `Round: ${e.round} | Card: ${e.currentCardIndex + 1}/${DECK_SIZE}`,
       card
-        ? `Current Card: ${card.label} — ${card.actionType === "major" ? "Major Action" : "Minor or Heroic Action"}`
+        ? `Current Card: ${card.label} — ${cardActionLabel}`
         : `Current Card: (none drawn)`,
       ``,
       ...e.participants.map(
@@ -579,10 +626,16 @@ export class PageEncounterTracker extends LitElement {
   override render() {
     const enc = this.encounter;
     const card = this.currentCard();
+    const actionType = computeActionType(enc);
     const active = card ? participantsForCard(enc.participants, card) : [];
     const activeIds = new Set(active.map((p) => p.id));
     const cardsRemaining = DECK_SIZE - (enc.currentCardIndex + 1);
     const allCardsDrawn = enc.currentCardIndex >= DECK_SIZE - 1;
+
+    const actionLabel =
+      actionType === "bonus" ? "⚔ Bonus Action" :
+      actionType === "minor" ? "⚡ Minor or Heroic Action" :
+      "⚔ Major Action";
 
     return html`
       <h1>Encounter Tracker</h1>
@@ -629,8 +682,8 @@ export class PageEncounterTracker extends LitElement {
           ? html`
               <div class="current-card ${card.participantType}">
                 <div class="card-label">${card.label}</div>
-                <div class="card-action-type ${card.actionType}">
-                  ${card.actionType === "major" ? "⚔ Major Action" : "⚡ Minor or Heroic Action"}
+                <div class="card-action-type ${actionType}">
+                  ${actionLabel}
                 </div>
                 ${active.length > 0
                   ? html`
