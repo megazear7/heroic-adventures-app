@@ -151,6 +151,13 @@ async function testBuildOutput(): Promise<void> {
   await assert("app.css is in static", async () => {
     await fs.access("src/static/app.css");
   });
+
+  await assert("_redirects has SPA catch-all rule", async () => {
+    const data = await fs.readFile("src/static/_redirects", "utf-8");
+    if (!data.includes("/* /index.html 200")) {
+      throw new Error("_redirects missing SPA catch-all rule (/* /index.html 200)");
+    }
+  });
 }
 
 /* ---------- PWA static config tests ---------- */
