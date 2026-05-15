@@ -431,5 +431,3 @@ export class EncounterParticipant extends LitElement {
     `;
   }
 }
-
-

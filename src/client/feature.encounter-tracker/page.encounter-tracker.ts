@@ -415,7 +415,7 @@ export class PageEncounterTracker extends LitElement {
     if (this.toastTimer) clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => {
       this.toast = null;
-    }, 2000);
+    }, 1800);
   }
 
   private currentCard(): InitiativeCard | null {
@@ -726,5 +726,3 @@ export class PageEncounterTracker extends LitElement {
     `;
   }
 }
-
-
