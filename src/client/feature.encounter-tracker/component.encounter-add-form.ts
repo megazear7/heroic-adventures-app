@@ -59,6 +59,12 @@ export class EncounterAddForm extends LitElement {
     select:focus {
       border-color: var(--color-1, #c9a84c);
     }
+    .hint {
+      font-size: 0.72rem;
+      color: var(--color-primary-text-muted, #8a8780);
+      margin-top: 1px;
+      line-height: 1.4;
+    }
     .actions {
       display: flex;
       gap: 0.75rem;
@@ -98,7 +104,7 @@ export class EncounterAddForm extends LitElement {
 
   @state() private name = "";
   @state() private type: "monster" | "player" = "monster";
-  @state() private initiative = "";
+  @state() private initiative = "1";
   @state() private maxHp = "";
   @state() private error: string | null = null;
 
@@ -113,7 +119,7 @@ export class EncounterAddForm extends LitElement {
       id: crypto.randomUUID(),
       name: this.name.trim(),
       type: this.type,
-      initiative: isNaN(init) ? 0 : init,
+      initiative: isNaN(init) || init < 1 ? 1 : init,
       hp: isNaN(hp) ? 10 : hp,
       maxHp: isNaN(hp) ? 10 : hp,
       notes: "",
@@ -135,7 +141,7 @@ export class EncounterAddForm extends LitElement {
     );
 
     this.name = "";
-    this.initiative = "";
+    this.initiative = "1";
     this.maxHp = "";
     (e.target as HTMLFormElement).reset();
   }
@@ -160,19 +166,24 @@ export class EncounterAddForm extends LitElement {
               <select
                 name="type"
                 .value=${this.type}
-                @change=${(e: Event) => (this.type = (e.target as HTMLSelectElement).value as "monster" | "player")}>
+                @change=${(e: Event) =>
+                  (this.type = (e.target as HTMLSelectElement).value as "monster" | "player")}>
                 <option value="monster">Monster</option>
                 <option value="player">Player / PC</option>
               </select>
             </label>
             <label>
               Initiative
-              <input
+              <select
                 name="initiative"
-                type="number"
                 .value=${this.initiative}
-                @input=${(e: Event) => (this.initiative = (e.target as HTMLInputElement).value)}
-                placeholder="0" />
+                @change=${(e: Event) => (this.initiative = (e.target as HTMLSelectElement).value)}>
+                <option value="1">1–3</option>
+                <option value="4">4–6</option>
+                <option value="7">7–8</option>
+                <option value="9">9+</option>
+              </select>
+              <span class="hint">Initiative tier — determines which card activates them</span>
             </label>
             <label>
               Max HP
@@ -199,3 +210,4 @@ export class EncounterAddForm extends LitElement {
     `;
   }
 }
+

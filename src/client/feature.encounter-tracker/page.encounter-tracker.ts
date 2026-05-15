@@ -1,21 +1,50 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { Encounter, EncounterSchema, Participant } from "../../shared/type.encounter.js";
+import {
+  Encounter,
+  EncounterSchema,
+  Participant,
+  INITIATIVE_CARDS,
+  InitiativeCard,
+} from "../../shared/type.encounter.js";
 import "./component.encounter-add-form.js";
 import "./component.encounter-participant.js";
 
 const STORAGE_KEY = "ha-encounter-tracker";
+const DECK_SIZE = INITIATIVE_CARDS.length; // 10
+
+function shuffleDeck(): string[] {
+  const ids = INITIATIVE_CARDS.map((c) => c.id);
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  return ids;
+}
 
 function newEncounter(): Encounter {
   return {
     id: crypto.randomUUID(),
     name: "New Encounter",
     round: 1,
-    currentTurnIndex: 0,
+    currentCardIndex: -1,
+    deck: shuffleDeck(),
     participants: [],
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
+}
+
+function cardById(id: string): InitiativeCard | undefined {
+  return INITIATIVE_CARDS.find((c) => c.id === id);
+}
+
+function participantsForCard(participants: Participant[], card: InitiativeCard): Participant[] {
+  return participants.filter((p) => {
+    if (p.type !== card.participantType) return false;
+    if (card.minInit === null) return true;
+    return p.initiative >= card.minInit && p.initiative <= (card.maxInit as number);
+  });
 }
 
 @customElement("page-encounter-tracker")
@@ -78,6 +107,114 @@ export class PageEncounterTracker extends LitElement {
       font-weight: 700;
       color: var(--color-1, #c9a84c);
     }
+
+    /* ---- Card Deck ---- */
+    .deck-section {
+      background: var(--color-primary-surface-raised, #16162a);
+      border: 1px solid rgba(201, 168, 76, 0.15);
+      border-radius: 14px;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .deck-section-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-primary-text-muted, #8a8780);
+      margin: 0 0 0.875rem;
+    }
+    .current-card {
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .current-card.player {
+      background: rgba(100, 180, 255, 0.08);
+      border: 2px solid rgba(100, 180, 255, 0.35);
+    }
+    .current-card.monster {
+      background: rgba(255, 100, 100, 0.08);
+      border: 2px solid rgba(255, 100, 100, 0.35);
+    }
+    .current-card.none {
+      background: var(--color-primary-surface-overlay, #1e1e38);
+      border: 2px dashed rgba(201, 168, 76, 0.2);
+    }
+    .card-label {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--color-primary-text, #e2e0d6);
+    }
+    .card-action-type {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--color-primary-text-muted, #8a8780);
+    }
+    .card-action-type.major {
+      color: var(--color-1, #c9a84c);
+    }
+    .card-action-type.minor {
+      color: #88ccff;
+    }
+    .card-active-names {
+      font-size: 0.88rem;
+      color: var(--color-primary-text, #e2e0d6);
+      margin-top: 0.25rem;
+    }
+    .card-active-names strong {
+      color: var(--color-1, #c9a84c);
+    }
+    .card-no-match {
+      font-size: 0.82rem;
+      color: var(--color-primary-text-muted, #8a8780);
+      font-style: italic;
+    }
+    .deck-progress {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.82rem;
+      color: var(--color-primary-text-muted, #8a8780);
+    }
+    .deck-pips {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .deck-pip {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      background: var(--color-primary-surface-overlay, #1e1e38);
+    }
+    .deck-pip.played {
+      background: rgba(201, 168, 76, 0.35);
+      border-color: var(--color-1, #c9a84c);
+    }
+    .deck-pip.current {
+      background: var(--color-1, #c9a84c);
+      border-color: var(--color-1, #c9a84c);
+    }
+    .deck-pip.player-card {
+      border-color: rgba(100, 180, 255, 0.5);
+    }
+    .deck-pip.player-card.played, .deck-pip.player-card.current {
+      background: rgba(100, 180, 255, 0.5);
+    }
+    .deck-pip.monster-card {
+      border-color: rgba(255, 100, 100, 0.5);
+    }
+    .deck-pip.monster-card.played, .deck-pip.monster-card.current {
+      background: rgba(255, 100, 100, 0.5);
+    }
+
+    /* ---- Controls ---- */
     .controls-bar {
       display: flex;
       gap: 0.75rem;
@@ -105,6 +242,11 @@ export class PageEncounterTracker extends LitElement {
       background: var(--color-1, #c9a84c);
       color: #1a1a2e;
     }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+      pointer-events: none;
+    }
     .btn-primary {
       background: var(--color-1, #c9a84c);
       color: #1a1a2e;
@@ -112,6 +254,15 @@ export class PageEncounterTracker extends LitElement {
     .btn-primary:hover {
       background: #d4b555;
       border-color: #d4b555;
+    }
+    .btn-end-round {
+      background: rgba(100, 180, 255, 0.12);
+      color: #88ccff;
+      border-color: rgba(100, 180, 255, 0.4);
+    }
+    .btn-end-round:hover {
+      background: rgba(100, 180, 255, 0.25);
+      color: #88ccff;
     }
     .btn-danger {
       border-color: rgba(255, 100, 100, 0.5);
@@ -129,6 +280,8 @@ export class PageEncounterTracker extends LitElement {
       background: rgba(138, 135, 128, 0.1);
       color: var(--color-primary-text, #e2e0d6);
     }
+
+    /* ---- Participants ---- */
     .participants-list {
       display: flex;
       flex-direction: column;
@@ -149,11 +302,8 @@ export class PageEncounterTracker extends LitElement {
       letter-spacing: 0.08em;
       margin: 2rem 0 0.75rem;
     }
-    .sort-note {
-      font-size: 0.78rem;
-      color: var(--color-primary-text-muted, #8a8780);
-      margin-bottom: 0.75rem;
-    }
+
+    /* ---- Export ---- */
     .export-area {
       margin-top: 2rem;
       background: var(--color-primary-surface-raised, #16162a);
@@ -184,6 +334,8 @@ export class PageEncounterTracker extends LitElement {
       white-space: pre-wrap;
       word-break: break-word;
     }
+
+    /* ---- Toast ---- */
     .toast {
       position: fixed;
       bottom: 80px;
@@ -218,6 +370,10 @@ export class PageEncounterTracker extends LitElement {
       }
       .controls-bar {
         gap: 0.5rem;
+      }
+      .deck-section {
+        padding: 0.875rem;
+        border-radius: 10px;
       }
     }
   `;
@@ -259,7 +415,13 @@ export class PageEncounterTracker extends LitElement {
     if (this.toastTimer) clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => {
       this.toast = null;
-    }, 1800);
+    }, 2000);
+  }
+
+  private currentCard(): InitiativeCard | null {
+    const enc = this.encounter;
+    if (enc.currentCardIndex < 0 || enc.currentCardIndex >= enc.deck.length) return null;
+    return cardById(enc.deck[enc.currentCardIndex]) ?? null;
   }
 
   /* ---- Encounter controls ---- */
@@ -269,32 +431,40 @@ export class PageEncounterTracker extends LitElement {
     this.saveEncounter();
   }
 
-  private nextTurn() {
-    const len = this.encounter.participants.length;
-    if (len === 0) return;
-    let next = this.encounter.currentTurnIndex + 1;
-    let newRound = this.encounter.round;
-    if (next >= len) {
-      next = 0;
-      newRound = this.encounter.round + 1;
+  private drawNextCard() {
+    const enc = this.encounter;
+    const nextIdx = enc.currentCardIndex + 1;
+    if (nextIdx >= DECK_SIZE) {
+      // All 10 cards played — start a new round
+      this.startNewRound();
+      return;
     }
-    this.encounter = { ...this.encounter, currentTurnIndex: next, round: newRound };
+    this.encounter = { ...enc, currentCardIndex: nextIdx };
     this.saveEncounter();
-    this.showToast(`Round ${this.encounter.round} — ${this.encounter.participants[next]?.name ?? ""}'s turn`);
+    const card = cardById(enc.deck[nextIdx]);
+    if (card) {
+      const action = card.actionType === "major" ? "Major Action" : "Minor or Heroic Action";
+      this.showToast(`${card.label} — ${action}`);
+    }
+  }
+
+  private startNewRound() {
+    const newRound = this.encounter.round + 1;
+    this.encounter = {
+      ...this.encounter,
+      round: newRound,
+      currentCardIndex: -1,
+      deck: shuffleDeck(),
+    };
+    this.saveEncounter();
+    this.showToast(`Round ${newRound} — Deck reshuffled!`);
   }
 
   private resetEncounter() {
-    if (!confirm("Start a new encounter? This will clear all participants and reset the round counter.")) return;
+    if (!confirm("Start a new encounter? This will clear all participants and reset to Round 1.")) return;
     this.encounter = newEncounter();
     this.saveEncounter();
     this.showExport = false;
-  }
-
-  private sortByInitiative() {
-    const sorted = [...this.encounter.participants].sort((a, b) => b.initiative - a.initiative);
-    this.encounter = { ...this.encounter, participants: sorted, currentTurnIndex: 0 };
-    this.saveEncounter();
-    this.showToast("Sorted by initiative");
   }
 
   /* ---- Participant handlers ---- */
@@ -330,9 +500,7 @@ export class PageEncounterTracker extends LitElement {
 
   private handleRemove(e: CustomEvent<{ id: string }>) {
     const participants = this.encounter.participants.filter((p) => p.id !== e.detail.id);
-    // Adjust current turn index if needed
-    const idx = Math.min(this.encounter.currentTurnIndex, Math.max(0, participants.length - 1));
-    this.encounter = { ...this.encounter, participants, currentTurnIndex: idx };
+    this.encounter = { ...this.encounter, participants };
     this.saveEncounter();
   }
 
@@ -351,11 +519,7 @@ export class PageEncounterTracker extends LitElement {
     if (idx <= 0) return;
     const arr = [...this.encounter.participants];
     [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
-    // Keep active turn on same participant
-    let newActive = this.encounter.currentTurnIndex;
-    if (newActive === idx) newActive = idx - 1;
-    else if (newActive === idx - 1) newActive = idx;
-    this.encounter = { ...this.encounter, participants: arr, currentTurnIndex: newActive };
+    this.encounter = { ...this.encounter, participants: arr };
     this.saveEncounter();
   }
 
@@ -364,10 +528,7 @@ export class PageEncounterTracker extends LitElement {
     if (idx < 0 || idx >= this.encounter.participants.length - 1) return;
     const arr = [...this.encounter.participants];
     [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
-    let newActive = this.encounter.currentTurnIndex;
-    if (newActive === idx) newActive = idx + 1;
-    else if (newActive === idx + 1) newActive = idx;
-    this.encounter = { ...this.encounter, participants: arr, currentTurnIndex: newActive };
+    this.encounter = { ...this.encounter, participants: arr };
     this.saveEncounter();
   }
 
@@ -386,13 +547,19 @@ export class PageEncounterTracker extends LitElement {
 
   private buildTextSummary(): string {
     const e = this.encounter;
+    const card = this.currentCard();
+    const active = card ? participantsForCard(e.participants, card) : [];
+    const activeIds = new Set(active.map((p) => p.id));
     const lines = [
       `Encounter: ${e.name}`,
-      `Round: ${e.round}`,
+      `Round: ${e.round} | Card: ${e.currentCardIndex + 1}/${DECK_SIZE}`,
+      card
+        ? `Current Card: ${card.label} — ${card.actionType === "major" ? "Major Action" : "Minor or Heroic Action"}`
+        : `Current Card: (none drawn)`,
       ``,
       ...e.participants.map(
-        (p, i) =>
-          `${i === e.currentTurnIndex ? "▶ " : "  "}[${p.type === "monster" ? "M" : "P"}] ${p.name} | Init: ${p.initiative} | HP: ${p.hp}/${p.maxHp}${p.notes ? ` | Notes: ${p.notes}` : ""}`,
+        (p) =>
+          `${activeIds.has(p.id) ? "▶ " : "  "}[${p.type === "monster" ? "M" : "P"}] ${p.name} | Init: ${p.initiative} | HP: ${p.hp}/${p.maxHp}${p.notes ? ` | Notes: ${p.notes}` : ""}`,
       ),
     ];
     return lines.join("\n");
@@ -411,13 +578,15 @@ export class PageEncounterTracker extends LitElement {
 
   override render() {
     const enc = this.encounter;
-    const activeIdx = Math.min(enc.currentTurnIndex, enc.participants.length - 1);
+    const card = this.currentCard();
+    const active = card ? participantsForCard(enc.participants, card) : [];
+    const activeIds = new Set(active.map((p) => p.id));
+    const cardsRemaining = DECK_SIZE - (enc.currentCardIndex + 1);
+    const allCardsDrawn = enc.currentCardIndex >= DECK_SIZE - 1;
 
     return html`
       <h1>Encounter Tracker</h1>
-      <p class="subtitle">
-        Track initiative, HP, and turns. Data is saved locally and works offline.
-      </p>
+      <p class="subtitle">Card-based initiative — draw from the 10-card deck each round.</p>
 
       <!-- Encounter name + round badge -->
       <div class="encounter-header">
@@ -432,35 +601,77 @@ export class PageEncounterTracker extends LitElement {
         </div>
       </div>
 
-      <!-- Controls bar -->
-      <div class="controls-bar">
-        <button
-          class="btn btn-primary"
-          @click=${this.nextTurn}
-          ?disabled=${enc.participants.length === 0}>
-          ▶ Next Turn
-        </button>
-        <button class="btn" @click=${this.sortByInitiative} ?disabled=${enc.participants.length === 0}>
-          ↕ Sort by Initiative
-        </button>
-        <button class="btn btn-muted" @click=${this.toggleTextExport}>
-          ${this.showExport ? "Hide Export" : "Export"}
-        </button>
-        <button class="btn btn-danger" @click=${this.resetEncounter}>New Encounter</button>
+      <!-- Card Deck Section -->
+      <div class="deck-section">
+        <div class="deck-section-title">Initiative Deck</div>
+
+        <!-- Progress pips -->
+        <div class="deck-progress">
+          <div class="deck-pips" aria-label="Cards played">
+            ${enc.deck.map((cardId, i) => {
+              const c = cardById(cardId);
+              const typeClass = c ? `${c.participantType}-card` : "";
+              const stateClass = i < enc.currentCardIndex ? "played" : i === enc.currentCardIndex ? "current" : "";
+              return html`<div class="deck-pip ${typeClass} ${stateClass}" title="${c?.label ?? cardId}"></div>`;
+            })}
+          </div>
+          <span>
+            ${enc.currentCardIndex < 0
+              ? "Round not started"
+              : allCardsDrawn
+                ? "All cards drawn"
+                : `${cardsRemaining} card${cardsRemaining !== 1 ? "s" : ""} remaining`}
+          </span>
+        </div>
+
+        <!-- Current card display -->
+        ${card
+          ? html`
+              <div class="current-card ${card.participantType}">
+                <div class="card-label">${card.label}</div>
+                <div class="card-action-type ${card.actionType}">
+                  ${card.actionType === "major" ? "⚔ Major Action" : "⚡ Minor or Heroic Action"}
+                </div>
+                ${active.length > 0
+                  ? html`
+                      <div class="card-active-names">
+                        Acting: <strong>${active.map((p) => p.name).join(", ")}</strong>
+                      </div>
+                    `
+                  : html`
+                      <div class="card-no-match">No matching participants in this tier</div>
+                    `}
+              </div>
+            `
+          : html`
+              <div class="current-card none">
+                <div class="card-label">Round not started</div>
+                <div class="card-action-type">Draw the first card to begin</div>
+              </div>
+            `}
+
+        <!-- Draw / End Round controls -->
+        <div class="controls-bar" style="margin-bottom: 0; margin-top: 0.875rem;">
+          ${allCardsDrawn
+            ? html`
+                <button class="btn btn-end-round" @click=${this.startNewRound}>
+                  ↺ End Round &amp; Reshuffle
+                </button>
+              `
+            : html`
+                <button class="btn btn-primary" @click=${this.drawNextCard} ?disabled=${enc.participants.length === 0}>
+                  ▶ Draw Next Card
+                </button>
+              `}
+          <button class="btn btn-muted" @click=${this.toggleTextExport}>
+            ${this.showExport ? "Hide Export" : "Export"}
+          </button>
+          <button class="btn btn-danger" @click=${this.resetEncounter}>New Encounter</button>
+        </div>
       </div>
 
       <!-- Participants -->
-      <div class="section-title">
-        Participants (${enc.participants.length})
-      </div>
-      ${enc.participants.length > 0
-        ? html`
-            <p class="sort-note">
-              Use ▲▼ to reorder or "Sort by Initiative" to auto-sort.
-              Active: <strong>${enc.participants[activeIdx]?.name ?? ""}</strong>
-            </p>
-          `
-        : nothing}
+      <div class="section-title">Participants (${enc.participants.length})</div>
 
       <div
         class="participants-list"
@@ -481,7 +692,7 @@ export class PageEncounterTracker extends LitElement {
               (p, i) => html`
                 <encounter-participant
                   .participant=${p}
-                  .isActive=${i === activeIdx}
+                  .isActive=${activeIds.has(p.id)}
                   .isFirst=${i === 0}
                   .isLast=${i === enc.participants.length - 1}>
                 </encounter-participant>
@@ -515,3 +726,5 @@ export class PageEncounterTracker extends LitElement {
     `;
   }
 }
+
+

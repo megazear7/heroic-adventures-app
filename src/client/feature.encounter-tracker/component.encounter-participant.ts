@@ -2,6 +2,13 @@ import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Participant } from "../../shared/type.encounter.js";
 
+function initiativeTierLabel(initiative: number): string {
+  if (initiative >= 9) return "9+";
+  if (initiative >= 7) return "7–8";
+  if (initiative >= 4) return "4–6";
+  return "1–3";
+}
+
 @customElement("encounter-participant")
 export class EncounterParticipant extends LitElement {
   static override styles = css`
@@ -30,12 +37,21 @@ export class EncounterParticipant extends LitElement {
       margin-bottom: 0.75rem;
       flex-wrap: wrap;
     }
-    .turn-indicator {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
+    .active-indicator {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 2px 8px;
+      border-radius: 20px;
       background: var(--color-1, #c9a84c);
+      color: #1a1a2e;
       flex-shrink: 0;
+      animation: pulse 1.5s ease infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
     }
     .type-badge {
       font-size: 0.7rem;
@@ -278,6 +294,7 @@ export class EncounterParticipant extends LitElement {
   `;
 
   @property({ type: Object }) participant!: Participant;
+  /** True when the currently drawn card activates this participant */
   @property({ type: Boolean }) isActive = false;
   @property({ type: Boolean }) isFirst = false;
   @property({ type: Boolean }) isLast = false;
@@ -328,18 +345,19 @@ export class EncounterParticipant extends LitElement {
     const p = this.participant;
     const pct = Math.max(0, Math.min(1, p.hp / p.maxHp));
     const cls = this.hpClass();
+    const tier = initiativeTierLabel(p.initiative);
 
     return html`
       <div class="card ${this.isActive ? "active-turn" : ""} ${p.hp <= 0 ? "dead" : ""}">
         <div class="header">
           ${this.isActive
             ? html`
-                <div class="turn-indicator"></div>
+                <span class="active-indicator">Acting Now</span>
               `
             : nothing}
           <span class="type-badge ${p.type}">${p.type === "monster" ? "Monster" : "Player"}</span>
           <span class="name">${p.name}</span>
-          <span class="initiative-badge">Init ${p.initiative}</span>
+          <span class="initiative-badge" title="Initiative tier ${tier}">Init ${tier}</span>
           <div class="order-btns">
             <button class="btn-order" @click=${this.handleMoveUp} ?disabled=${this.isFirst} title="Move up" aria-label="Move up">▲</button>
             <button
@@ -413,3 +431,5 @@ export class EncounterParticipant extends LitElement {
     `;
   }
 }
+
+
