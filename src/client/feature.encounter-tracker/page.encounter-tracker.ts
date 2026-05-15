@@ -457,9 +457,7 @@ export class PageEncounterTracker extends LitElement {
         ? html`
             <p class="sort-note">
               Use ▲▼ to reorder or "Sort by Initiative" to auto-sort.
-              ${enc.participants.length > 0
-                ? html`Active: <strong>${enc.participants[activeIdx]?.name ?? ""}</strong>`
-                : ""}
+              Active: <strong>${enc.participants[activeIdx]?.name ?? ""}</strong>
             </p>
           `
         : nothing}

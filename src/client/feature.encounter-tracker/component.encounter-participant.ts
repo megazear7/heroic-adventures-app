@@ -341,12 +341,13 @@ export class EncounterParticipant extends LitElement {
           <span class="name">${p.name}</span>
           <span class="initiative-badge">Init ${p.initiative}</span>
           <div class="order-btns">
-            <button class="btn-order" @click=${this.handleMoveUp} ?disabled=${this.isFirst} title="Move up">▲</button>
+            <button class="btn-order" @click=${this.handleMoveUp} ?disabled=${this.isFirst} title="Move up" aria-label="Move up">▲</button>
             <button
               class="btn-order"
               @click=${this.handleMoveDown}
               ?disabled=${this.isLast}
-              title="Move down">▼</button>
+              title="Move down"
+              aria-label="Move down">▼</button>
           </div>
         </div>
 
