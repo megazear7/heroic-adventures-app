@@ -20,6 +20,7 @@ import "./page.settings.js";
 import "./page.not-found.js";
 import "./feature.characters/page.characters.js";
 import "./feature.adventure-log/page.adventure-log.js";
+import "./feature.encounter-tracker/page.encounter-tracker.js";
 import "./component.nav-drawer.js";
 import "./component.bookmark-bar.js";
 import "./component.profile-modal.js";
@@ -259,6 +260,10 @@ export class HeroicApp extends LitElement {
         return html`
           <page-adventure-log></page-adventure-log>
         `;
+      case RouteName.enum.encounter_tracker:
+        return html`
+          <page-encounter-tracker></page-encounter-tracker>
+        `;
       default:
         return html`
           <heroic-not-found-page></heroic-not-found-page>
@@ -284,6 +289,9 @@ export class HeroicApp extends LitElement {
     }
     if (pathname === "/adventure-log") {
       return { name: RouteName.enum.adventure_log, path: "/adventure-log" };
+    }
+    if (pathname === "/encounter-tracker") {
+      return { name: RouteName.enum.encounter_tracker, path: "/encounter-tracker" };
     }
 
     for (const route of this.routes) {
