@@ -23,6 +23,31 @@ export class PageCharacters extends LitElement {
       color: #666;
       font-size: 0.9rem;
     }
+    .builder-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+    .builder-header h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+    .create-new-link {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      color: #1a1a2e;
+      border: 1px solid #1a1a2e;
+      border-radius: 6px;
+      padding: 0.3rem 0.65rem;
+      background: #fff;
+    }
+    .create-new-link:hover {
+      background: #f0f0f5;
+    }
     .characters-list {
       margin-top: 2rem;
       display: flex;
@@ -66,7 +91,11 @@ export class PageCharacters extends LitElement {
     return html`
       <h1>Character Builder</h1>
       <p class="subtitle">Build in steps, auto-save drafts locally, and keep read-only sheets handy for mobile play.</p>
-      <character-create-form @character-created=${this.handleCharacterCreated}></character-create-form>
+      <div class="builder-header">
+        <h2 id="create-character">Create New Character</h2>
+        <a class="create-new-link" href="#create-character-form">Start Building</a>
+      </div>
+      <character-create-form id="create-character-form" @character-created=${this.handleCharacterCreated}></character-create-form>
       <div class="characters-list">
         ${this.characters.length === 0 ? html`<p>No characters yet.</p>` : this.characters.map(c => html`<character-card .character=${c}></character-card>`)}
       </div>
