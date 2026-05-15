@@ -50,7 +50,7 @@ export class PageCharacters extends LitElement {
 
       .layout {
         display: grid;
-        grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.9fr);
+        grid-template-columns: 1fr;
         gap: var(--size-large);
         align-items: start;
       }
@@ -89,12 +89,6 @@ export class PageCharacters extends LitElement {
         border-radius: var(--border-radius-medium);
         color: var(--color-primary-text-muted);
         text-align: center;
-      }
-
-      @media (max-width: 1024px) {
-        .layout {
-          grid-template-columns: 1fr;
-        }
       }
     `,
   ];

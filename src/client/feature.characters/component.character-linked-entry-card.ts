@@ -1,5 +1,5 @@
 import { css, html, LitElement, nothing, TemplateResult } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import { globalStyles } from "../styles.global.js";
 import { CharacterContentLink } from "../../shared/type.character.js";
 
@@ -14,21 +14,14 @@ export class CharacterLinkedEntryCard extends LitElement {
 
       .preview-card {
         display: grid;
-        grid-template-columns: auto 1fr auto;
+        grid-template-columns: auto 1fr;
         gap: var(--size-medium);
         align-items: start;
         padding: var(--size-medium);
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(201, 168, 76, 0.04));
         border: var(--border-normal);
         border-radius: var(--border-radius-medium);
-        transition: var(--transition-all);
-      }
-
-      .preview-card:hover,
-      .preview-card:focus-within {
-        border-color: rgba(201, 168, 76, 0.3);
-        box-shadow: var(--shadow-glow);
-        transform: translateY(-1px);
+        transition: border-color var(--time-fast) ease;
       }
 
       .media {
@@ -92,8 +85,6 @@ export class CharacterLinkedEntryCard extends LitElement {
           opacity var(--time-normal) ease;
       }
 
-      .preview-card:hover .excerpt,
-      .preview-card:focus-within .excerpt,
       .preview-card.expanded .excerpt {
         max-height: 120px;
         opacity: 1;
@@ -101,40 +92,53 @@ export class CharacterLinkedEntryCard extends LitElement {
 
       .actions {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         gap: 8px;
-        align-items: flex-end;
+        align-items: center;
+        justify-content: flex-end;
+        grid-column: 1 / -1;
       }
 
-      .mini-btn {
+      .excerpt-toggle {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 88px;
-        padding: 8px 10px;
-        border-radius: var(--border-radius-small);
-        border: var(--border-normal);
+        padding: 0;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        color: var(--color-primary-text-muted);
+        cursor: pointer;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        font-size: var(--font-tiny);
+        transition: color var(--time-fast) ease;
+      }
+
+      .excerpt-toggle:hover {
+        color: var(--color-1);
+      }
+
+      .remove-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: none;
         background: transparent;
         color: var(--color-primary-text);
         cursor: pointer;
-        text-decoration: none;
-        font-size: var(--font-tiny);
-        transition: var(--transition-fast);
+        font-size: var(--font-large);
+        line-height: 1;
+        transition: color var(--time-fast) ease;
       }
 
-      .mini-btn:hover {
-        border-color: rgba(201, 168, 76, 0.35);
+      .remove-btn:hover {
         color: var(--color-1);
       }
 
       @media (max-width: 700px) {
-        .preview-card {
-          grid-template-columns: auto 1fr;
-        }
-
         .actions {
-          grid-column: 1 / -1;
-          flex-direction: row;
           justify-content: flex-start;
         }
       }
@@ -144,6 +148,7 @@ export class CharacterLinkedEntryCard extends LitElement {
   @property({ attribute: false }) selection: CharacterContentLink | null = null;
   @property({ type: Boolean }) removable = false;
   @property({ type: Boolean }) expanded = false;
+  @state() private userExpanded = false;
 
   override render(): TemplateResult {
     if (!this.selection) {
@@ -152,9 +157,11 @@ export class CharacterLinkedEntryCard extends LitElement {
 
     const href = this.selection.slug ? `/${this.selection.categoryId}/${this.selection.slug}` : "";
     const fallbackBadge = this.selection.categoryName.slice(0, 2).toUpperCase();
+    const showExcerpt = this.expanded || this.userExpanded;
+    const canToggleExcerpt = Boolean(this.selection.excerpt) && !this.expanded;
 
     return html`
-      <div class="preview-card ${this.expanded ? "expanded" : ""}">
+      <div class="preview-card ${showExcerpt ? "expanded" : ""}">
         <div class="media">
           ${this.selection.heroImage
             ? html`
@@ -186,21 +193,37 @@ export class CharacterLinkedEntryCard extends LitElement {
               `
             : nothing}
         </div>
-        <div class="actions">
-          ${href
-            ? html`
-                <a class="mini-btn" href="${href}">Open Page</a>
-              `
-            : nothing}
-          ${this.removable
-            ? html`
-                <button class="mini-btn" type="button" @click=${this.handleRemove}>Remove</button>
-              `
-            : nothing}
-        </div>
+        ${canToggleExcerpt || this.removable
+          ? html`
+              <div class="actions">
+                ${canToggleExcerpt
+                  ? html`
+                      <button class="excerpt-toggle" type="button" @click=${this.toggleExcerpt}>
+                        ${showExcerpt ? "Hide excerpt" : "Show excerpt"}
+                      </button>
+                    `
+                  : nothing}
+                ${this.removable
+                  ? html`
+                      <button
+                        class="remove-btn"
+                        type="button"
+                        @click=${this.handleRemove}
+                        aria-label="Remove selection">
+                        ×
+                      </button>
+                    `
+                  : nothing}
+              </div>
+            `
+          : nothing}
       </div>
     `;
   }
+
+  private toggleExcerpt = (): void => {
+    this.userExpanded = !this.userExpanded;
+  };
 
   private handleRemove(): void {
     if (!this.selection) {
