@@ -209,7 +209,8 @@ export class CharacterLinkedEntryCard extends LitElement {
                         class="remove-btn"
                         type="button"
                         @click=${this.handleRemove}
-                        aria-label="Remove selection">
+                        aria-label="Remove selection"
+                        title="Remove selection">
                         ×
                       </button>
                     `
