@@ -2,13 +2,6 @@ import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Participant } from "../../shared/type.encounter.js";
 
-function initiativeTierLabel(initiative: number): string {
-  if (initiative >= 9) return "9+";
-  if (initiative >= 7) return "7–8";
-  if (initiative >= 4) return "4–6";
-  return "1–3";
-}
-
 @customElement("encounter-participant")
 export class EncounterParticipant extends LitElement {
   static override styles = css`
@@ -345,7 +338,6 @@ export class EncounterParticipant extends LitElement {
     const p = this.participant;
     const pct = Math.max(0, Math.min(1, p.hp / p.maxHp));
     const cls = this.hpClass();
-    const tier = initiativeTierLabel(p.initiative);
 
     return html`
       <div class="card ${this.isActive ? "active-turn" : ""} ${p.hp <= 0 ? "dead" : ""}">
@@ -357,7 +349,7 @@ export class EncounterParticipant extends LitElement {
             : nothing}
           <span class="type-badge ${p.type}">${p.type === "monster" ? "Monster" : "Player"}</span>
           <span class="name">${p.name}</span>
-          <span class="initiative-badge" title="Initiative tier ${tier}">Init ${tier}</span>
+          <span class="initiative-badge" title="Initiative ${p.initiative}">Init ${p.initiative}</span>
           <div class="order-btns">
             <button class="btn-order" @click=${this.handleMoveUp} ?disabled=${this.isFirst} title="Move up" aria-label="Move up">▲</button>
             <button

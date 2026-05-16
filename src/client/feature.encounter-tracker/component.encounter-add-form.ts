@@ -174,16 +174,15 @@ export class EncounterAddForm extends LitElement {
             </label>
             <label>
               Initiative
-              <select
+              <input
                 name="initiative"
+                type="number"
+                min="1"
+                step="1"
                 .value=${this.initiative}
-                @change=${(e: Event) => (this.initiative = (e.target as HTMLSelectElement).value)}>
-                <option value="1">1–3</option>
-                <option value="4">4–6</option>
-                <option value="7">7–8</option>
-                <option value="9">9+</option>
-              </select>
-              <span class="hint">Initiative tier — determines which card activates them</span>
+                @input=${(e: Event) => (this.initiative = (e.target as HTMLInputElement).value)}
+                placeholder="1" />
+              <span class="hint">Single initiative value — card ranges determine activation</span>
             </label>
             <label>
               Max HP
@@ -210,4 +209,3 @@ export class EncounterAddForm extends LitElement {
     `;
   }
 }
-
