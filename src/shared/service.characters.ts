@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   Character,
   CharacterContentLink,
+  DEFAULT_CHARACTER_INITIATIVE,
   DEFAULT_CHARACTER_HEALTH,
   CharacterMultiSelectionKey,
   CharacterSchema,
@@ -17,6 +18,7 @@ const LegacyCharacterSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
   health: z.number().int().min(1).optional().default(DEFAULT_CHARACTER_HEALTH),
+  initiative: z.number().int().min(1).optional().default(DEFAULT_CHARACTER_INITIATIVE),
   race: z.string().min(1),
   class: z.string().min(1),
   background: z.string().min(1),
@@ -68,6 +70,7 @@ function migrateLegacyCharacter(character: LegacyCharacter): Character {
     id: character.id,
     name: character.name,
     health: character.health,
+    initiative: character.initiative,
     race: legacyLink(character.race, SINGLE_CATEGORY_CONFIG.race.categoryId, SINGLE_CATEGORY_CONFIG.race.categoryName),
     class: legacyLink(
       character.class,

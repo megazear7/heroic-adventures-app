@@ -5,6 +5,7 @@ import { deleteCharacter, getCharacters, upsertCharacter } from "../../shared/se
 import {
   Character,
   CharacterContentLink,
+  DEFAULT_CHARACTER_INITIATIVE,
   DEFAULT_CHARACTER_HEALTH,
   CharacterSelectionKey,
   CharacterSingleSelectionKey,
@@ -247,6 +248,7 @@ export class CharacterCard extends LitElement {
   @state() private characterModalOpen = false;
   @state() private characterNameDraft = "";
   @state() private characterHealthDraft = "10";
+  @state() private characterInitiativeDraft = "1";
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -268,6 +270,7 @@ export class CharacterCard extends LitElement {
             <h2><a class="name-link" href="/character/${c.id}">${c.name}</a></h2>
             <div class="summary">
               <span class="pill">${c.health} HP</span>
+              <span class="pill">Init ${c.initiative}</span>
               <span class="pill">${c.race.title}</span>
               <span class="pill">${c.class.title}</span>
               <span class="pill">${c.background.title}</span>
@@ -398,6 +401,17 @@ export class CharacterCard extends LitElement {
                 }}
                 placeholder="10" />
             </label>
+            <label>
+              Initiative
+              <input
+                type="number"
+                min="1"
+                .value=${this.characterInitiativeDraft}
+                @input=${(event: Event) => {
+                  this.characterInitiativeDraft = (event.target as HTMLInputElement).value;
+                }}
+                placeholder="1" />
+            </label>
           </div>
           <div class="modal-actions">
             <button class="btn" type="button" @click=${this.closeCharacterEditor}>Cancel</button>
@@ -485,6 +499,7 @@ export class CharacterCard extends LitElement {
     this.menuOpen = false;
     this.characterNameDraft = this.character.name;
     this.characterHealthDraft = String(this.character.health ?? DEFAULT_CHARACTER_HEALTH);
+    this.characterInitiativeDraft = String(this.character.initiative ?? DEFAULT_CHARACTER_INITIATIVE);
     this.characterModalOpen = true;
   };
 
@@ -505,10 +520,17 @@ export class CharacterCard extends LitElement {
       return;
     }
 
+    const parsedInitiative = parseInt(this.characterInitiativeDraft, 10);
+    if (Number.isNaN(parsedInitiative) || parsedInitiative < 1) {
+      this.feedback = "Initiative must be at least 1.";
+      return;
+    }
+
     upsertCharacter({
       ...this.character,
       name,
       health: parsedHealth,
+      initiative: parsedInitiative,
       updatedAt: Date.now(),
     });
     this.closeCharacterEditor();

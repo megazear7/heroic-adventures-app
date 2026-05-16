@@ -38,10 +38,12 @@ export type ParticipantType = z.infer<typeof ParticipantType>;
 
 export const ParticipantSchema = z.object({
   id: z.string(),
+  characterId: z.string().optional(),
   name: z.string().min(1),
   type: ParticipantType,
   /** Initiative value (1–3, 4–6, 7–8, or 9+) determines which card activates them */
   initiative: z.number().int().min(1),
+  pendingInitiative: z.number().int().min(1).nullable().optional().default(null),
   hp: z.number().int(),
   maxHp: z.number().int().min(1),
   notes: z.string(),

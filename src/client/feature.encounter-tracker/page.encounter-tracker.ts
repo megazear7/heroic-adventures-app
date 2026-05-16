@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { CHARACTERS_CHANGED_EVENT, getCharacters } from "../../shared/service.characters.js";
-import { Character } from "../../shared/type.character.js";
+import { CHARACTERS_CHANGED_EVENT, getCharacters, upsertCharacter } from "../../shared/service.characters.js";
+import { Character, DEFAULT_CHARACTER_HEALTH, DEFAULT_CHARACTER_INITIATIVE } from "../../shared/type.character.js";
 import {
   Encounter,
   EncounterSchema,
@@ -17,9 +17,6 @@ import "./component.encounter-participant.js";
 const STORAGE_KEY = "ha-encounter-tracker";
 const DECK_SIZE = INITIATIVE_CARDS.length; // 10
 const MAX_ROSTER_SEARCH_RESULTS = 8;
-const DEFAULT_ROSTER_CHARACTER_PARTICIPANT_INITIATIVE = 1;
-const DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP = 10;
-
 function shuffleDeck(): string[] {
   return shuffleIds(INITIATIVE_CARDS.map((c) => c.id));
 }
@@ -598,7 +595,52 @@ export class PageEncounterTracker extends LitElement {
 
   private readonly syncCharacters = (): void => {
     this.rosterCharacters = getCharacters();
+    this.syncParticipantsFromRoster();
   };
+
+  private syncParticipantsFromRoster(): void {
+    if (this.rosterCharacters.length === 0 || this.encounter.participants.length === 0) {
+      return;
+    }
+
+    const byId = new Map(this.rosterCharacters.map((character) => [character.id, character]));
+    let changed = false;
+    const participants = this.encounter.participants.map((participant) => {
+      if (!participant.characterId) {
+        return participant;
+      }
+
+      const character = byId.get(participant.characterId);
+      if (!character) {
+        return participant;
+      }
+
+      const hasPendingInitiative = participant.pendingInitiative !== null && participant.pendingInitiative !== undefined;
+      const nextParticipant: Participant = {
+        ...participant,
+        name: character.name,
+        hp: character.health,
+        maxHp: character.health,
+        initiative: hasPendingInitiative ? participant.initiative : character.initiative,
+      };
+
+      if (
+        nextParticipant.name !== participant.name ||
+        nextParticipant.hp !== participant.hp ||
+        nextParticipant.maxHp !== participant.maxHp ||
+        nextParticipant.initiative !== participant.initiative
+      ) {
+        changed = true;
+      }
+
+      return nextParticipant;
+    });
+
+    if (changed) {
+      this.encounter = { ...this.encounter, participants };
+      this.saveEncounter();
+    }
+  }
 
   private get rosterResults(): Character[] {
     return sortRosterByScore(this.rosterQuery, this.rosterCharacters).slice(0, MAX_ROSTER_SEARCH_RESULTS);
@@ -672,11 +714,17 @@ export class PageEncounterTracker extends LitElement {
 
   private startNewRound() {
     const newRound = this.encounter.round + 1;
+    const participants = this.encounter.participants.map((participant) =>
+      participant.pendingInitiative
+        ? { ...participant, initiative: participant.pendingInitiative, pendingInitiative: null }
+        : participant,
+    );
     this.encounter = {
       ...this.encounter,
       round: newRound,
       currentCardIndex: -1,
       deck: shuffleDeck(),
+      participants,
     };
     this.saveEncounter();
     this.showToast(`Round ${newRound} — Deck reshuffled!`);
@@ -718,14 +766,14 @@ export class PageEncounterTracker extends LitElement {
   /* ---- Participant handlers ---- */
 
   private handleParticipantAdded(e: CustomEvent<Participant>) {
-    const updated = [...this.encounter.participants, e.detail];
+    const updated = [...this.encounter.participants, { ...e.detail, pendingInitiative: e.detail.pendingInitiative ?? null }];
     this.encounter = { ...this.encounter, participants: updated };
     this.saveEncounter();
   }
 
   private handleAddCharacter(character: Character) {
     const alreadyAdded = this.encounter.participants.some(
-      (participant) => participant.type === "player" && participant.name === character.name,
+      (participant) => participant.characterId === character.id || (participant.type === "player" && participant.name === character.name),
     );
     if (alreadyAdded) {
       this.showToast(`${character.name} is already in this encounter.`);
@@ -734,11 +782,13 @@ export class PageEncounterTracker extends LitElement {
 
     const participant: Participant = {
       id: crypto.randomUUID(),
+      characterId: character.id,
       name: character.name,
       type: "player",
-      initiative: DEFAULT_ROSTER_CHARACTER_PARTICIPANT_INITIATIVE,
-      hp: character.health ?? DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP,
-      maxHp: character.health ?? DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP,
+      initiative: character.initiative ?? DEFAULT_CHARACTER_INITIATIVE,
+      pendingInitiative: null,
+      hp: character.health ?? DEFAULT_CHARACTER_HEALTH,
+      maxHp: character.health ?? DEFAULT_CHARACTER_HEALTH,
       notes: "",
       conditions: [],
     };
@@ -815,12 +865,31 @@ export class PageEncounterTracker extends LitElement {
     this.saveEncounter();
   }
 
+  private updateLinkedCharacter(participantId: string, changes: Partial<Pick<Character, "name" | "health" | "initiative">>): void {
+    const participant = this.encounter.participants.find((item) => item.id === participantId);
+    if (!participant?.characterId) {
+      return;
+    }
+
+    const character = getCharacters().find((item) => item.id === participant.characterId);
+    if (!character) {
+      return;
+    }
+
+    upsertCharacter({
+      ...character,
+      ...changes,
+      updatedAt: Date.now(),
+    });
+  }
+
   private handleDamage(e: CustomEvent<{ id: string; amount: number }>) {
     const { id, amount } = e.detail;
     const p = this.encounter.participants.find((x) => x.id === id);
     if (!p) return;
     const hp = Math.max(0, p.hp - amount);
     this.updateParticipant(id, { hp });
+    this.updateLinkedCharacter(id, { health: hp });
     if (hp === 0) this.showToast(`${p.name} is down!`);
   }
 
@@ -830,6 +899,7 @@ export class PageEncounterTracker extends LitElement {
     if (!p) return;
     const hp = Math.min(p.maxHp, p.hp + amount);
     this.updateParticipant(id, { hp });
+    this.updateLinkedCharacter(id, { health: hp });
   }
 
   private handleRemove(e: CustomEvent<{ id: string }>) {
@@ -864,6 +934,29 @@ export class PageEncounterTracker extends LitElement {
     [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
     this.encounter = { ...this.encounter, participants: arr };
     this.saveEncounter();
+  }
+
+  private handleParticipantEdit(e: CustomEvent<{ id: string; name: string; health: number; initiative: number }>) {
+    const participant = this.encounter.participants.find((item) => item.id === e.detail.id);
+    if (!participant) {
+      return;
+    }
+
+    const pendingInitiative = e.detail.initiative === participant.initiative ? null : e.detail.initiative;
+    this.updateParticipant(e.detail.id, {
+      name: e.detail.name,
+      hp: e.detail.health,
+      maxHp: e.detail.health,
+      pendingInitiative,
+    });
+
+    if (participant.characterId) {
+      this.updateLinkedCharacter(e.detail.id, {
+        name: e.detail.name,
+        health: e.detail.health,
+        initiative: e.detail.initiative,
+      });
+    }
   }
 
   override render() {
@@ -995,7 +1088,8 @@ export class PageEncounterTracker extends LitElement {
         @participant-notes=${this.handleNotes}
         @participant-remove-condition=${this.handleRemoveCondition}
         @participant-move-up=${this.handleMoveUp}
-        @participant-move-down=${this.handleMoveDown}>
+        @participant-move-down=${this.handleMoveDown}
+        @participant-edit=${this.handleParticipantEdit}>
         ${enc.participants.length === 0
           ? html`
               <div class="empty-state">
