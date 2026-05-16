@@ -1,7 +1,7 @@
 import { css, html, LitElement, nothing, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { globalStyles } from "../styles.global.js";
-import { deleteCharacter, upsertCharacter } from "../../shared/service.characters.js";
+import { deleteCharacter, getCharacters, upsertCharacter } from "../../shared/service.characters.js";
 import {
   Character,
   CharacterContentLink,
@@ -374,10 +374,17 @@ export class CharacterCard extends LitElement {
   private duplicateCharacter = (): void => {
     this.menuOpen = false;
     const now = Date.now();
+    const existingNames = new Set(getCharacters().map((character) => character.name));
+    let nextName = `${this.character.name} Copy`;
+    let copyNumber = 2;
+    while (existingNames.has(nextName)) {
+      nextName = `${this.character.name} Copy ${copyNumber}`;
+      copyNumber += 1;
+    }
     const duplicate = {
       ...this.character,
       id: crypto.randomUUID(),
-      name: `${this.character.name} Copy`,
+      name: nextName,
       createdAt: now,
       updatedAt: now,
     };
