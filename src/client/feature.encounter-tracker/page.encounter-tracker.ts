@@ -15,6 +15,7 @@ import "./component.encounter-participant.js";
 
 const STORAGE_KEY = "ha-encounter-tracker";
 const DECK_SIZE = INITIATIVE_CARDS.length; // 10
+const DEFAULT_ROSTER_CHARACTER_PARTICIPANT_INITIATIVE = 1;
 const DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP = 10;
 
 function shuffleDeck(): string[] {
@@ -576,7 +577,7 @@ export class PageEncounterTracker extends LitElement {
       id: crypto.randomUUID(),
       name: character.name,
       type: "player",
-      initiative: 1,
+      initiative: DEFAULT_ROSTER_CHARACTER_PARTICIPANT_INITIATIVE,
       hp: DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP,
       maxHp: DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP,
       notes: "",

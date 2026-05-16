@@ -119,7 +119,7 @@ export class EncounterAddForm extends LitElement {
       id: crypto.randomUUID(),
       name: this.name.trim(),
       type: this.type,
-      initiative: isNaN(init) || init < 1 ? 1 : init,
+      initiative: isNaN(init) || init < 1 ? 1 : init > 99 ? 99 : init,
       hp: isNaN(hp) ? 10 : hp,
       maxHp: isNaN(hp) ? 10 : hp,
       notes: "",
