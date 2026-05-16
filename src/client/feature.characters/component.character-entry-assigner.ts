@@ -78,6 +78,10 @@ export class CharacterEntryAssigner extends LitElement {
         font-weight: 600;
       }
 
+      .character-name-link {
+        color: inherit;
+      }
+
       .character-meta {
         color: var(--color-primary-text-muted);
         font-size: var(--font-small);
@@ -91,6 +95,14 @@ export class CharacterEntryAssigner extends LitElement {
 
       .cta {
         min-width: 110px;
+      }
+
+      .toggle {
+        background: transparent;
+        border: none;
+        color: var(--color-primary-text-muted);
+        cursor: pointer;
+        font-size: var(--font-small);
       }
 
       .empty {
@@ -123,6 +135,7 @@ export class CharacterEntryAssigner extends LitElement {
 
   @state() private characters: Character[] = [];
   @state() private feedback = "";
+  @state() private expanded = false;
 
   private readonly handleCharactersChanged = (): void => {
     this.characters = getCharacters();
@@ -158,20 +171,23 @@ export class CharacterEntryAssigner extends LitElement {
             <h3>Add To Character</h3>
             <p>Add ${this.entry.title} to an existing character's ${SLOT_LABELS[slot]}.</p>
           </div>
+          <button class="toggle" type="button" @click=${this.toggleExpanded}>${this.expanded ? "Hide" : "Show"}</button>
         </div>
 
-        ${this.characters.length === 0
-          ? html`
-              <div class="empty">
-                <span>No saved characters yet.</span>
-                <a class="btn btn-primary" href="/characters#create-character-form">Create Character</a>
-              </div>
-            `
-          : html`
-              <div class="character-list">
-                ${this.characters.map((character) => this.renderCharacterRow(character, slot))}
-              </div>
-            `}
+        ${this.expanded
+          ? this.characters.length === 0
+            ? html`
+                <div class="empty">
+                  <span>No saved characters yet.</span>
+                  <a class="btn btn-primary" href="/character/create">Create Character</a>
+                </div>
+              `
+            : html`
+                <div class="character-list">
+                  ${this.characters.map((character) => this.renderCharacterRow(character, slot))}
+                </div>
+              `
+          : nothing}
         ${this.feedback
           ? html`
               <div class="feedback">${this.feedback}</div>
@@ -187,7 +203,9 @@ export class CharacterEntryAssigner extends LitElement {
     return html`
       <div class="character-row">
         <div>
-          <div class="character-name">${character.name}</div>
+          <div class="character-name">
+            <a class="character-name-link" href="/character/${character.id}">${character.name}</a>
+          </div>
           <div class="character-meta">${character.race.title} • ${character.class.title}</div>
           ${state.message
             ? html`
@@ -240,4 +258,8 @@ export class CharacterEntryAssigner extends LitElement {
     }
     return { cta: `Add To ${SLOT_LABELS[slot]}`, disabled: false };
   }
+
+  private toggleExpanded = (): void => {
+    this.expanded = !this.expanded;
+  };
 }

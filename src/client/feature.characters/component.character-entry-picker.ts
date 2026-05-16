@@ -14,6 +14,7 @@ export class CharacterEntryPicker extends LitElement {
     css`
       :host {
         display: block;
+        --scrollbar-thumb: rgba(201, 168, 76, 0.4);
       }
 
       .field {
@@ -88,15 +89,26 @@ export class CharacterEntryPicker extends LitElement {
         border: var(--border-normal);
         border-radius: var(--border-radius-medium);
         box-shadow: var(--shadow-active);
-        overflow: hidden;
+        overflow: auto;
+        max-height: min(380px, 55vh);
+        scrollbar-width: thin;
+        scrollbar-color: var(--scrollbar-thumb) transparent;
+      }
+
+      .results::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .results::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb);
+        border-radius: 999px;
       }
 
       .result-row {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: var(--size-small);
+        display: block;
         padding: var(--size-medium);
         border-bottom: 1px solid rgba(201, 168, 76, 0.08);
+        cursor: pointer;
       }
 
       .result-row:last-child {
@@ -136,36 +148,6 @@ export class CharacterEntryPicker extends LitElement {
         overflow: hidden;
       }
 
-      .result-actions {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        align-items: flex-end;
-      }
-
-      .result-btn,
-      .result-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 84px;
-        padding: 8px 10px;
-        border-radius: var(--border-radius-small);
-        border: var(--border-normal);
-        background: transparent;
-        color: var(--color-primary-text);
-        cursor: pointer;
-        text-decoration: none;
-        font-size: var(--font-tiny);
-        transition: var(--transition-fast);
-      }
-
-      .result-btn:hover,
-      .result-link:hover {
-        border-color: rgba(201, 168, 76, 0.35);
-        color: var(--color-1);
-      }
-
       .selected-list {
         display: grid;
         gap: var(--size-small);
@@ -175,17 +157,6 @@ export class CharacterEntryPicker extends LitElement {
         padding: var(--size-medium);
         color: var(--color-primary-text-muted);
         font-size: var(--font-small);
-      }
-
-      @media (max-width: 700px) {
-        .result-row {
-          grid-template-columns: 1fr;
-        }
-
-        .result-actions {
-          flex-direction: row;
-          justify-content: flex-start;
-        }
       }
     `,
   ];
@@ -238,7 +209,9 @@ export class CharacterEntryPicker extends LitElement {
                       `
                     : results.map(
                         (entry, index) => html`
-                          <div class="result-row ${this.activeIndex === index ? "active" : ""}">
+                          <div
+                            class="result-row ${this.activeIndex === index ? "active" : ""}"
+                            @mousedown=${() => this.selectEntry(entry)}>
                             <div class="result-main">
                               <div class="result-meta">
                                 ${entry.categoryName}${entry.subcategory
@@ -253,12 +226,6 @@ export class CharacterEntryPicker extends LitElement {
                                     <div class="result-excerpt">${this.toExcerpt(entry.contentText)}</div>
                                   `
                                 : nothing}
-                            </div>
-                            <div class="result-actions">
-                              <button class="result-btn" type="button" @mousedown=${() => this.selectEntry(entry)}>
-                                ${this.multiple ? "Add" : "Choose"}
-                              </button>
-                              <a class="result-link" href="/${entry.categoryId}/${entry.slug}">Open</a>
                             </div>
                           </div>
                         `,

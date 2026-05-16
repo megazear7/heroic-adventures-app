@@ -104,10 +104,6 @@ export class CharacterCreateForm extends LitElement {
       .step-panel {
         display: grid;
         gap: var(--size-large);
-        padding: var(--size-large);
-        border-radius: var(--border-radius-medium);
-        border: var(--border-normal);
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(201, 168, 76, 0.04));
       }
 
       .step-header p {
@@ -549,6 +545,13 @@ export class CharacterCreateForm extends LitElement {
       </div>
 
       <div class="grid two-up">
+        ${this.renderSelectionGroup("Race", this.singleSelection(this.form.race))}
+        ${this.renderSelectionGroup("Class", this.singleSelection(this.form.class))}
+        ${this.renderSelectionGroup("Background", this.singleSelection(this.form.background))}
+        ${this.renderSelectionGroup("Flaw", this.singleSelection(this.form.flaw))}
+      </div>
+
+      <div class="grid two-up">
         ${this.renderSelectionGroup("Features", this.form.features)}
         ${this.renderSelectionGroup("Feats", this.form.feats)}
         ${this.renderSelectionGroup("Expertise", this.form.expertise)}
@@ -570,7 +573,7 @@ export class CharacterCreateForm extends LitElement {
               <div class="selected-grid">
                 ${entries.map(
                   (entry) => html`
-                    <character-linked-entry-card .selection=${entry} .expanded=${true}></character-linked-entry-card>
+                    <character-linked-entry-card .selection=${entry}></character-linked-entry-card>
                   `,
                 )}
               </div>
