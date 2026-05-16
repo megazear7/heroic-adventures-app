@@ -439,6 +439,7 @@ export class EncounterParticipant extends LitElement {
   @state() private editNameDraft = "";
   @state() private editHealthDraft = "1";
   @state() private editInitiativeDraft = "1";
+  private editTriggerButton: HTMLButtonElement | null = null;
 
   private hpClass(): string {
     const pct = this.participant.hp / this.participant.maxHp;
@@ -483,16 +484,32 @@ export class EncounterParticipant extends LitElement {
     });
   }
 
-  private openEditModal() {
+  private openEditModal(event: Event) {
     const p = this.participant;
+    this.editTriggerButton = event.currentTarget as HTMLButtonElement;
     this.editNameDraft = p.name;
     this.editHealthDraft = String(p.maxHp);
     this.editInitiativeDraft = String(this.displayInitiative(p));
     this.editModalOpen = true;
+    void this.focusModalNameInput();
   }
 
   private closeEditModal = (): void => {
     this.editModalOpen = false;
+    queueMicrotask(() => this.editTriggerButton?.focus());
+  };
+
+  private async focusModalNameInput(): Promise<void> {
+    await this.updateComplete;
+    const input = this.renderRoot.querySelector<HTMLInputElement>("#edit-participant-name");
+    input?.focus();
+  }
+
+  private handleModalKeyDown = (event: KeyboardEvent): void => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      this.closeEditModal();
+    }
   };
 
   private saveEditModal = (): void => {
@@ -532,9 +549,9 @@ export class EncounterParticipant extends LitElement {
               type="button"
               title="Edit participant"
               aria-label="Edit participant"
-              @click=${this.openEditModal}>
-              ${pencilIcon}
-            </button>
+                @click=${this.openEditModal}>
+                ${pencilIcon}
+              </button>
           </span>
           <span
             class="initiative-badge ${p.pendingInitiative ? "pending" : ""}"
@@ -634,6 +651,7 @@ export class EncounterParticipant extends LitElement {
               role="dialog"
               aria-modal="true"
               aria-labelledby="edit-participant-title"
+              @keydown=${this.handleModalKeyDown}
               @click=${this.closeEditModal}>
               <div class="modal" @click=${(event: Event) => event.stopPropagation()}>
                 <div class="modal-header">
@@ -650,6 +668,7 @@ export class EncounterParticipant extends LitElement {
                   <label>
                     Name
                     <input
+                      id="edit-participant-name"
                       .value=${this.editNameDraft}
                       @input=${(event: Event) => {
                         this.editNameDraft = (event.target as HTMLInputElement).value;

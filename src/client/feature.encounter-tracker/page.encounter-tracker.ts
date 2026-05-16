@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { CHARACTERS_CHANGED_EVENT, getCharacters, upsertCharacter } from "../../shared/service.characters.js";
-import { Character, DEFAULT_CHARACTER_HEALTH, DEFAULT_CHARACTER_INITIATIVE } from "../../shared/type.character.js";
+import { Character } from "../../shared/type.character.js";
 import {
   Encounter,
   EncounterSchema,
@@ -607,11 +607,6 @@ export class PageEncounterTracker extends LitElement {
       return;
     }
 
-    const hasLinkedParticipants = this.encounter.participants.some((participant) => participant.characterId);
-    if (!hasLinkedParticipants) {
-      return;
-    }
-
     const byId = new Map(this.rosterCharacters.map((character) => [character.id, character]));
     let changed = false;
     const participants = this.encounter.participants.map((participant) => {
@@ -782,11 +777,7 @@ export class PageEncounterTracker extends LitElement {
   }
 
   private handleAddCharacter(character: Character) {
-    const alreadyAdded = this.encounter.participants.some(
-      (participant) =>
-        participant.characterId === character.id ||
-        (participant.type === "player" && participant.name === character.name),
-    );
+    const alreadyAdded = this.encounter.participants.some((participant) => participant.characterId === character.id);
     if (alreadyAdded) {
       this.showToast(`${character.name} is already in this encounter.`);
       return;
@@ -797,10 +788,10 @@ export class PageEncounterTracker extends LitElement {
       characterId: character.id,
       name: character.name,
       type: "player",
-      initiative: character.initiative ?? DEFAULT_CHARACTER_INITIATIVE,
+      initiative: character.initiative,
       pendingInitiative: null,
-      hp: character.health ?? DEFAULT_CHARACTER_HEALTH,
-      maxHp: character.health ?? DEFAULT_CHARACTER_HEALTH,
+      hp: character.health,
+      maxHp: character.health,
       notes: "",
       conditions: [],
     };
