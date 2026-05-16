@@ -3,8 +3,7 @@ import { customElement, state } from "lit/decorators.js";
 import { globalStyles } from "../styles.global.js";
 import { PROFILE_CHANGED_EVENT } from "../../shared/service.profile.js";
 import { Character } from "../../shared/type.character.js";
-import { CHARACTERS_CHANGED_EVENT, getCharacters, upsertCharacter } from "../../shared/service.characters.js";
-import "./component.character-create-form.js";
+import { CHARACTERS_CHANGED_EVENT, getCharacters } from "../../shared/service.characters.js";
 import "./component.character-card.js";
 
 @customElement("page-characters")
@@ -62,6 +61,11 @@ export class PageCharacters extends LitElement {
         background: var(--color-primary-surface-raised);
         border: var(--border-normal);
         border-radius: var(--border-radius-medium);
+      }
+
+      .roster {
+        display: grid;
+        gap: var(--size-large);
       }
 
       .panel-header {
@@ -129,26 +133,12 @@ export class PageCharacters extends LitElement {
             </div>
             <div class="hero-stat">Content-linked selections</div>
             <div class="hero-stat">Profile-scoped local storage</div>
+            <a class="btn btn-primary" href="/character/create">Create Character</a>
           </div>
         </section>
 
         <div class="layout">
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <h2 id="create-character">Create New Character</h2>
-                <p>
-                  Use the published races, classes, backgrounds, flaws, features, spells, feats, expertise, and items
-                  already available in the compendium.
-                </p>
-              </div>
-            </div>
-            <character-create-form
-              id="create-character-form"
-              @character-created=${this.handleCharacterCreated}></character-create-form>
-          </section>
-
-          <section class="panel">
+          <section class="roster">
             <div class="panel-header">
               <div>
                 <h2>Roster</h2>
@@ -176,9 +166,5 @@ export class PageCharacters extends LitElement {
         </div>
       </main>
     `;
-  }
-
-  private handleCharacterCreated(event: CustomEvent<Character>): void {
-    upsertCharacter(event.detail);
   }
 }

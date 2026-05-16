@@ -19,6 +19,8 @@ import "./page.recent.js";
 import "./page.settings.js";
 import "./page.not-found.js";
 import "./feature.characters/page.characters.js";
+import "./feature.characters/page.character-create.js";
+import "./feature.characters/page.character.js";
 import "./feature.adventure-log/page.adventure-log.js";
 import "./feature.encounter-tracker/page.encounter-tracker.js";
 import "./component.nav-drawer.js";
@@ -256,6 +258,14 @@ export class HeroicApp extends LitElement {
         return html`
           <page-characters></page-characters>
         `;
+      case RouteName.enum.character_create:
+        return html`
+          <heroic-character-create-page></heroic-character-create-page>
+        `;
+      case RouteName.enum.character:
+        return html`
+          <heroic-character-page></heroic-character-page>
+        `;
       case RouteName.enum.adventure_log:
         return html`
           <page-adventure-log></page-adventure-log>
@@ -289,6 +299,12 @@ export class HeroicApp extends LitElement {
     }
     if (pathname === "/characters") {
       return { name: RouteName.enum.characters, path: "/characters" };
+    }
+    if (pathname === "/character/create") {
+      return { name: RouteName.enum.character_create, path: "/character/create" };
+    }
+    if (/^\/character\/[^/]+$/.test(pathname)) {
+      return { name: RouteName.enum.character, path: "/character/:characterId" };
     }
     if (pathname === "/adventure-log") {
       return { name: RouteName.enum.adventure_log, path: "/adventure-log" };

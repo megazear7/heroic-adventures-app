@@ -37,6 +37,14 @@ export const routes = [
     path: "/characters",
   },
   {
+    name: RouteName.enum.character_create,
+    path: "/character/create",
+  },
+  {
+    name: RouteName.enum.character,
+    path: "/character/:characterId",
+  },
+  {
     name: RouteName.enum.adventure_log,
     path: "/adventure-log",
   },
