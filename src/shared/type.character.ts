@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const DEFAULT_CHARACTER_HEALTH = 10;
+export const DEFAULT_CHARACTER_INITIATIVE = 1;
 
 export const CharacterContentLink = z.object({
   id: z.string(),
@@ -24,6 +25,7 @@ export const CharacterSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
   health: z.number().int().min(1).default(DEFAULT_CHARACTER_HEALTH),
+  initiative: z.number().int().min(1).default(DEFAULT_CHARACTER_INITIATIVE),
   race: CharacterContentLink,
   class: CharacterContentLink,
   background: CharacterContentLink,

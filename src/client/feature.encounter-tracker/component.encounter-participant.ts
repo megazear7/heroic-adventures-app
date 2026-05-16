@@ -1,6 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Participant } from "../../shared/type.encounter.js";
+import { pencilIcon } from "../icons.js";
 
 @customElement("encounter-participant")
 export class EncounterParticipant extends LitElement {
@@ -13,12 +14,16 @@ export class EncounterParticipant extends LitElement {
       border: 2px solid rgba(201, 168, 76, 0.12);
       border-radius: 12px;
       padding: 1rem;
-      transition: border-color 200ms ease, box-shadow 200ms ease;
+      transition:
+        border-color 200ms ease,
+        box-shadow 200ms ease;
       position: relative;
     }
     .card.active-turn {
       border-color: var(--color-1, #c9a84c);
-      box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.18), 0 4px 16px rgba(201, 168, 76, 0.1);
+      box-shadow:
+        0 0 0 2px rgba(201, 168, 76, 0.18),
+        0 4px 16px rgba(201, 168, 76, 0.1);
     }
     .card.dead {
       opacity: 0.5;
@@ -43,8 +48,13 @@ export class EncounterParticipant extends LitElement {
       animation: pulse 1.5s ease infinite;
     }
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
     }
     .type-badge {
       font-size: 0.7rem;
@@ -73,6 +83,44 @@ export class EncounterParticipant extends LitElement {
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .name-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex: 1;
+      min-width: 0;
+    }
+    .edit-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: none;
+      color: var(--color-primary-text-muted, #8a8780);
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 120ms ease;
+      flex-shrink: 0;
+    }
+    .edit-btn:hover {
+      color: var(--color-1, #c9a84c);
+    }
+    .edit-btn:focus-visible {
+      outline: 2px solid var(--color-1, #c9a84c);
+      outline-offset: 2px;
+    }
+    .card:hover .edit-btn,
+    .card:focus-within .edit-btn,
+    .edit-btn:focus-visible {
+      opacity: 1;
+    }
+    @media (hover: none) {
+      .edit-btn {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+      }
+    }
     .initiative-badge {
       font-size: 0.8rem;
       font-weight: 600;
@@ -81,6 +129,9 @@ export class EncounterParticipant extends LitElement {
       padding: 2px 10px;
       border-radius: 20px;
       flex-shrink: 0;
+    }
+    .initiative-badge.pending {
+      color: #88ccff;
     }
     .stats-row {
       display: flex;
@@ -125,7 +176,9 @@ export class EncounterParticipant extends LitElement {
     .hp-bar {
       height: 100%;
       border-radius: 4px;
-      transition: width 300ms ease, background 300ms ease;
+      transition:
+        width 300ms ease,
+        background 300ms ease;
     }
     .hp-bar.healthy {
       background: #6ee36e;
@@ -175,7 +228,9 @@ export class EncounterParticipant extends LitElement {
       font-size: 0.82rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background 150ms ease, color 150ms ease;
+      transition:
+        background 150ms ease,
+        color 150ms ease;
       min-height: 36px;
       touch-action: manipulation;
     }
@@ -274,6 +329,92 @@ export class EncounterParticipant extends LitElement {
     .condition-chip:hover {
       background: rgba(201, 168, 76, 0.28);
     }
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal {
+      width: min(520px, 100%);
+      background: var(--color-primary-surface-raised, #16162a);
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      border-radius: 12px;
+      padding: 1rem;
+      display: grid;
+      gap: 0.75rem;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .modal-title {
+      margin: 0;
+      font-size: 1rem;
+      color: var(--color-primary-text, #e2e0d6);
+    }
+    .modal-close {
+      border: none;
+      background: none;
+      color: var(--color-primary-text-muted, #8a8780);
+      cursor: pointer;
+    }
+    .modal-form {
+      display: grid;
+      gap: 0.65rem;
+    }
+    .modal-form label {
+      display: grid;
+      gap: 0.25rem;
+      font-size: 0.8rem;
+      color: var(--color-primary-text-muted, #8a8780);
+    }
+    .modal-form input {
+      font-size: 0.95rem;
+      font-family: var(--font-family, sans-serif);
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      background: var(--color-primary-surface-overlay, #1e1e38);
+      color: var(--color-primary-text, #e2e0d6);
+      outline: none;
+      transition: border-color 200ms ease;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .modal-form input:focus {
+      border-color: var(--color-1, #c9a84c);
+    }
+    .modal-hint {
+      margin: 0;
+      font-size: 0.75rem;
+      color: var(--color-primary-text-muted, #8a8780);
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+    .modal-btn {
+      padding: 0.5rem 0.85rem;
+      border-radius: 6px;
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      background: transparent;
+      color: var(--color-primary-text, #e2e0d6);
+      cursor: pointer;
+    }
+    .modal-btn.primary {
+      background: var(--color-1, #c9a84c);
+      color: #1a1a2e;
+      border-color: var(--color-1, #c9a84c);
+      font-weight: 700;
+    }
     @media (max-width: 480px) {
       .card {
         padding: 0.75rem;
@@ -294,6 +435,11 @@ export class EncounterParticipant extends LitElement {
 
   @state() private adjustAmount = 1;
   @state() private showNotes = false;
+  @state() private editModalOpen = false;
+  @state() private editNameDraft = "";
+  @state() private editHealthDraft = "1";
+  @state() private editInitiativeDraft = "1";
+  private editTriggerButton: HTMLButtonElement | null = null;
 
   private hpClass(): string {
     const pct = this.participant.hp / this.participant.maxHp;
@@ -305,6 +451,10 @@ export class EncounterParticipant extends LitElement {
 
   private dispatch(type: string, detail: unknown) {
     this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+  }
+
+  private displayInitiative(participant: Participant): number {
+    return participant.pendingInitiative ?? participant.initiative;
   }
 
   private handleDamage() {
@@ -334,6 +484,50 @@ export class EncounterParticipant extends LitElement {
     });
   }
 
+  private openEditModal(event: Event) {
+    const p = this.participant;
+    this.editTriggerButton = event.currentTarget as HTMLButtonElement;
+    this.editNameDraft = p.name;
+    this.editHealthDraft = String(p.maxHp);
+    this.editInitiativeDraft = String(this.displayInitiative(p));
+    this.editModalOpen = true;
+    void this.focusModalNameInput();
+  }
+
+  private closeEditModal = (): void => {
+    this.editModalOpen = false;
+    queueMicrotask(() => this.editTriggerButton?.focus());
+  };
+
+  private async focusModalNameInput(): Promise<void> {
+    await this.updateComplete;
+    const input = this.renderRoot.querySelector<HTMLInputElement>("#edit-participant-name");
+    input?.focus();
+  }
+
+  private handleModalKeyDown = (event: KeyboardEvent): void => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      this.closeEditModal();
+    }
+  };
+
+  private saveEditModal = (): void => {
+    const name = this.editNameDraft.trim();
+    const health = parseInt(this.editHealthDraft, 10);
+    const initiative = parseInt(this.editInitiativeDraft, 10);
+    if (!name || Number.isNaN(health) || health < 1 || Number.isNaN(initiative) || initiative < 1) {
+      return;
+    }
+    this.dispatch("participant-edit", {
+      id: this.participant.id,
+      name,
+      health,
+      initiative,
+    });
+    this.closeEditModal();
+  };
+
   override render() {
     const p = this.participant;
     const pct = Math.max(0, Math.min(1, p.hp / p.maxHp));
@@ -348,16 +542,46 @@ export class EncounterParticipant extends LitElement {
               `
             : nothing}
           <span class="type-badge ${p.type}">${p.type === "monster" ? "Monster" : "Player"}</span>
-          <span class="name">${p.name}</span>
-          <span class="initiative-badge" title="Initiative ${p.initiative}">Init ${p.initiative}</span>
+          <span class="name-wrap">
+            <span class="name">${p.name}</span>
+            <button
+              class="edit-btn"
+              type="button"
+              title="Edit participant"
+              aria-label="Edit participant"
+                @click=${this.openEditModal}>
+                ${pencilIcon}
+              </button>
+          </span>
+          <span
+            class="initiative-badge ${p.pendingInitiative ? "pending" : ""}"
+            title=${p.pendingInitiative
+              ? `Initiative ${p.initiative} (pending: ${p.pendingInitiative})`
+              : `Initiative ${p.initiative}`}>
+            Init
+            ${p.initiative}${p.pendingInitiative
+              ? html`
+                  → ${p.pendingInitiative}
+                `
+              : nothing}
+          </span>
           <div class="order-btns">
-            <button class="btn-order" @click=${this.handleMoveUp} ?disabled=${this.isFirst} title="Move up" aria-label="Move up">▲</button>
+            <button
+              class="btn-order"
+              @click=${this.handleMoveUp}
+              ?disabled=${this.isFirst}
+              title="Move up"
+              aria-label="Move up">
+              ▲
+            </button>
             <button
               class="btn-order"
               @click=${this.handleMoveDown}
               ?disabled=${this.isLast}
               title="Move down"
-              aria-label="Move down">▼</button>
+              aria-label="Move down">
+              ▼
+            </button>
           </div>
         </div>
 
@@ -396,9 +620,9 @@ export class EncounterParticipant extends LitElement {
                     <span
                       class="condition-chip"
                       @click=${() => this.dispatch("participant-remove-condition", { id: p.id, condition: c })}
-                      title="Click to remove condition"
-                      >${c} ×</span
-                    >
+                      title="Click to remove condition">
+                      ${c} ×
+                    </span>
                   `,
                 )}
               </div>
@@ -420,6 +644,66 @@ export class EncounterParticipant extends LitElement {
             : nothing}
         </div>
       </div>
+      ${this.editModalOpen
+        ? html`
+            <div
+              class="overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="edit-participant-title"
+              @keydown=${this.handleModalKeyDown}
+              @click=${this.closeEditModal}>
+              <div class="modal" @click=${(event: Event) => event.stopPropagation()}>
+                <div class="modal-header">
+                  <h3 class="modal-title" id="edit-participant-title">Edit Participant</h3>
+                  <button
+                    class="modal-close"
+                    type="button"
+                    aria-label="Close edit participant dialog"
+                    @click=${this.closeEditModal}>
+                    Close
+                  </button>
+                </div>
+                <div class="modal-form">
+                  <label>
+                    Name
+                    <input
+                      id="edit-participant-name"
+                      .value=${this.editNameDraft}
+                      @input=${(event: Event) => {
+                        this.editNameDraft = (event.target as HTMLInputElement).value;
+                      }} />
+                  </label>
+                  <label>
+                    Health
+                    <input
+                      type="number"
+                      min="1"
+                      .value=${this.editHealthDraft}
+                      @input=${(event: Event) => {
+                        this.editHealthDraft = (event.target as HTMLInputElement).value;
+                      }} />
+                  </label>
+                  <label>
+                    Initiative
+                    <input
+                      type="number"
+                      min="1"
+                      .value=${this.editInitiativeDraft}
+                      @input=${(event: Event) => {
+                        this.editInitiativeDraft = (event.target as HTMLInputElement).value;
+                      }} />
+                  </label>
+                </div>
+                <p class="modal-hint">Initiative changes take effect at the start of the next round.</p>
+                <div class="modal-actions">
+                  <button class="modal-btn" type="button" @click=${this.closeEditModal}>Cancel</button>
+                  <button class="modal-btn primary" type="button" @click=${this.saveEditModal}>Save</button>
+                </div>
+              </div>
+            </div>
+          `
+        : nothing}
     `;
   }
 }
