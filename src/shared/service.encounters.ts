@@ -20,8 +20,8 @@ function saveEncounterList(encounters: Encounter[]): void {
   dispatchEncountersChanged();
 }
 
-/** Migrate a single legacy encounter from the old single-slot key, if present. */
-function migrateLegacy(encounters: Encounter[]): Encounter[] {
+/** Migrate a single legacy encounter from the old single-slot key, if present. Saves to the new key and removes the old one. */
+function migrateLegacyEncounterAndSave(encounters: Encounter[]): Encounter[] {
   try {
     const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) return encounters;
@@ -44,7 +44,7 @@ export function getEncounters(): Encounter[] {
     const raw = localStorage.getItem(storageKey());
     if (!raw) {
       const empty: Encounter[] = [];
-      return migrateLegacy(empty);
+      return migrateLegacyEncounterAndSave(empty);
     }
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];

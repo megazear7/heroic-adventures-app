@@ -15,6 +15,7 @@ import {
   upsertEncounter,
   duplicateEncounter,
 } from "../../shared/service.encounters.js";
+import { shuffleDeck, shuffleIds } from "../../shared/util.encounter.js";
 import { parseRouteParams } from "../../shared/util.route-params.js";
 import { searchIcon, leftArrowIcon } from "../icons.js";
 import "./component.encounter-add-form.js";
@@ -22,19 +23,6 @@ import "./component.encounter-participant.js";
 
 const DECK_SIZE = INITIATIVE_CARDS.length; // 10
 const MAX_ROSTER_SEARCH_RESULTS = 8;
-
-function shuffleDeck(): string[] {
-  return shuffleIds(INITIATIVE_CARDS.map((c) => c.id));
-}
-
-function shuffleIds(ids: string[]): string[] {
-  const shuffled = [...ids];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
 
 function buildRosterSearchText(character: Character): string {
   return `${character.name} ${character.race.title} ${character.class.title}`.toLowerCase();

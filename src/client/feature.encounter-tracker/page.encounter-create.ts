@@ -2,17 +2,7 @@ import { html, LitElement, TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
 import { upsertEncounter } from "../../shared/service.encounters.js";
 import { Encounter } from "../../shared/type.encounter.js";
-import { INITIATIVE_CARDS } from "../../shared/type.encounter.js";
-
-function shuffleDeck(): string[] {
-  const ids = INITIATIVE_CARDS.map((c) => c.id);
-  const shuffled = [...ids];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
+import { shuffleDeck } from "../../shared/util.encounter.js";
 
 function newEncounter(): Encounter {
   return {
