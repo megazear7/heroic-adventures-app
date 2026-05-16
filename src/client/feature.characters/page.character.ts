@@ -5,6 +5,7 @@ import { leftArrowIcon } from "../icons.js";
 import { Character } from "../../shared/type.character.js";
 import { CHARACTERS_CHANGED_EVENT, getCharacters } from "../../shared/service.characters.js";
 import { PROFILE_CHANGED_EVENT } from "../../shared/service.profile.js";
+import { parseRouteParams } from "../../shared/util.route-params.js";
 import "./component.character-card.js";
 
 @customElement("heroic-character-page")
@@ -27,7 +28,7 @@ export class CharacterPage extends LitElement {
   @state() private character: Character | null = null;
 
   private readonly syncCharacter = (): void => {
-    const id = window.location.pathname.split("/").filter(Boolean)[1] ?? "";
+    const id = parseRouteParams("/character/:characterId", window.location.pathname).characterId;
     this.character = getCharacters().find((character) => character.id === id) ?? null;
   };
 

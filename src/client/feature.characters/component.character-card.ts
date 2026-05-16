@@ -379,7 +379,10 @@ export class CharacterCard extends LitElement {
   };
 
   private handleDocumentClick = (event: Event): void => {
-    if (this.menuOpen && !event.composedPath().includes(this)) {
+    const clickedInside = event
+      .composedPath()
+      .some((target) => target === this || target === this.shadowRoot || target === this.renderRoot);
+    if (this.menuOpen && !clickedInside) {
       this.menuOpen = false;
     }
   };

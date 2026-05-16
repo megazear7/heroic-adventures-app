@@ -14,6 +14,7 @@ export class CharacterEntryPicker extends LitElement {
     css`
       :host {
         display: block;
+        --scrollbar-thumb: rgba(201, 168, 76, 0.4);
       }
 
       .field {
@@ -91,7 +92,7 @@ export class CharacterEntryPicker extends LitElement {
         overflow: auto;
         max-height: min(380px, 55vh);
         scrollbar-width: thin;
-        scrollbar-color: rgba(201, 168, 76, 0.4) transparent;
+        scrollbar-color: var(--scrollbar-thumb) transparent;
       }
 
       .results::-webkit-scrollbar {
@@ -99,7 +100,7 @@ export class CharacterEntryPicker extends LitElement {
       }
 
       .results::-webkit-scrollbar-thumb {
-        background: rgba(201, 168, 76, 0.35);
+        background: var(--scrollbar-thumb);
         border-radius: 999px;
       }
 
