@@ -21,6 +21,7 @@ export type CharacterContentLink = z.infer<typeof CharacterContentLink>;
 export const CharacterSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
+  health: z.number().int().min(1).default(10),
   race: CharacterContentLink,
   class: CharacterContentLink,
   background: CharacterContentLink,

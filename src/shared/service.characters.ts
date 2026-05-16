@@ -15,6 +15,7 @@ const CHARACTER_DRAFT_PREFIX = "heroic-character-draft";
 const LegacyCharacterSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
+  health: z.number().int().min(1).optional().default(10),
   race: z.string().min(1),
   class: z.string().min(1),
   background: z.string().min(1),
@@ -65,6 +66,7 @@ function migrateLegacyCharacter(character: LegacyCharacter): Character {
   return {
     id: character.id,
     name: character.name,
+    health: character.health,
     race: legacyLink(character.race, SINGLE_CATEGORY_CONFIG.race.categoryId, SINGLE_CATEGORY_CONFIG.race.categoryName),
     class: legacyLink(
       character.class,

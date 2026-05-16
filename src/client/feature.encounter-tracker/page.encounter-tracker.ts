@@ -10,6 +10,7 @@ import {
   InitiativeCard,
 } from "../../shared/type.encounter.js";
 import { PROFILE_CHANGED_EVENT } from "../../shared/service.profile.js";
+import { searchIcon } from "../icons.js";
 import "./component.encounter-add-form.js";
 import "./component.encounter-participant.js";
 
@@ -19,12 +20,44 @@ const DEFAULT_ROSTER_CHARACTER_PARTICIPANT_INITIATIVE = 1;
 const DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP = 10;
 
 function shuffleDeck(): string[] {
-  const ids = INITIATIVE_CARDS.map((c) => c.id);
-  for (let i = ids.length - 1; i > 0; i--) {
+  return shuffleIds(INITIATIVE_CARDS.map((c) => c.id));
+}
+
+function shuffleIds(ids: string[]): string[] {
+  const shuffled = [...ids];
+  for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [ids[i], ids[j]] = [ids[j], ids[i]];
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  return ids;
+  return shuffled;
+}
+
+function buildRosterSearchText(character: Character): string {
+  return `${character.name} ${character.race.title} ${character.class.title}`.toLowerCase();
+}
+
+function rosterSearchScore(query: string, character: Character): number {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return 1;
+  const haystack = buildRosterSearchText(character);
+  if (haystack === normalized) return 200;
+  if (character.name.toLowerCase() === normalized) return 160;
+  if (character.name.toLowerCase().startsWith(normalized)) return 140;
+  if (haystack.startsWith(normalized)) return 120;
+  if (haystack.includes(normalized)) return 90;
+  return 0;
+}
+
+function compareRosterCharacters(left: Character, right: Character): number {
+  return left.name.localeCompare(right.name) || left.class.title.localeCompare(right.class.title);
+}
+
+function sortRosterByScore(query: string, characters: Character[]): Character[] {
+  return [...characters]
+    .map((character) => ({ character, score: rosterSearchScore(query, character) }))
+    .filter((item) => item.score > 0)
+    .sort((left, right) => right.score - left.score || compareRosterCharacters(left.character, right.character))
+    .map((item) => item.character);
 }
 
 function newEncounter(): Encounter {
@@ -255,13 +288,16 @@ export class PageEncounterTracker extends LitElement {
       display: flex;
       gap: 4px;
       flex-wrap: wrap;
+      overflow: visible;
     }
     .deck-pip {
+      position: relative;
       width: 10px;
       height: 10px;
       border-radius: 2px;
       border: 1px solid rgba(201, 168, 76, 0.2);
       background: var(--color-primary-surface-overlay, #1e1e38);
+      cursor: default;
     }
     .deck-pip.played {
       background: rgba(201, 168, 76, 0.35);
@@ -282,6 +318,35 @@ export class PageEncounterTracker extends LitElement {
     }
     .deck-pip.monster-card.played, .deck-pip.monster-card.current {
       background: rgba(255, 100, 100, 0.5);
+    }
+    .deck-pip-tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      min-width: 150px;
+      max-width: 220px;
+      background: var(--color-primary-surface-raised, #16162a);
+      border: 1px solid rgba(201, 168, 76, 0.3);
+      border-radius: 8px;
+      padding: 0.5rem 0.6rem;
+      font-size: 0.75rem;
+      line-height: 1.35;
+      color: var(--color-primary-text, #e2e0d6);
+      box-shadow: var(--shadow-active, 0 8px 20px rgba(0, 0, 0, 0.35));
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 80ms ease;
+      z-index: 50;
+    }
+    .deck-pip:hover .deck-pip-tooltip,
+    .deck-pip:focus-visible .deck-pip-tooltip {
+      opacity: 1;
+    }
+    .deck-pip-tooltip-meta {
+      margin-top: 0.15rem;
+      color: var(--color-primary-text-muted, #8a8780);
+      font-size: 0.7rem;
     }
 
     /* ---- Controls ---- */
@@ -374,21 +439,88 @@ export class PageEncounterTracker extends LitElement {
     }
     .character-roster {
       margin-bottom: 1.5rem;
+      max-width: 560px;
     }
-    .roster-list {
+    .roster-field {
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
+      gap: 0.4rem;
     }
-    .roster-item {
+    .roster-helper {
+      color: var(--color-primary-text-muted, #8a8780);
+      font-size: 0.76rem;
+    }
+    .roster-search-shell {
+      position: relative;
+    }
+    .roster-search-wrapper {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      padding: 0.75rem 0.9rem;
-      border: 1px solid rgba(201, 168, 76, 0.15);
-      border-radius: 10px;
+      gap: 10px;
       background: var(--color-primary-surface-raised, #16162a);
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      border-radius: 10px;
+      padding: 10px 14px;
+      transition: border-color 120ms ease;
+    }
+    .roster-search-wrapper:focus-within {
+      border-color: var(--color-1, #c9a84c);
+      box-shadow: var(--shadow-glow);
+    }
+    .roster-search-icon {
+      color: var(--color-primary-text-muted, #8a8780);
+      display: flex;
+      flex-shrink: 0;
+    }
+    .roster-search-input {
+      width: 100%;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--color-primary-text, #e2e0d6);
+      font-size: 0.95rem;
+      font-family: var(--font-family, sans-serif);
+    }
+    .roster-results {
+      position: absolute;
+      inset: calc(100% + 6px) 0 auto;
+      z-index: 30;
+      background: var(--color-primary-surface-raised, #16162a);
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      border-radius: 10px;
+      box-shadow: var(--shadow-active, 0 8px 20px rgba(0, 0, 0, 0.35));
+      max-height: min(300px, 45vh);
+      overflow: auto;
+    }
+    .roster-result {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: none;
+      border-bottom: 1px solid rgba(201, 168, 76, 0.08);
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      padding: 0.75rem 0.9rem;
+      font: inherit;
+    }
+    .roster-result:last-child {
+      border-bottom: none;
+    }
+    .roster-result.active,
+    .roster-result:hover {
+      background: rgba(201, 168, 76, 0.08);
+    }
+    .roster-item {
+      display: grid;
+      gap: 0.25rem;
+    }
+    .roster-item-top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.5rem;
+      flex-wrap: wrap;
     }
     .roster-name {
       font-weight: 700;
@@ -445,7 +577,9 @@ export class PageEncounterTracker extends LitElement {
   @state() private encounter: Encounter = newEncounter();
   @state() private rosterCharacters: Character[] = [];
   @state() private toast: string | null = null;
-  private toastTimer: ReturnType<typeof setTimeout> | null = null;
+  @state() private rosterQuery = "";
+  @state() private rosterPickerOpen = false;
+  @state() private rosterActiveIndex = -1;
 
   override connectedCallback() {
     super.connectedCallback();
@@ -459,14 +593,15 @@ export class PageEncounterTracker extends LitElement {
     super.disconnectedCallback();
     window.removeEventListener(CHARACTERS_CHANGED_EVENT, this.syncCharacters);
     window.removeEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
-    if (this.toastTimer) {
-      clearTimeout(this.toastTimer);
-    }
   }
 
   private readonly syncCharacters = (): void => {
     this.rosterCharacters = getCharacters();
   };
+
+  private get rosterResults(): Character[] {
+    return sortRosterByScore(this.rosterQuery, this.rosterCharacters).slice(0, 8);
+  }
 
   private loadEncounter() {
     try {
@@ -491,10 +626,6 @@ export class PageEncounterTracker extends LitElement {
 
   private showToast(msg: string) {
     this.toast = msg;
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => {
-      this.toast = null;
-    }, 1800);
   }
 
   private currentCard(): InitiativeCard | null {
@@ -550,6 +681,33 @@ export class PageEncounterTracker extends LitElement {
     this.showToast(`Round ${newRound} — Deck reshuffled!`);
   }
 
+  private reshuffleCurrentRoundDeck = (): void => {
+    const { currentCardIndex, deck } = this.encounter;
+
+    if (currentCardIndex < 0) {
+      this.encounter = {
+        ...this.encounter,
+        deck: shuffleDeck(),
+      };
+      this.saveEncounter();
+      this.showToast("Deck shuffled.");
+      return;
+    }
+
+    const remaining = deck.slice(currentCardIndex + 1);
+    if (remaining.length === 0) {
+      this.showToast("No remaining cards to shuffle.");
+      return;
+    }
+
+    this.encounter = {
+      ...this.encounter,
+      deck: [...deck.slice(0, currentCardIndex + 1), ...shuffleIds(remaining)],
+    };
+    this.saveEncounter();
+    this.showToast(`Shuffled ${remaining.length} remaining card${remaining.length === 1 ? "" : "s"}.`);
+  };
+
   private resetEncounter() {
     if (!confirm("Start a new encounter? This will clear all participants and reset to Round 1.")) return;
     this.encounter = newEncounter();
@@ -578,8 +736,8 @@ export class PageEncounterTracker extends LitElement {
       name: character.name,
       type: "player",
       initiative: DEFAULT_ROSTER_CHARACTER_PARTICIPANT_INITIATIVE,
-      hp: DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP,
-      maxHp: DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP,
+      hp: character.health ?? DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP,
+      maxHp: character.health ?? DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP,
       notes: "",
       conditions: [],
     };
@@ -590,7 +748,62 @@ export class PageEncounterTracker extends LitElement {
     };
     this.saveEncounter();
     this.showToast(`${character.name} added to encounter.`);
+    this.rosterQuery = "";
+    this.rosterPickerOpen = false;
+    this.rosterActiveIndex = -1;
   }
+
+  private handleRosterInput = (event: Event): void => {
+    this.rosterQuery = (event.target as HTMLInputElement).value;
+    this.rosterPickerOpen = true;
+    this.rosterActiveIndex = -1;
+  };
+
+  private handleRosterFocus = (): void => {
+    this.rosterPickerOpen = true;
+  };
+
+  private handleRosterBlur = (): void => {
+    setTimeout(() => {
+      this.rosterPickerOpen = false;
+      this.rosterActiveIndex = -1;
+    }, 120);
+  };
+
+  private addCharacterFromResult = (character: Character): void => {
+    this.handleAddCharacter(character);
+  };
+
+  private handleRosterKeyDown = (event: KeyboardEvent): void => {
+    if (!this.rosterPickerOpen && ["ArrowDown", "ArrowUp"].includes(event.key)) {
+      this.rosterPickerOpen = true;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      this.rosterActiveIndex = Math.min(this.rosterActiveIndex + 1, this.rosterResults.length - 1);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      this.rosterActiveIndex = Math.max(this.rosterActiveIndex - 1, -1);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      if (this.rosterActiveIndex >= 0 && this.rosterActiveIndex < this.rosterResults.length) {
+        event.preventDefault();
+        this.addCharacterFromResult(this.rosterResults[this.rosterActiveIndex]);
+      }
+      return;
+    }
+
+    if (event.key === "Escape") {
+      this.rosterPickerOpen = false;
+      this.rosterActiveIndex = -1;
+    }
+  };
 
   private updateParticipant(id: string, changes: Partial<Participant>) {
     const participants = this.encounter.participants.map((p) => (p.id === id ? { ...p, ...changes } : p));
@@ -655,6 +868,7 @@ export class PageEncounterTracker extends LitElement {
     const actionType = computeActionType(enc);
     const active = card ? participantsForCard(enc.participants, card) : [];
     const activeIds = new Set(active.map((p) => p.id));
+    const rosterResults = this.rosterResults;
     const cardsRemaining = DECK_SIZE - (enc.currentCardIndex + 1);
     const allCardsDrawn = enc.currentCardIndex >= DECK_SIZE - 1;
 
@@ -701,8 +915,16 @@ export class PageEncounterTracker extends LitElement {
               const c = cardById(cardId);
               const typeClass = c ? `${c.participantType}-card` : "";
               const stateClass = i < enc.currentCardIndex ? "played" : i === enc.currentCardIndex ? "current" : "";
-              const tooltip = c ? `${c.label} (${cardActionTypeLabel(c.actionType)})` : cardId;
-              return html`<div class="deck-pip ${typeClass} ${stateClass}" title=${tooltip}></div>`;
+              const tooltipTitle = c ? c.label : cardId;
+              const tooltipMeta = c ? cardActionTypeLabel(c.actionType) : "Unknown card";
+              return html`
+                <div class="deck-pip ${typeClass} ${stateClass}" tabindex="0">
+                  <div class="deck-pip-tooltip" role="tooltip">
+                    <div>${tooltipTitle}</div>
+                    <div class="deck-pip-tooltip-meta">${tooltipMeta}</div>
+                  </div>
+                </div>
+              `;
             })}
           </div>
           <span>
@@ -748,11 +970,12 @@ export class PageEncounterTracker extends LitElement {
                   ↺ End Round &amp; Reshuffle
                 </button>
               `
-              : html`
+            : html`
                   <button class="btn btn-primary" @click=${this.drawNextCard} ?disabled=${enc.participants.length === 0}>
                     ▶ Draw Next Card
                   </button>
                 `}
+          <button class="btn btn-muted" @click=${this.reshuffleCurrentRoundDeck}>🔀 Shuffle Remaining</button>
           <button class="btn btn-danger" @click=${this.resetEncounter}>New Encounter</button>
         </div>
       </div>
@@ -795,18 +1018,47 @@ export class PageEncounterTracker extends LitElement {
               <div class="empty-state">No saved characters available.</div>
             `
           : html`
-              <div class="roster-list">
-                ${this.rosterCharacters.map(
-                  (character) => html`
-                    <div class="roster-item">
-                      <div>
-                        <div class="roster-name">${character.name}</div>
-                        <div class="roster-meta">${character.race.title} • ${character.class.title}</div>
-                      </div>
-                      <button class="btn btn-muted" @click=${() => this.handleAddCharacter(character)}>Add Character</button>
-                    </div>
-                  `,
-                )}
+              <div class="roster-field">
+                <div class="roster-helper">Search by character, race, or class.</div>
+                <div class="roster-search-shell">
+                  <div class="roster-search-wrapper">
+                    <span class="roster-search-icon">${searchIcon}</span>
+                    <input
+                      class="roster-search-input"
+                      type="text"
+                      .value=${this.rosterQuery}
+                      placeholder="Type to add a roster character"
+                      @input=${this.handleRosterInput}
+                      @keydown=${this.handleRosterKeyDown}
+                      @focus=${this.handleRosterFocus}
+                      @blur=${this.handleRosterBlur} />
+                  </div>
+                  ${this.rosterPickerOpen
+                    ? html`
+                        <div class="roster-results" role="listbox">
+                          ${rosterResults.length === 0
+                            ? html`
+                                <div class="empty-state">No matching characters.</div>
+                              `
+                            : rosterResults.map(
+                                (character, index) => html`
+                                  <button
+                                    class="roster-result ${index === this.rosterActiveIndex ? "active" : ""}"
+                                    @mousedown=${() => this.addCharacterFromResult(character)}>
+                                    <div class="roster-item">
+                                      <div class="roster-item-top">
+                                        <div class="roster-name">${character.name}</div>
+                                        <div class="roster-meta">${character.health} HP</div>
+                                      </div>
+                                      <div class="roster-meta">${character.race.title} • ${character.class.title}</div>
+                                    </div>
+                                  </button>
+                                `,
+                              )}
+                        </div>
+                      `
+                    : nothing}
+                </div>
               </div>
             `}
       </div>

@@ -202,6 +202,29 @@ export class CharacterCard extends LitElement {
         gap: var(--size-small);
       }
 
+      .modal-form {
+        display: grid;
+        gap: var(--size-medium);
+      }
+
+      .modal-form label {
+        display: grid;
+        gap: 6px;
+        font-size: var(--font-small);
+        color: var(--color-primary-text-muted);
+      }
+
+      .modal-form input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 12px;
+        border-radius: var(--border-radius-small);
+        border: var(--border-normal);
+        background: var(--color-primary-surface-overlay);
+        color: var(--color-primary-text);
+        font-family: var(--font-family);
+      }
+
       @media (max-width: 800px) {
         .grid.two-up {
           grid-template-columns: 1fr;
@@ -220,6 +243,9 @@ export class CharacterCard extends LitElement {
   @state() private modalChoices: SearchIndexedEntry[] = [];
   @state() private modalSelection: CharacterContentLink[] = [];
   @state() private catalog: SearchIndexedEntry[] = [];
+  @state() private characterModalOpen = false;
+  @state() private characterNameDraft = "";
+  @state() private characterHealthDraft = "10";
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -240,6 +266,7 @@ export class CharacterCard extends LitElement {
           <div>
             <h2><a class="name-link" href="/character/${c.id}">${c.name}</a></h2>
             <div class="summary">
+              <span class="pill">${c.health} HP</span>
               <span class="pill">${c.race.title}</span>
               <span class="pill">${c.class.title}</span>
               <span class="pill">${c.background.title}</span>
@@ -256,7 +283,7 @@ export class CharacterCard extends LitElement {
                     <button type="button" @click=${this.shareCharacter}>Share</button>
                     <button type="button" @click=${this.exportCharacter}>Export JSON</button>
                     <button type="button" @click=${this.copyCharacter}>Copy</button>
-                    <button type="button" @click=${this.renameCharacter}>Rename</button>
+                    <button type="button" @click=${this.openCharacterEditor}>Edit Character</button>
                     <button type="button" @click=${this.duplicateCharacter}>Duplicate</button>
                     <button type="button" @click=${this.removeCharacter}>Delete</button>
                   </div>
@@ -287,6 +314,7 @@ export class CharacterCard extends LitElement {
       </div>
 
       ${this.modalOpen ? this.renderEditModal() : nothing}
+      ${this.characterModalOpen ? this.renderCharacterEditModal() : nothing}
     `;
   }
 
@@ -334,6 +362,45 @@ export class CharacterCard extends LitElement {
           <div class="modal-actions">
             <button class="btn" type="button" @click=${this.closeModal}>Cancel</button>
             <button class="btn btn-primary" type="button" @click=${this.saveModal}>Save</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private renderCharacterEditModal(): TemplateResult {
+    return html`
+      <div class="overlay" @click=${this.closeCharacterEditor}>
+        <div class="modal" @click=${(event: Event) => event.stopPropagation()}>
+          <div class="modal-header">
+            <h3>Edit Character</h3>
+            <button class="modal-close" type="button" @click=${this.closeCharacterEditor}>Close</button>
+          </div>
+          <div class="modal-form">
+            <label>
+              Name
+              <input
+                .value=${this.characterNameDraft}
+                @input=${(event: Event) => {
+                  this.characterNameDraft = (event.target as HTMLInputElement).value;
+                }}
+                placeholder="Character name" />
+            </label>
+            <label>
+              Health
+              <input
+                type="number"
+                min="1"
+                .value=${this.characterHealthDraft}
+                @input=${(event: Event) => {
+                  this.characterHealthDraft = (event.target as HTMLInputElement).value;
+                }}
+                placeholder="10" />
+            </label>
+          </div>
+          <div class="modal-actions">
+            <button class="btn" type="button" @click=${this.closeCharacterEditor}>Cancel</button>
+            <button class="btn btn-primary" type="button" @click=${this.saveCharacterEditor}>Save</button>
           </div>
         </div>
       </div>
@@ -413,29 +480,38 @@ export class CharacterCard extends LitElement {
     this.feedback = "Character duplicated.";
   };
 
-  private renameCharacter = (): void => {
+  private openCharacterEditor = (): void => {
     this.menuOpen = false;
-    const nextName = prompt("Rename character", this.character.name);
-    if (nextName === null) {
-      return;
-    }
+    this.characterNameDraft = this.character.name;
+    this.characterHealthDraft = String(this.character.health);
+    this.characterModalOpen = true;
+  };
 
-    const trimmed = nextName.trim();
-    if (!trimmed) {
+  private closeCharacterEditor = (): void => {
+    this.characterModalOpen = false;
+  };
+
+  private saveCharacterEditor = (): void => {
+    const name = this.characterNameDraft.trim();
+    if (!name) {
       this.feedback = "Character name cannot be empty.";
       return;
     }
 
-    if (trimmed === this.character.name) {
+    const parsedHealth = parseInt(this.characterHealthDraft, 10);
+    if (Number.isNaN(parsedHealth) || parsedHealth < 1) {
+      this.feedback = "Health must be at least 1.";
       return;
     }
 
     upsertCharacter({
       ...this.character,
-      name: trimmed,
+      name,
+      health: parsedHealth,
       updatedAt: Date.now(),
     });
-    this.feedback = "Character renamed.";
+    this.closeCharacterEditor();
+    this.feedback = "Character updated.";
   };
 
   private removeCharacter = (): void => {

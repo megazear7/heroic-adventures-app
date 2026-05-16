@@ -11,6 +11,7 @@ const STEPS = ["Identity", "Story", "Build", "Review"] as const;
 
 type CharacterDraft = {
   name: string;
+  health: number;
   race?: CharacterContentLink;
   class?: CharacterContentLink;
   background?: CharacterContentLink;
@@ -24,6 +25,7 @@ type CharacterDraft = {
 
 const EMPTY_DRAFT: CharacterDraft = {
   name: "",
+  health: 10,
   spells: [],
   features: [],
   feats: [],
@@ -321,6 +323,7 @@ export class CharacterCreateForm extends LitElement {
     const result = CharacterSchema.safeParse({
       id: crypto.randomUUID(),
       name: this.form.name.trim(),
+      health: this.form.health,
       race: this.form.race,
       class: this.form.class,
       background: this.form.background,
@@ -351,7 +354,7 @@ export class CharacterCreateForm extends LitElement {
 
   private canMoveNext(step = this.step): boolean {
     if (step === 0) {
-      return Boolean(this.form.name.trim() && this.form.race && this.form.class);
+      return Boolean(this.form.name.trim() && this.form.health >= 1 && this.form.race && this.form.class);
     }
     if (step === 1) {
       return Boolean(this.form.background && this.form.flaw);
@@ -409,6 +412,16 @@ export class CharacterCreateForm extends LitElement {
             .value=${this.form.name}
             @input=${this.handleNameInput}
             placeholder="Aldren of the White Peaks" />
+        </div>
+        <div class="name-field">
+          <label for="character-health">Health</label>
+          <input
+            id="character-health"
+            type="number"
+            min="1"
+            .value=${String(this.form.health)}
+            @input=${this.handleHealthInput}
+            placeholder="10" />
         </div>
         <div class="grid two-up">
           <character-entry-picker
@@ -529,6 +542,10 @@ export class CharacterCreateForm extends LitElement {
           <input class="summary-input" .value=${this.form.name} readonly />
         </label>
         <label>
+          Health
+          <input class="summary-input" .value=${String(this.form.health)} readonly />
+        </label>
+        <label>
           Identity
           <input
             class="summary-input"
@@ -585,6 +602,13 @@ export class CharacterCreateForm extends LitElement {
   private handleNameInput = (event: Event): void => {
     const input = event.target as HTMLInputElement;
     this.persistDraft({ ...this.form, name: input.value });
+  };
+
+  private handleHealthInput = (event: Event): void => {
+    const input = event.target as HTMLInputElement;
+    const parsed = parseInt(input.value, 10);
+    const health = Number.isNaN(parsed) ? 10 : Math.max(1, parsed);
+    this.persistDraft({ ...this.form, health });
   };
 
   private handleSingleSelection(
