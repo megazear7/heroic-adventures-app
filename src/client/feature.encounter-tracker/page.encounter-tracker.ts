@@ -607,6 +607,11 @@ export class PageEncounterTracker extends LitElement {
       return;
     }
 
+    const hasLinkedParticipants = this.encounter.participants.some((participant) => participant.characterId);
+    if (!hasLinkedParticipants) {
+      return;
+    }
+
     const byId = new Map(this.rosterCharacters.map((character) => [character.id, character]));
     let changed = false;
     const participants = this.encounter.participants.map((participant) => {
@@ -619,8 +624,7 @@ export class PageEncounterTracker extends LitElement {
         return participant;
       }
 
-      const hasPendingInitiative =
-        participant.pendingInitiative !== null && participant.pendingInitiative !== undefined;
+      const hasPendingInitiative = participant.pendingInitiative !== null;
       const nextParticipant: Participant = {
         ...participant,
         name: character.name,
@@ -718,7 +722,7 @@ export class PageEncounterTracker extends LitElement {
   private startNewRound() {
     const newRound = this.encounter.round + 1;
     const participants = this.encounter.participants.map((participant) =>
-      participant.pendingInitiative
+      participant.pendingInitiative !== null
         ? { ...participant, initiative: participant.pendingInitiative, pendingInitiative: null }
         : participant,
     );
@@ -882,7 +886,7 @@ export class PageEncounterTracker extends LitElement {
       return;
     }
 
-    const character = getCharacters().find((item) => item.id === participant.characterId);
+    const character = this.rosterCharacters.find((item) => item.id === participant.characterId);
     if (!character) {
       return;
     }

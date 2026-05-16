@@ -99,19 +99,20 @@ export class EncounterParticipant extends LitElement {
       color: var(--color-primary-text-muted, #8a8780);
       cursor: pointer;
       opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
       transition: opacity 120ms ease;
       flex-shrink: 0;
     }
     .edit-btn:hover {
       color: var(--color-1, #c9a84c);
     }
+    .edit-btn:focus-visible {
+      outline: 2px solid var(--color-1, #c9a84c);
+      outline-offset: 2px;
+    }
     .card:hover .edit-btn,
+    .card:focus-within .edit-btn,
     .edit-btn:focus-visible {
       opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
     }
     @media (hover: none) {
       .edit-btn {
@@ -451,6 +452,10 @@ export class EncounterParticipant extends LitElement {
     this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
   }
 
+  private displayInitiative(participant: Participant): number {
+    return participant.pendingInitiative ?? participant.initiative;
+  }
+
   private handleDamage() {
     this.dispatch("participant-damage", { id: this.participant.id, amount: this.adjustAmount });
   }
@@ -482,7 +487,7 @@ export class EncounterParticipant extends LitElement {
     const p = this.participant;
     this.editNameDraft = p.name;
     this.editHealthDraft = String(p.maxHp);
-    this.editInitiativeDraft = String(p.pendingInitiative ?? p.initiative);
+    this.editInitiativeDraft = String(this.displayInitiative(p));
     this.editModalOpen = true;
   }
 
@@ -531,7 +536,11 @@ export class EncounterParticipant extends LitElement {
               ${pencilIcon}
             </button>
           </span>
-          <span class="initiative-badge ${p.pendingInitiative ? "pending" : ""}" title="Initiative ${p.initiative}">
+          <span
+            class="initiative-badge ${p.pendingInitiative ? "pending" : ""}"
+            title=${p.pendingInitiative
+              ? `Initiative ${p.initiative} (pending: ${p.pendingInitiative})`
+              : `Initiative ${p.initiative}`}>
             Init
             ${p.initiative}${p.pendingInitiative
               ? html`
@@ -620,11 +629,22 @@ export class EncounterParticipant extends LitElement {
       </div>
       ${this.editModalOpen
         ? html`
-            <div class="overlay" @click=${this.closeEditModal}>
+            <div
+              class="overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="edit-participant-title"
+              @click=${this.closeEditModal}>
               <div class="modal" @click=${(event: Event) => event.stopPropagation()}>
                 <div class="modal-header">
-                  <h3 class="modal-title">Edit Participant</h3>
-                  <button class="modal-close" type="button" @click=${this.closeEditModal}>Close</button>
+                  <h3 class="modal-title" id="edit-participant-title">Edit Participant</h3>
+                  <button
+                    class="modal-close"
+                    type="button"
+                    aria-label="Close edit participant dialog"
+                    @click=${this.closeEditModal}>
+                    Close
+                  </button>
                 </div>
                 <div class="modal-form">
                   <label>
