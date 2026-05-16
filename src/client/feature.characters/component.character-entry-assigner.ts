@@ -260,7 +260,7 @@ export class CharacterEntryAssigner extends LitElement {
 
   private handleContainerClick = (event: Event): void => {
     const target = event.target as Element;
-    if (target.closest("button, a, input, select, textarea, [data-no-toggle]")) {
+    if (target.closest("button, [role='button'], a, input, select, textarea, [data-no-toggle]")) {
       return;
     }
     this.expanded = !this.expanded;
@@ -271,7 +271,7 @@ export class CharacterEntryAssigner extends LitElement {
       return;
     }
     const target = event.target as Element;
-    if (target.closest("button, a, input, select, textarea, [data-no-toggle]")) {
+    if (target.closest("button, [role='button'], a, input, select, textarea, [data-no-toggle]")) {
       return;
     }
     event.preventDefault();

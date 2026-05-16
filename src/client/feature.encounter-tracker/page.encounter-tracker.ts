@@ -15,6 +15,7 @@ import "./component.encounter-participant.js";
 
 const STORAGE_KEY = "ha-encounter-tracker";
 const DECK_SIZE = INITIATIVE_CARDS.length; // 10
+const DEFAULT_CHARACTER_PARTICIPANT_HP = 10;
 
 function shuffleDeck(): string[] {
   const ids = INITIATIVE_CARDS.map((c) => c.id);
@@ -41,6 +42,10 @@ function newEncounter(): Encounter {
 
 function cardById(id: string): InitiativeCard | undefined {
   return INITIATIVE_CARDS.find((c) => c.id === id);
+}
+
+function cardActionTypeLabel(actionType: InitiativeCard["actionType"]): string {
+  return actionType === "minor" ? "Minor/Heroic action" : "Major action";
 }
 
 function participantsForCard(participants: Participant[], card: InitiativeCard): Participant[] {
@@ -572,8 +577,8 @@ export class PageEncounterTracker extends LitElement {
       name: character.name,
       type: "player",
       initiative: 1,
-      hp: 10,
-      maxHp: 10,
+      hp: DEFAULT_CHARACTER_PARTICIPANT_HP,
+      maxHp: DEFAULT_CHARACTER_PARTICIPANT_HP,
       notes: "",
       conditions: [],
     };
@@ -695,9 +700,7 @@ export class PageEncounterTracker extends LitElement {
               const c = cardById(cardId);
               const typeClass = c ? `${c.participantType}-card` : "";
               const stateClass = i < enc.currentCardIndex ? "played" : i === enc.currentCardIndex ? "current" : "";
-              const tooltip = c
-                ? `${c.label} (${c.actionType === "minor" ? "Minor/Heroic action" : "Major action"})`
-                : cardId;
+              const tooltip = c ? `${c.label} (${cardActionTypeLabel(c.actionType)})` : cardId;
               return html`<div class="deck-pip ${typeClass} ${stateClass}" title=${tooltip} aria-label=${tooltip}></div>`;
             })}
           </div>
