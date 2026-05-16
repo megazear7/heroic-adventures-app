@@ -162,6 +162,20 @@ export class CharacterCard extends LitElement {
         gap: var(--size-medium);
       }
 
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--size-small);
+      }
+
+      .modal-close {
+        border: none;
+        background: none;
+        color: var(--color-primary-text-muted);
+        cursor: pointer;
+      }
+
       .modal-actions {
         display: flex;
         justify-content: flex-end;
@@ -286,7 +300,10 @@ export class CharacterCard extends LitElement {
     return html`
       <div class="overlay" @click=${this.closeModal}>
         <div class="modal" @click=${(event: Event) => event.stopPropagation()}>
-          <h3>Edit ${this.modalSectionLabel}</h3>
+          <div class="modal-header">
+            <h3>Edit ${this.modalSectionLabel}</h3>
+            <button class="modal-close" type="button" @click=${this.closeModal}>Close</button>
+          </div>
           <character-entry-picker
             .label=${this.modalSectionLabel}
             .multiple=${this.modalSectionMultiple}
@@ -379,10 +396,9 @@ export class CharacterCard extends LitElement {
   };
 
   private handleDocumentClick = (event: Event): void => {
-    const clickedInside = event
-      .composedPath()
-      .some((target) => target === this || target === this.shadowRoot || target === this.renderRoot);
-    if (this.menuOpen && !clickedInside) {
+    const menuWrap = this.renderRoot.querySelector(".menu-wrap");
+    const clickedInsideMenu = menuWrap ? event.composedPath().includes(menuWrap) : false;
+    if (this.menuOpen && !clickedInsideMenu) {
       this.menuOpen = false;
     }
   };
