@@ -239,7 +239,7 @@ export class HeroicNavDrawer extends LitElement {
           </li>
 
           <li class="nav-item">
-            <a href="/encounter-tracker" @click=${this.close}>Encounter Tracker</a>
+            <a href="/encounters" @click=${this.close}>Encounters</a>
           </li>
 
           <li class="nav-section">Core</li>

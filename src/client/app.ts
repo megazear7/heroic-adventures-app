@@ -23,6 +23,9 @@ import "./feature.characters/page.character-create.js";
 import "./feature.characters/page.character.js";
 import "./feature.adventure-log/page.adventure-log.js";
 import "./feature.encounter-tracker/page.encounter-tracker.js";
+import "./feature.encounter-tracker/page.encounters.js";
+import "./feature.encounter-tracker/page.encounter-create.js";
+import "./feature.encounter-tracker/page.encounter.js";
 import "./component.nav-drawer.js";
 import "./component.bookmark-bar.js";
 import "./component.profile-modal.js";
@@ -274,6 +277,18 @@ export class HeroicApp extends LitElement {
         return html`
           <page-encounter-tracker></page-encounter-tracker>
         `;
+      case RouteName.enum.encounters:
+        return html`
+          <page-encounters></page-encounters>
+        `;
+      case RouteName.enum.encounter_create:
+        return html`
+          <page-encounter-create></page-encounter-create>
+        `;
+      case RouteName.enum.encounter:
+        return html`
+          <page-encounter></page-encounter>
+        `;
       default:
         return html`
           <heroic-not-found-page></heroic-not-found-page>
@@ -311,6 +326,15 @@ export class HeroicApp extends LitElement {
     }
     if (pathname === "/encounter-tracker") {
       return { name: RouteName.enum.encounter_tracker, path: "/encounter-tracker" };
+    }
+    if (pathname === "/encounters") {
+      return { name: RouteName.enum.encounters, path: "/encounters" };
+    }
+    if (pathname === "/encounter/create") {
+      return { name: RouteName.enum.encounter_create, path: "/encounter/create" };
+    }
+    if (/^\/encounter\/[^/]+$/.test(pathname)) {
+      return { name: RouteName.enum.encounter, path: "/encounter/:encounterId" };
     }
 
     for (const route of this.routes) {

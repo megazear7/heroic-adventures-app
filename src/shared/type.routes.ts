@@ -16,6 +16,9 @@ export const RouteName = z.enum([
   "character",
   "adventure_log",
   "encounter_tracker",
+  "encounters",
+  "encounter_create",
+  "encounter",
   "not_found",
 ]);
 export type RouteName = z.infer<typeof RouteName>;

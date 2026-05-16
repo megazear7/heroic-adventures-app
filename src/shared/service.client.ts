@@ -52,6 +52,18 @@ export const routes = [
     name: RouteName.enum.encounter_tracker,
     path: "/encounter-tracker",
   },
+  {
+    name: RouteName.enum.encounters,
+    path: "/encounters",
+  },
+  {
+    name: RouteName.enum.encounter_create,
+    path: "/encounter/create",
+  },
+  {
+    name: RouteName.enum.encounter,
+    path: "/encounter/:encounterId",
+  },
 ];
 
 export class ClientService extends AbstractService<NoBodyParams, NoPathParams, string> {
