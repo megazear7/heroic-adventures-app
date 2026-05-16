@@ -157,7 +157,13 @@ export class CharacterEntryAssigner extends LitElement {
     }
 
     return html`
-      <section class="assigner" @click=${this.handleContainerClick}>
+      <section
+        class="assigner"
+        role="button"
+        tabindex="0"
+        aria-expanded=${String(this.expanded)}
+        @click=${this.handleContainerClick}
+        @keydown=${this.handleContainerKeydown}>
         <div class="assigner-header">
           <h3>Add to character</h3>
         </div>
@@ -253,13 +259,22 @@ export class CharacterEntryAssigner extends LitElement {
   }
 
   private handleContainerClick = (event: Event): void => {
-    const target = event.target as Element | null;
-    if (!target) {
-      return;
-    }
+    const target = event.target as Element;
     if (target.closest("button, a, input, select, textarea, [data-no-toggle]")) {
       return;
     }
+    this.expanded = !this.expanded;
+  };
+
+  private handleContainerKeydown = (event: KeyboardEvent): void => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    const target = event.target as Element;
+    if (target.closest("button, a, input, select, textarea, [data-no-toggle]")) {
+      return;
+    }
+    event.preventDefault();
     this.expanded = !this.expanded;
   };
 }
