@@ -39,6 +39,10 @@ export class CharacterEntryAssigner extends LitElement {
         border-radius: var(--border-radius-medium);
         cursor: pointer;
       }
+      .assigner:focus-visible {
+        outline: 2px solid var(--color-1);
+        outline-offset: 2px;
+      }
 
       .assigner-header {
         display: flex;

@@ -178,6 +178,7 @@ export class EncounterAddForm extends LitElement {
                 name="initiative"
                 type="number"
                 min="1"
+                max="99"
                 step="1"
                 .value=${this.initiative}
                 @input=${(e: Event) => (this.initiative = (e.target as HTMLInputElement).value)}
