@@ -16,6 +16,7 @@ import "./component.encounter-participant.js";
 
 const STORAGE_KEY = "ha-encounter-tracker";
 const DECK_SIZE = INITIATIVE_CARDS.length; // 10
+const MAX_ROSTER_SEARCH_RESULTS = 8;
 const DEFAULT_ROSTER_CHARACTER_PARTICIPANT_INITIATIVE = 1;
 const DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP = 10;
 
@@ -40,9 +41,10 @@ function rosterSearchScore(query: string, character: Character): number {
   const normalized = query.trim().toLowerCase();
   if (!normalized) return 1;
   const haystack = buildRosterSearchText(character);
+  const name = character.name.toLowerCase();
   if (haystack === normalized) return 200;
-  if (character.name.toLowerCase() === normalized) return 160;
-  if (character.name.toLowerCase().startsWith(normalized)) return 140;
+  if (name === normalized) return 160;
+  if (name.startsWith(normalized)) return 140;
   if (haystack.startsWith(normalized)) return 120;
   if (haystack.includes(normalized)) return 90;
   return 0;
@@ -339,8 +341,7 @@ export class PageEncounterTracker extends LitElement {
       transition: opacity 80ms ease;
       z-index: 50;
     }
-    .deck-pip:hover .deck-pip-tooltip,
-    .deck-pip:focus-visible .deck-pip-tooltip {
+    .deck-pip:hover .deck-pip-tooltip {
       opacity: 1;
     }
     .deck-pip-tooltip-meta {
@@ -600,7 +601,7 @@ export class PageEncounterTracker extends LitElement {
   };
 
   private get rosterResults(): Character[] {
-    return sortRosterByScore(this.rosterQuery, this.rosterCharacters).slice(0, 8);
+    return sortRosterByScore(this.rosterQuery, this.rosterCharacters).slice(0, MAX_ROSTER_SEARCH_RESULTS);
   }
 
   private loadEncounter() {
@@ -681,7 +682,7 @@ export class PageEncounterTracker extends LitElement {
     this.showToast(`Round ${newRound} — Deck reshuffled!`);
   }
 
-  private reshuffleCurrentRoundDeck = (): void => {
+  private shuffleRemainingCards = (): void => {
     const { currentCardIndex, deck } = this.encounter;
 
     if (currentCardIndex < 0) {
@@ -763,11 +764,14 @@ export class PageEncounterTracker extends LitElement {
     this.rosterPickerOpen = true;
   };
 
-  private handleRosterBlur = (): void => {
-    setTimeout(() => {
-      this.rosterPickerOpen = false;
-      this.rosterActiveIndex = -1;
-    }, 120);
+  private handleRosterBlur = (event: FocusEvent): void => {
+    const shell = this.renderRoot.querySelector(".roster-search-shell");
+    const nextTarget = event.relatedTarget as Node | null;
+    if (shell && nextTarget && shell.contains(nextTarget)) {
+      return;
+    }
+    this.rosterPickerOpen = false;
+    this.rosterActiveIndex = -1;
   };
 
   private addCharacterFromResult = (character: Character): void => {
@@ -918,7 +922,7 @@ export class PageEncounterTracker extends LitElement {
               const tooltipTitle = c ? c.label : cardId;
               const tooltipMeta = c ? cardActionTypeLabel(c.actionType) : "Unknown card";
               return html`
-                <div class="deck-pip ${typeClass} ${stateClass}" tabindex="0">
+                <div class="deck-pip ${typeClass} ${stateClass}">
                   <div class="deck-pip-tooltip" role="tooltip">
                     <div>${tooltipTitle}</div>
                     <div class="deck-pip-tooltip-meta">${tooltipMeta}</div>
@@ -975,7 +979,7 @@ export class PageEncounterTracker extends LitElement {
                     ▶ Draw Next Card
                   </button>
                 `}
-          <button class="btn btn-muted" @click=${this.reshuffleCurrentRoundDeck}>🔀 Shuffle Remaining</button>
+          <button class="btn btn-muted" @click=${this.shuffleRemainingCards}>🔀 Shuffle Remaining</button>
           <button class="btn btn-danger" @click=${this.resetEncounter}>New Encounter</button>
         </div>
       </div>
@@ -1044,7 +1048,7 @@ export class PageEncounterTracker extends LitElement {
                                 (character, index) => html`
                                   <button
                                     class="roster-result ${index === this.rosterActiveIndex ? "active" : ""}"
-                                    @mousedown=${() => this.addCharacterFromResult(character)}>
+                                    @click=${() => this.addCharacterFromResult(character)}>
                                     <div class="roster-item">
                                       <div class="roster-item-top">
                                         <div class="roster-name">${character.name}</div>

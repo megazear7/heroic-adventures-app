@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   Character,
   CharacterContentLink,
+  DEFAULT_CHARACTER_HEALTH,
   CharacterMultiSelectionKey,
   CharacterSchema,
   CharacterSelectionKey,
@@ -15,7 +16,7 @@ const CHARACTER_DRAFT_PREFIX = "heroic-character-draft";
 const LegacyCharacterSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
-  health: z.number().int().min(1).optional().default(10),
+  health: z.number().int().min(1).optional().default(DEFAULT_CHARACTER_HEALTH),
   race: z.string().min(1),
   class: z.string().min(1),
   background: z.string().min(1),

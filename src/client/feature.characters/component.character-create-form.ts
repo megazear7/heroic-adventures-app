@@ -2,7 +2,7 @@ import { css, html, LitElement, TemplateResult } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { globalStyles } from "../styles.global.js";
 import { loadSearchIndex, SearchIndexedEntry } from "../service.search.js";
-import { Character, CharacterContentLink, CharacterSchema } from "../../shared/type.character.js";
+import { Character, CharacterContentLink, CharacterSchema, DEFAULT_CHARACTER_HEALTH } from "../../shared/type.character.js";
 import { clearCharacterDraft, getCharacterDraft, saveCharacterDraft } from "../../shared/service.characters.js";
 import "./component.character-entry-picker.js";
 import "./component.character-linked-entry-card.js";
@@ -25,7 +25,7 @@ type CharacterDraft = {
 
 const EMPTY_DRAFT: CharacterDraft = {
   name: "",
-  health: 10,
+  health: DEFAULT_CHARACTER_HEALTH,
   spells: [],
   features: [],
   feats: [],
@@ -607,7 +607,7 @@ export class CharacterCreateForm extends LitElement {
   private handleHealthInput = (event: Event): void => {
     const input = event.target as HTMLInputElement;
     const parsed = parseInt(input.value, 10);
-    const health = Number.isNaN(parsed) ? 10 : Math.max(1, parsed);
+    const health = Number.isNaN(parsed) ? DEFAULT_CHARACTER_HEALTH : Math.max(1, parsed);
     this.persistDraft({ ...this.form, health });
   };
 

@@ -5,6 +5,7 @@ import { deleteCharacter, getCharacters, upsertCharacter } from "../../shared/se
 import {
   Character,
   CharacterContentLink,
+  DEFAULT_CHARACTER_HEALTH,
   CharacterSelectionKey,
   CharacterSingleSelectionKey,
 } from "../../shared/type.character.js";
@@ -483,7 +484,7 @@ export class CharacterCard extends LitElement {
   private openCharacterEditor = (): void => {
     this.menuOpen = false;
     this.characterNameDraft = this.character.name;
-    this.characterHealthDraft = String(this.character.health);
+    this.characterHealthDraft = String(this.character.health ?? DEFAULT_CHARACTER_HEALTH);
     this.characterModalOpen = true;
   };
 
