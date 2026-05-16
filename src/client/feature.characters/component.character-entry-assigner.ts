@@ -264,21 +264,31 @@ export class CharacterEntryAssigner extends LitElement {
 
   private handleContainerClick = (event: Event): void => {
     const target = event.target as Element;
-    if (target.closest("button, [role='button'], a, input, select, textarea, [data-no-toggle]")) {
+    if (this.shouldSkipToggle(event, target)) {
       return;
     }
     this.expanded = !this.expanded;
   };
 
   private handleContainerKeydown = (event: KeyboardEvent): void => {
-    if (event.key !== "Enter" && event.key !== " ") {
+    const isToggleKey = event.key === "Enter" || event.key === " ";
+    if (!isToggleKey) {
       return;
     }
     const target = event.target as Element;
-    if (target.closest("button, [role='button'], a, input, select, textarea, [data-no-toggle]")) {
+    if (this.shouldSkipToggle(event, target)) {
       return;
     }
     event.preventDefault();
     this.expanded = !this.expanded;
   };
+
+  private shouldSkipToggle(event: Event, target: Element): boolean {
+    if (target.closest("button, a, input, select, textarea, [data-no-toggle]")) {
+      return true;
+    }
+    const nestedRoleButton = target.closest("[role='button']");
+    const container = event.currentTarget as Element | null;
+    return Boolean(nestedRoleButton && nestedRoleButton !== container);
+  }
 }

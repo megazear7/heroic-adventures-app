@@ -702,7 +702,7 @@ export class PageEncounterTracker extends LitElement {
               const typeClass = c ? `${c.participantType}-card` : "";
               const stateClass = i < enc.currentCardIndex ? "played" : i === enc.currentCardIndex ? "current" : "";
               const tooltip = c ? `${c.label} (${cardActionTypeLabel(c.actionType)})` : cardId;
-              return html`<div class="deck-pip ${typeClass} ${stateClass}" title=${tooltip} aria-label=${tooltip}></div>`;
+              return html`<div class="deck-pip ${typeClass} ${stateClass}" title=${tooltip}></div>`;
             })}
           </div>
           <span>
