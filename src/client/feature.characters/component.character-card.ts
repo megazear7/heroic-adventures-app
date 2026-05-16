@@ -130,10 +130,30 @@ export class CharacterCard extends LitElement {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 120ms ease;
       }
 
       .edit-btn:hover {
         color: var(--color-1);
+      }
+
+      .sheet:hover .edit-btn,
+      .section:focus-within .edit-btn,
+      .edit-btn:focus-visible {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+      }
+
+      @media (hover: none) {
+        .edit-btn {
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+        }
       }
 
       .feedback {
@@ -236,6 +256,7 @@ export class CharacterCard extends LitElement {
                     <button type="button" @click=${this.shareCharacter}>Share</button>
                     <button type="button" @click=${this.exportCharacter}>Export JSON</button>
                     <button type="button" @click=${this.copyCharacter}>Copy</button>
+                    <button type="button" @click=${this.renameCharacter}>Rename</button>
                     <button type="button" @click=${this.duplicateCharacter}>Duplicate</button>
                     <button type="button" @click=${this.removeCharacter}>Delete</button>
                   </div>
@@ -390,6 +411,31 @@ export class CharacterCard extends LitElement {
     };
     upsertCharacter(duplicate);
     this.feedback = "Character duplicated.";
+  };
+
+  private renameCharacter = (): void => {
+    this.menuOpen = false;
+    const nextName = prompt("Rename character", this.character.name);
+    if (nextName === null) {
+      return;
+    }
+
+    const trimmed = nextName.trim();
+    if (!trimmed) {
+      this.feedback = "Character name cannot be empty.";
+      return;
+    }
+
+    if (trimmed === this.character.name) {
+      return;
+    }
+
+    upsertCharacter({
+      ...this.character,
+      name: trimmed,
+      updatedAt: Date.now(),
+    });
+    this.feedback = "Character renamed.";
   };
 
   private removeCharacter = (): void => {

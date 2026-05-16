@@ -52,6 +52,7 @@ export type Participant = z.infer<typeof ParticipantSchema>;
 export const EncounterSchema = z.object({
   id: z.string(),
   name: z.string(),
+  level: z.number().int().min(1).max(30).default(1),
   round: z.number().int().min(1),
   /** Index into deck of the currently revealed card; -1 = round not yet started */
   currentCardIndex: z.number().int().min(-1),

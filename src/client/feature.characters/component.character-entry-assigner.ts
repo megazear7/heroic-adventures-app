@@ -37,17 +37,21 @@ export class CharacterEntryAssigner extends LitElement {
         background: linear-gradient(180deg, rgba(201, 168, 76, 0.08), rgba(201, 168, 76, 0.02));
         border: var(--border-normal);
         border-radius: var(--border-radius-medium);
+        cursor: pointer;
+      }
+      .assigner:focus-visible {
+        outline: 2px solid var(--color-1);
+        outline-offset: 2px;
       }
 
       .assigner-header {
         display: flex;
         align-items: baseline;
-        justify-content: space-between;
         gap: var(--size-medium);
-        margin-bottom: var(--size-medium);
       }
 
       .assigner-copy {
+        margin-top: var(--size-small);
         max-width: 60ch;
       }
 
@@ -95,14 +99,6 @@ export class CharacterEntryAssigner extends LitElement {
 
       .cta {
         min-width: 110px;
-      }
-
-      .toggle {
-        background: transparent;
-        border: none;
-        color: var(--color-primary-text-muted);
-        cursor: pointer;
-        font-size: var(--font-small);
       }
 
       .empty {
@@ -165,30 +161,37 @@ export class CharacterEntryAssigner extends LitElement {
     }
 
     return html`
-      <section class="assigner">
+      <section
+        class="assigner"
+        role="button"
+        tabindex="0"
+        aria-expanded=${String(this.expanded)}
+        @click=${this.handleContainerClick}
+        @keydown=${this.handleContainerKeydown}>
         <div class="assigner-header">
-          <div class="assigner-copy">
-            <h3>Add To Character</h3>
-            <p>Add ${this.entry.title} to an existing character's ${SLOT_LABELS[slot]}.</p>
-          </div>
-          <button class="toggle" type="button" @click=${this.toggleExpanded}>${this.expanded ? "Hide" : "Show"}</button>
+          <h3>Add to character</h3>
         </div>
 
         ${this.expanded
-          ? this.characters.length === 0
-            ? html`
-                <div class="empty">
-                  <span>No saved characters yet.</span>
-                  <a class="btn btn-primary" href="/character/create">Create Character</a>
-                </div>
-              `
-            : html`
-                <div class="character-list">
-                  ${this.characters.map((character) => this.renderCharacterRow(character, slot))}
-                </div>
-              `
+          ? html`
+              <div class="assigner-copy">
+                <p>Add ${this.entry.title} to an existing character's ${SLOT_LABELS[slot]}.</p>
+              </div>
+              ${this.characters.length === 0
+                ? html`
+                    <div class="empty" data-no-toggle>
+                      <span>No saved characters yet.</span>
+                      <a class="btn btn-primary" href="/character/create">Create Character</a>
+                    </div>
+                  `
+                : html`
+                    <div class="character-list" data-no-toggle>
+                      ${this.characters.map((character) => this.renderCharacterRow(character, slot))}
+                    </div>
+                  `}
+            `
           : nothing}
-        ${this.feedback
+        ${this.feedback && this.expanded
           ? html`
               <div class="feedback">${this.feedback}</div>
             `
@@ -201,7 +204,7 @@ export class CharacterEntryAssigner extends LitElement {
     const state = this.getCharacterState(character, slot);
 
     return html`
-      <div class="character-row">
+      <div class="character-row" data-no-toggle>
         <div>
           <div class="character-name">
             <a class="character-name-link" href="/character/${character.id}">${character.name}</a>
@@ -259,7 +262,33 @@ export class CharacterEntryAssigner extends LitElement {
     return { cta: `Add To ${SLOT_LABELS[slot]}`, disabled: false };
   }
 
-  private toggleExpanded = (): void => {
+  private handleContainerClick = (event: Event): void => {
+    const target = event.target as Element;
+    if (this.shouldSkipToggle(event, target)) {
+      return;
+    }
     this.expanded = !this.expanded;
   };
+
+  private handleContainerKeydown = (event: KeyboardEvent): void => {
+    const isToggleKey = event.key === "Enter" || event.key === " ";
+    if (!isToggleKey) {
+      return;
+    }
+    const target = event.target as Element;
+    if (this.shouldSkipToggle(event, target)) {
+      return;
+    }
+    event.preventDefault();
+    this.expanded = !this.expanded;
+  };
+
+  private shouldSkipToggle(event: Event, target: Element): boolean {
+    if (target.closest("button, a, input, select, textarea, [data-no-toggle]")) {
+      return true;
+    }
+    const nestedRoleButton = target.closest("[role='button']");
+    const container = event.currentTarget as Element | null;
+    return Boolean(nestedRoleButton && nestedRoleButton !== container);
+  }
 }

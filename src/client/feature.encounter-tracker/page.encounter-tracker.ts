@@ -1,5 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import { CHARACTERS_CHANGED_EVENT, getCharacters } from "../../shared/service.characters.js";
+import { Character } from "../../shared/type.character.js";
 import {
   Encounter,
   EncounterSchema,
@@ -7,11 +9,14 @@ import {
   INITIATIVE_CARDS,
   InitiativeCard,
 } from "../../shared/type.encounter.js";
+import { PROFILE_CHANGED_EVENT } from "../../shared/service.profile.js";
 import "./component.encounter-add-form.js";
 import "./component.encounter-participant.js";
 
 const STORAGE_KEY = "ha-encounter-tracker";
 const DECK_SIZE = INITIATIVE_CARDS.length; // 10
+const DEFAULT_ROSTER_CHARACTER_PARTICIPANT_INITIATIVE = 1;
+const DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP = 10;
 
 function shuffleDeck(): string[] {
   const ids = INITIATIVE_CARDS.map((c) => c.id);
@@ -26,6 +31,7 @@ function newEncounter(): Encounter {
   return {
     id: crypto.randomUUID(),
     name: "New Encounter",
+    level: 1,
     round: 1,
     currentCardIndex: -1,
     deck: shuffleDeck(),
@@ -37,6 +43,10 @@ function newEncounter(): Encounter {
 
 function cardById(id: string): InitiativeCard | undefined {
   return INITIATIVE_CARDS.find((c) => c.id === id);
+}
+
+function cardActionTypeLabel(actionType: InitiativeCard["actionType"]): string {
+  return actionType === "minor" ? "Minor/Heroic action" : "Major action";
 }
 
 function participantsForCard(participants: Participant[], card: InitiativeCard): Participant[] {
@@ -103,7 +113,7 @@ export class PageEncounterTracker extends LitElement {
     }
     .encounter-header {
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       gap: 1rem;
       margin-bottom: 1.25rem;
       flex-wrap: wrap;
@@ -140,6 +150,29 @@ export class PageEncounterTracker extends LitElement {
       font-size: 1.1rem;
       font-weight: 700;
       color: var(--color-1, #c9a84c);
+    }
+    .level-input-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--color-primary-text-muted, #8a8780);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .level-select {
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: var(--font-family, sans-serif);
+      padding: 0.4rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid rgba(201, 168, 76, 0.25);
+      background: var(--color-primary-surface-raised, #16162a);
+      color: var(--color-primary-text, #e2e0d6);
+      outline: none;
+    }
+    .level-select:focus {
+      border-color: var(--color-1, #c9a84c);
     }
 
     /* ---- Card Deck ---- */
@@ -339,37 +372,31 @@ export class PageEncounterTracker extends LitElement {
       letter-spacing: 0.08em;
       margin: 2rem 0 0.75rem;
     }
-
-    /* ---- Export ---- */
-    .export-area {
-      margin-top: 2rem;
-      background: var(--color-primary-surface-raised, #16162a);
-      border: 1px solid rgba(201, 168, 76, 0.12);
-      border-radius: 12px;
-      padding: 1.25rem;
+    .character-roster {
+      margin-bottom: 1.5rem;
     }
-    .export-title {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--color-primary-text-muted, #8a8780);
-      margin-bottom: 0.75rem;
-    }
-    .export-btns {
+    .roster-list {
       display: flex;
-      gap: 0.75rem;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 0.6rem;
     }
-    pre.export-preview {
-      margin-top: 1rem;
-      font-size: 0.78rem;
-      font-family: monospace;
-      background: var(--color-primary-surface-overlay, #1e1e38);
+    .roster-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.75rem 0.9rem;
+      border: 1px solid rgba(201, 168, 76, 0.15);
+      border-radius: 10px;
+      background: var(--color-primary-surface-raised, #16162a);
+    }
+    .roster-name {
+      font-weight: 700;
       color: var(--color-primary-text, #e2e0d6);
-      border-radius: 8px;
-      padding: 0.875rem;
-      overflow-x: auto;
-      white-space: pre-wrap;
-      word-break: break-word;
+    }
+    .roster-meta {
+      color: var(--color-primary-text-muted, #8a8780);
+      font-size: 0.82rem;
     }
 
     /* ---- Toast ---- */
@@ -416,15 +443,30 @@ export class PageEncounterTracker extends LitElement {
   `;
 
   @state() private encounter: Encounter = newEncounter();
-  @state() private showExport = false;
-  @state() private exportText = "";
+  @state() private rosterCharacters: Character[] = [];
   @state() private toast: string | null = null;
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
   override connectedCallback() {
     super.connectedCallback();
     this.loadEncounter();
+    this.syncCharacters();
+    window.addEventListener(CHARACTERS_CHANGED_EVENT, this.syncCharacters);
+    window.addEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
   }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener(CHARACTERS_CHANGED_EVENT, this.syncCharacters);
+    window.removeEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
+    if (this.toastTimer) {
+      clearTimeout(this.toastTimer);
+    }
+  }
+
+  private readonly syncCharacters = (): void => {
+    this.rosterCharacters = getCharacters();
+  };
 
   private loadEncounter() {
     try {
@@ -468,6 +510,12 @@ export class PageEncounterTracker extends LitElement {
     this.saveEncounter();
   }
 
+  private handleLevelChange(e: Event) {
+    const level = parseInt((e.target as HTMLSelectElement).value, 10);
+    this.encounter = { ...this.encounter, level: Number.isNaN(level) ? 1 : level };
+    this.saveEncounter();
+  }
+
   private drawNextCard() {
     const enc = this.encounter;
     const nextIdx = enc.currentCardIndex + 1;
@@ -506,7 +554,6 @@ export class PageEncounterTracker extends LitElement {
     if (!confirm("Start a new encounter? This will clear all participants and reset to Round 1.")) return;
     this.encounter = newEncounter();
     this.saveEncounter();
-    this.showExport = false;
   }
 
   /* ---- Participant handlers ---- */
@@ -515,6 +562,34 @@ export class PageEncounterTracker extends LitElement {
     const updated = [...this.encounter.participants, e.detail];
     this.encounter = { ...this.encounter, participants: updated };
     this.saveEncounter();
+  }
+
+  private handleAddCharacter(character: Character) {
+    const alreadyAdded = this.encounter.participants.some(
+      (participant) => participant.type === "player" && participant.name === character.name,
+    );
+    if (alreadyAdded) {
+      this.showToast(`${character.name} is already in this encounter.`);
+      return;
+    }
+
+    const participant: Participant = {
+      id: crypto.randomUUID(),
+      name: character.name,
+      type: "player",
+      initiative: DEFAULT_ROSTER_CHARACTER_PARTICIPANT_INITIATIVE,
+      hp: DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP,
+      maxHp: DEFAULT_ROSTER_CHARACTER_PARTICIPANT_HP,
+      notes: "",
+      conditions: [],
+    };
+
+    this.encounter = {
+      ...this.encounter,
+      participants: [...this.encounter.participants, participant],
+    };
+    this.saveEncounter();
+    this.showToast(`${character.name} added to encounter.`);
   }
 
   private updateParticipant(id: string, changes: Partial<Participant>) {
@@ -574,55 +649,6 @@ export class PageEncounterTracker extends LitElement {
     this.saveEncounter();
   }
 
-  /* ---- Export ---- */
-
-  private exportJson() {
-    const blob = new Blob([JSON.stringify(this.encounter, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `encounter-${this.encounter.name.replace(/\s+/g, "-").toLowerCase()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    this.showToast("Exported JSON");
-  }
-
-  private buildTextSummary(): string {
-    const e = this.encounter;
-    const card = this.currentCard();
-    const actionType = computeActionType(e);
-    const active = card ? participantsForCard(e.participants, card) : [];
-    const activeIds = new Set(active.map((p) => p.id));
-    const cardActionLabel =
-      actionType === "bonus" ? "Bonus Action" :
-      actionType === "minor" ? "Minor or Heroic Action" :
-      "Major Action";
-    const lines = [
-      `Encounter: ${e.name}`,
-      `Round: ${e.round} | Card: ${e.currentCardIndex + 1}/${DECK_SIZE}`,
-      card
-        ? `Current Card: ${card.label} — ${cardActionLabel}`
-        : `Current Card: (none drawn)`,
-      ``,
-      ...e.participants.map(
-        (p) =>
-          `${activeIds.has(p.id) ? "▶ " : "  "}[${p.type === "monster" ? "M" : "P"}] ${p.name} | Init: ${p.initiative} | HP: ${p.hp}/${p.maxHp}${p.notes ? ` | Notes: ${p.notes}` : ""}`,
-      ),
-    ];
-    return lines.join("\n");
-  }
-
-  private toggleTextExport() {
-    this.showExport = !this.showExport;
-    if (this.showExport) {
-      this.exportText = this.buildTextSummary();
-    }
-  }
-
-  private copyText() {
-    navigator.clipboard.writeText(this.exportText).then(() => this.showToast("Copied!"));
-  }
-
   override render() {
     const enc = this.encounter;
     const card = this.currentCard();
@@ -649,6 +675,16 @@ export class PageEncounterTracker extends LitElement {
           @input=${this.handleNameChange}
           aria-label="Encounter name"
           placeholder="Encounter name" />
+        <label class="level-input-wrap">
+          Level
+          <select class="level-select" .value=${String(enc.level)} @change=${this.handleLevelChange} aria-label="Encounter level">
+            ${Array.from({ length: 30 }, (_, index) => index + 1).map(
+              (level) => html`
+                <option value=${String(level)}>${level}</option>
+              `,
+            )}
+          </select>
+        </label>
         <div class="round-badge">
           Round <span class="round-number">${enc.round}</span>
         </div>
@@ -665,7 +701,8 @@ export class PageEncounterTracker extends LitElement {
               const c = cardById(cardId);
               const typeClass = c ? `${c.participantType}-card` : "";
               const stateClass = i < enc.currentCardIndex ? "played" : i === enc.currentCardIndex ? "current" : "";
-              return html`<div class="deck-pip ${typeClass} ${stateClass}" title="${c?.label ?? cardId}"></div>`;
+              const tooltip = c ? `${c.label} (${cardActionTypeLabel(c.actionType)})` : cardId;
+              return html`<div class="deck-pip ${typeClass} ${stateClass}" title=${tooltip}></div>`;
             })}
           </div>
           <span>
@@ -692,7 +729,7 @@ export class PageEncounterTracker extends LitElement {
                       </div>
                     `
                   : html`
-                      <div class="card-no-match">No matching participants in this tier</div>
+                      <div class="card-no-match">No matching participants for this card</div>
                     `}
               </div>
             `
@@ -711,14 +748,11 @@ export class PageEncounterTracker extends LitElement {
                   ↺ End Round &amp; Reshuffle
                 </button>
               `
-            : html`
-                <button class="btn btn-primary" @click=${this.drawNextCard} ?disabled=${enc.participants.length === 0}>
-                  ▶ Draw Next Card
-                </button>
-              `}
-          <button class="btn btn-muted" @click=${this.toggleTextExport}>
-            ${this.showExport ? "Hide Export" : "Export"}
-          </button>
+              : html`
+                  <button class="btn btn-primary" @click=${this.drawNextCard} ?disabled=${enc.participants.length === 0}>
+                    ▶ Draw Next Card
+                  </button>
+                `}
           <button class="btn btn-danger" @click=${this.resetEncounter}>New Encounter</button>
         </div>
       </div>
@@ -753,22 +787,32 @@ export class PageEncounterTracker extends LitElement {
             )}
       </div>
 
+      <!-- Character roster quick-add -->
+      <div class="section-title">Add from character roster</div>
+      <div class="character-roster">
+        ${this.rosterCharacters.length === 0
+          ? html`
+              <div class="empty-state">No saved characters available.</div>
+            `
+          : html`
+              <div class="roster-list">
+                ${this.rosterCharacters.map(
+                  (character) => html`
+                    <div class="roster-item">
+                      <div>
+                        <div class="roster-name">${character.name}</div>
+                        <div class="roster-meta">${character.race.title} • ${character.class.title}</div>
+                      </div>
+                      <button class="btn btn-muted" @click=${() => this.handleAddCharacter(character)}>Add Character</button>
+                    </div>
+                  `,
+                )}
+              </div>
+            `}
+      </div>
+
       <!-- Add form -->
       <encounter-add-form @participant-added=${this.handleParticipantAdded}></encounter-add-form>
-
-      <!-- Export panel -->
-      ${this.showExport
-        ? html`
-            <div class="export-area">
-              <div class="export-title">Export Encounter</div>
-              <div class="export-btns">
-                <button class="btn" @click=${this.copyText}>Copy Text</button>
-                <button class="btn" @click=${this.exportJson}>Download JSON</button>
-              </div>
-              <pre class="export-preview">${this.exportText}</pre>
-            </div>
-          `
-        : nothing}
 
       <!-- Toast notification -->
       ${this.toast
