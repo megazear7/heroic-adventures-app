@@ -309,13 +309,15 @@ export class PageEncounterTracker extends LitElement {
     .deck-pip.player-card {
       border-color: rgba(100, 180, 255, 0.5);
     }
-    .deck-pip.player-card.played, .deck-pip.player-card.current {
+    .deck-pip.player-card.played,
+    .deck-pip.player-card.current {
       background: rgba(100, 180, 255, 0.5);
     }
     .deck-pip.monster-card {
       border-color: rgba(255, 100, 100, 0.5);
     }
-    .deck-pip.monster-card.played, .deck-pip.monster-card.current {
+    .deck-pip.monster-card.played,
+    .deck-pip.monster-card.current {
       background: rgba(255, 100, 100, 0.5);
     }
     .deck-pip-tooltip {
@@ -367,7 +369,9 @@ export class PageEncounterTracker extends LitElement {
       font-size: 0.88rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background 150ms ease, color 150ms ease;
+      transition:
+        background 150ms ease,
+        color 150ms ease;
       min-height: 44px;
       touch-action: manipulation;
     }
@@ -615,7 +619,8 @@ export class PageEncounterTracker extends LitElement {
         return participant;
       }
 
-      const hasPendingInitiative = participant.pendingInitiative !== null && participant.pendingInitiative !== undefined;
+      const hasPendingInitiative =
+        participant.pendingInitiative !== null && participant.pendingInitiative !== undefined;
       const nextParticipant: Participant = {
         ...participant,
         name: character.name,
@@ -705,9 +710,7 @@ export class PageEncounterTracker extends LitElement {
     if (card) {
       const actionType = computeActionType(updatedEnc);
       const action =
-        actionType === "bonus" ? "Bonus Action" :
-        actionType === "minor" ? "Minor or Heroic Action" :
-        "Major Action";
+        actionType === "bonus" ? "Bonus Action" : actionType === "minor" ? "Minor or Heroic Action" : "Major Action";
       this.showToast(`${card.label} — ${action}`);
     }
   }
@@ -766,14 +769,19 @@ export class PageEncounterTracker extends LitElement {
   /* ---- Participant handlers ---- */
 
   private handleParticipantAdded(e: CustomEvent<Participant>) {
-    const updated = [...this.encounter.participants, { ...e.detail, pendingInitiative: e.detail.pendingInitiative ?? null }];
+    const updated = [
+      ...this.encounter.participants,
+      { ...e.detail, pendingInitiative: e.detail.pendingInitiative ?? null },
+    ];
     this.encounter = { ...this.encounter, participants: updated };
     this.saveEncounter();
   }
 
   private handleAddCharacter(character: Character) {
     const alreadyAdded = this.encounter.participants.some(
-      (participant) => participant.characterId === character.id || (participant.type === "player" && participant.name === character.name),
+      (participant) =>
+        participant.characterId === character.id ||
+        (participant.type === "player" && participant.name === character.name),
     );
     if (alreadyAdded) {
       this.showToast(`${character.name} is already in this encounter.`);
@@ -865,7 +873,10 @@ export class PageEncounterTracker extends LitElement {
     this.saveEncounter();
   }
 
-  private updateLinkedCharacter(participantId: string, changes: Partial<Pick<Character, "name" | "health" | "initiative">>): void {
+  private updateLinkedCharacter(
+    participantId: string,
+    changes: Partial<Pick<Character, "name" | "health" | "initiative">>,
+  ): void {
     const participant = this.encounter.participants.find((item) => item.id === participantId);
     if (!participant?.characterId) {
       return;
@@ -970,9 +981,11 @@ export class PageEncounterTracker extends LitElement {
     const allCardsDrawn = enc.currentCardIndex >= DECK_SIZE - 1;
 
     const actionLabel =
-      actionType === "bonus" ? "⚔ Bonus Action" :
-      actionType === "minor" ? "⚡ Minor or Heroic Action" :
-      "⚔ Major Action";
+      actionType === "bonus"
+        ? "⚔ Bonus Action"
+        : actionType === "minor"
+          ? "⚡ Minor or Heroic Action"
+          : "⚔ Major Action";
 
     return html`
       <h1>Encounter Tracker</h1>
@@ -988,7 +1001,11 @@ export class PageEncounterTracker extends LitElement {
           placeholder="Encounter name" />
         <label class="level-input-wrap">
           Level
-          <select class="level-select" .value=${String(enc.level)} @change=${this.handleLevelChange} aria-label="Encounter level">
+          <select
+            class="level-select"
+            .value=${String(enc.level)}
+            @change=${this.handleLevelChange}
+            aria-label="Encounter level">
             ${Array.from({ length: 30 }, (_, index) => index + 1).map(
               (level) => html`
                 <option value=${String(level)}>${level}</option>
@@ -997,7 +1014,8 @@ export class PageEncounterTracker extends LitElement {
           </select>
         </label>
         <div class="round-badge">
-          Round <span class="round-number">${enc.round}</span>
+          Round
+          <span class="round-number">${enc.round}</span>
         </div>
       </div>
 
@@ -1038,13 +1056,12 @@ export class PageEncounterTracker extends LitElement {
           ? html`
               <div class="current-card ${card.participantType}">
                 <div class="card-label">${card.label}</div>
-                <div class="card-action-type ${actionType}">
-                  ${actionLabel}
-                </div>
+                <div class="card-action-type ${actionType}">${actionLabel}</div>
                 ${active.length > 0
                   ? html`
                       <div class="card-active-names">
-                        Acting: <strong>${active.map((p) => p.name).join(", ")}</strong>
+                        Acting:
+                        <strong>${active.map((p) => p.name).join(", ")}</strong>
                       </div>
                     `
                   : html`
@@ -1063,15 +1080,13 @@ export class PageEncounterTracker extends LitElement {
         <div class="controls-bar" style="margin-bottom: 0; margin-top: 0.875rem;">
           ${allCardsDrawn
             ? html`
-                <button class="btn btn-end-round" @click=${this.startNewRound}>
-                  ↺ End Round &amp; Reshuffle
-                </button>
+                <button class="btn btn-end-round" @click=${this.startNewRound}>↺ End Round &amp; Reshuffle</button>
               `
             : html`
-                  <button class="btn btn-primary" @click=${this.drawNextCard} ?disabled=${enc.participants.length === 0}>
-                    ▶ Draw Next Card
-                  </button>
-                `}
+                <button class="btn btn-primary" @click=${this.drawNextCard} ?disabled=${enc.participants.length === 0}>
+                  ▶ Draw Next Card
+                </button>
+              `}
           <button class="btn btn-muted" @click=${this.shuffleRemainingCards}>🔀 Shuffle Remaining</button>
           <button class="btn btn-danger" @click=${this.resetEncounter}>New Encounter</button>
         </div>
@@ -1092,9 +1107,7 @@ export class PageEncounterTracker extends LitElement {
         @participant-edit=${this.handleParticipantEdit}>
         ${enc.participants.length === 0
           ? html`
-              <div class="empty-state">
-                No participants yet. Add monsters or players below to start the encounter.
-              </div>
+              <div class="empty-state">No participants yet. Add monsters or players below to start the encounter.</div>
             `
           : enc.participants.map(
               (p, i) => html`
@@ -1102,8 +1115,7 @@ export class PageEncounterTracker extends LitElement {
                   .participant=${p}
                   .isActive=${activeIds.has(p.id)}
                   .isFirst=${i === 0}
-                  .isLast=${i === enc.participants.length - 1}>
-                </encounter-participant>
+                  .isLast=${i === enc.participants.length - 1}></encounter-participant>
               `,
             )}
       </div>

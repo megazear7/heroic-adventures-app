@@ -14,12 +14,16 @@ export class EncounterParticipant extends LitElement {
       border: 2px solid rgba(201, 168, 76, 0.12);
       border-radius: 12px;
       padding: 1rem;
-      transition: border-color 200ms ease, box-shadow 200ms ease;
+      transition:
+        border-color 200ms ease,
+        box-shadow 200ms ease;
       position: relative;
     }
     .card.active-turn {
       border-color: var(--color-1, #c9a84c);
-      box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.18), 0 4px 16px rgba(201, 168, 76, 0.1);
+      box-shadow:
+        0 0 0 2px rgba(201, 168, 76, 0.18),
+        0 4px 16px rgba(201, 168, 76, 0.1);
     }
     .card.dead {
       opacity: 0.5;
@@ -44,8 +48,13 @@ export class EncounterParticipant extends LitElement {
       animation: pulse 1.5s ease infinite;
     }
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
     }
     .type-badge {
       font-size: 0.7rem;
@@ -166,7 +175,9 @@ export class EncounterParticipant extends LitElement {
     .hp-bar {
       height: 100%;
       border-radius: 4px;
-      transition: width 300ms ease, background 300ms ease;
+      transition:
+        width 300ms ease,
+        background 300ms ease;
     }
     .hp-bar.healthy {
       background: #6ee36e;
@@ -216,7 +227,9 @@ export class EncounterParticipant extends LitElement {
       font-size: 0.82rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background 150ms ease, color 150ms ease;
+      transition:
+        background 150ms ease,
+        color 150ms ease;
       min-height: 36px;
       touch-action: manipulation;
     }
@@ -509,21 +522,40 @@ export class EncounterParticipant extends LitElement {
           <span class="type-badge ${p.type}">${p.type === "monster" ? "Monster" : "Player"}</span>
           <span class="name-wrap">
             <span class="name">${p.name}</span>
-            <button class="edit-btn" type="button" title="Edit participant" aria-label="Edit participant" @click=${this.openEditModal}>
+            <button
+              class="edit-btn"
+              type="button"
+              title="Edit participant"
+              aria-label="Edit participant"
+              @click=${this.openEditModal}>
               ${pencilIcon}
             </button>
           </span>
           <span class="initiative-badge ${p.pendingInitiative ? "pending" : ""}" title="Initiative ${p.initiative}">
-            Init ${p.initiative}${p.pendingInitiative ? html` → ${p.pendingInitiative}` : nothing}
+            Init
+            ${p.initiative}${p.pendingInitiative
+              ? html`
+                  → ${p.pendingInitiative}
+                `
+              : nothing}
           </span>
           <div class="order-btns">
-            <button class="btn-order" @click=${this.handleMoveUp} ?disabled=${this.isFirst} title="Move up" aria-label="Move up">▲</button>
+            <button
+              class="btn-order"
+              @click=${this.handleMoveUp}
+              ?disabled=${this.isFirst}
+              title="Move up"
+              aria-label="Move up">
+              ▲
+            </button>
             <button
               class="btn-order"
               @click=${this.handleMoveDown}
               ?disabled=${this.isLast}
               title="Move down"
-              aria-label="Move down">▼</button>
+              aria-label="Move down">
+              ▼
+            </button>
           </div>
         </div>
 
@@ -562,9 +594,9 @@ export class EncounterParticipant extends LitElement {
                     <span
                       class="condition-chip"
                       @click=${() => this.dispatch("participant-remove-condition", { id: p.id, condition: c })}
-                      title="Click to remove condition"
-                      >${c} ×</span
-                    >
+                      title="Click to remove condition">
+                      ${c} ×
+                    </span>
                   `,
                 )}
               </div>

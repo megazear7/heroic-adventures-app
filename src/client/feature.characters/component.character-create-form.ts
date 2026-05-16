@@ -364,7 +364,11 @@ export class CharacterCreateForm extends LitElement {
   private canMoveNext(step = this.step): boolean {
     if (step === 0) {
       return Boolean(
-        this.form.name.trim() && this.form.health >= 1 && this.form.initiative >= 1 && this.form.race && this.form.class,
+        this.form.name.trim() &&
+        this.form.health >= 1 &&
+        this.form.initiative >= 1 &&
+        this.form.race &&
+        this.form.class,
       );
     }
     if (step === 1) {
