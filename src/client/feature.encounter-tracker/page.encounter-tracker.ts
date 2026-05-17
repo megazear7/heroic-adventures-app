@@ -8,6 +8,7 @@ import {
   Participant,
   INITIATIVE_CARDS,
   InitiativeCard,
+  getInitiativeCardById,
 } from "../../shared/type.encounter.js";
 import { PROFILE_CHANGED_EVENT } from "../../shared/service.profile.js";
 import { searchIcon } from "../icons.js";
@@ -73,8 +74,8 @@ function newEncounter(): Encounter {
   };
 }
 
-function cardById(id: string): InitiativeCard | undefined {
-  return INITIATIVE_CARDS.find((c) => c.id === id);
+function cardById(id: string, level: number): InitiativeCard | undefined {
+  return getInitiativeCardById(id, level);
 }
 
 function cardActionTypeLabel(actionType: InitiativeCard["actionType"]): string {
@@ -101,7 +102,7 @@ function computeActionType(enc: Encounter): "bonus" | "major" | "minor" {
   const cardIndex = enc.currentCardIndex;
   if (cardIndex < 0) return "major";
 
-  const card = cardById(enc.deck[cardIndex]);
+  const card = cardById(enc.deck[cardIndex], enc.level);
   if (!card) return "major";
 
   // Minor/heroic card → stays minor regardless
@@ -111,7 +112,7 @@ function computeActionType(enc: Encounter): "bonus" | "major" | "minor" {
   if (cardIndex === 0) return "bonus";
 
   // Check the previous card
-  const prevCard = cardById(enc.deck[cardIndex - 1]);
+  const prevCard = cardById(enc.deck[cardIndex - 1], enc.level);
   if (!prevCard) return "major";
 
   // Previous card was a minor/heroic card → major action only
@@ -225,6 +226,8 @@ export class PageEncounterTracker extends LitElement {
     }
     .current-card {
       border-radius: 10px;
+      height: 90px;
+      box-sizing: border-box;
       padding: 1rem 1.25rem;
       margin-bottom: 1rem;
       display: flex;
@@ -678,7 +681,7 @@ export class PageEncounterTracker extends LitElement {
   private currentCard(): InitiativeCard | null {
     const enc = this.encounter;
     if (enc.currentCardIndex < 0 || enc.currentCardIndex >= enc.deck.length) return null;
-    return cardById(enc.deck[enc.currentCardIndex]) ?? null;
+    return cardById(enc.deck[enc.currentCardIndex], enc.level) ?? null;
   }
 
   /* ---- Encounter controls ---- */
@@ -705,7 +708,7 @@ export class PageEncounterTracker extends LitElement {
     const updatedEnc = { ...enc, currentCardIndex: nextIdx };
     this.encounter = updatedEnc;
     this.saveEncounter();
-    const card = cardById(enc.deck[nextIdx]);
+    const card = cardById(enc.deck[nextIdx], enc.level);
     if (card) {
       const actionType = computeActionType(updatedEnc);
       const action =
@@ -1022,7 +1025,7 @@ export class PageEncounterTracker extends LitElement {
         <div class="deck-progress">
           <div class="deck-pips" aria-label="Cards played">
             ${enc.deck.map((cardId, i) => {
-              const c = cardById(cardId);
+              const c = cardById(cardId, enc.level);
               const typeClass = c ? `${c.participantType}-card` : "";
               const stateClass = i < enc.currentCardIndex ? "played" : i === enc.currentCardIndex ? "current" : "";
               const tooltipTitle = c ? c.label : cardId;
