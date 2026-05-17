@@ -38,6 +38,7 @@ type MinorInitiativeCardDefinition = {
 
 type InitiativeCardDefinition = MajorInitiativeCardDefinition | MinorInitiativeCardDefinition;
 const UNBOUNDED_INITIATIVE_MAX = 999;
+const initiativeCardsByLevel = new Map<number, readonly InitiativeCard[]>();
 
 const INITIATIVE_CARD_DEFINITIONS: readonly InitiativeCardDefinition[] = [
   { id: "player-1-3", participantType: "player", actionType: "major", tierIndex: 0 },
@@ -85,11 +86,17 @@ const LEVEL_INITIATIVE_RANGES: readonly InitiativeRangeSet[] = [
   ],
 ] as const;
 
+function normalizeEncounterLevel(level: number): number {
+  if (!Number.isFinite(level)) return 1;
+  return Math.max(1, Math.floor(level));
+}
+
 function getLevelRangeIndex(level: number): number {
-  if (level <= 4) return 0;
-  if (level <= 8) return 1;
-  if (level <= 12) return 2;
-  if (level <= 16) return 3;
+  const normalizedLevel = normalizeEncounterLevel(level);
+  if (normalizedLevel <= 4) return 0;
+  if (normalizedLevel <= 8) return 1;
+  if (normalizedLevel <= 12) return 2;
+  if (normalizedLevel <= 16) return 3;
   return 4;
 }
 
@@ -135,8 +142,14 @@ export const INITIATIVE_CARDS: readonly InitiativeCard[] = INITIATIVE_CARD_DEFIN
   buildInitiativeCard(definition, 1),
 );
 
-export function getInitiativeCards(level: number): InitiativeCard[] {
-  return INITIATIVE_CARD_DEFINITIONS.map((definition) => buildInitiativeCard(definition, level));
+export function getInitiativeCards(level: number): readonly InitiativeCard[] {
+  const normalizedLevel = normalizeEncounterLevel(level);
+  const cachedCards = initiativeCardsByLevel.get(normalizedLevel);
+  if (cachedCards) return cachedCards;
+
+  const cards = INITIATIVE_CARD_DEFINITIONS.map((definition) => buildInitiativeCard(definition, normalizedLevel));
+  initiativeCardsByLevel.set(normalizedLevel, cards);
+  return cards;
 }
 
 export function getInitiativeCardById(id: string, level: number): InitiativeCard | undefined {
