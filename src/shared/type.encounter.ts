@@ -87,8 +87,9 @@ const LEVEL_INITIATIVE_RANGES: readonly InitiativeRangeSet[] = [
 ] as const;
 
 function normalizeEncounterLevel(level: number): number {
-  if (!Number.isFinite(level)) return 1;
-  return Math.max(1, Math.floor(level));
+  const normalizedLevel = Math.floor(level);
+  if (!Number.isFinite(normalizedLevel)) return 1;
+  return Math.max(1, normalizedLevel);
 }
 
 function getLevelRangeIndex(level: number): number {
