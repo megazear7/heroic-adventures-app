@@ -74,11 +74,11 @@ function getLevelRangeIndex(level: number): number {
   return 4;
 }
 
-function getInitiativeRangesForLevel(level: number) {
+function getInitiativeRangesForLevel(level: number): (typeof LEVEL_INITIATIVE_RANGES)[number] {
   return LEVEL_INITIATIVE_RANGES[getLevelRangeIndex(level)];
 }
 
-function buildCardLabel(participantType: InitiativeCard["participantType"], minInit: number, maxInit: number) {
+function buildCardLabel(participantType: InitiativeCard["participantType"], minInit: number, maxInit: number): string {
   const participantLabel = participantType === "player" ? "Players" : "Monsters";
   return maxInit >= 999 ? `${participantLabel} ${minInit}+` : `${participantLabel} ${minInit}–${maxInit}`;
 }
