@@ -20,7 +20,25 @@ export interface InitiativeCard {
   actionType: "major" | "minor";
 }
 
-const INITIATIVE_CARD_DEFINITIONS = [
+type InitiativeRange = readonly [minInit: number, maxInit: number | null];
+type InitiativeRangeSet = readonly [InitiativeRange, InitiativeRange, InitiativeRange, InitiativeRange];
+
+type MajorInitiativeCardDefinition = {
+  id: string;
+  participantType: InitiativeCard["participantType"];
+  actionType: "major";
+  tierIndex: number;
+};
+
+type MinorInitiativeCardDefinition = {
+  id: string;
+  participantType: InitiativeCard["participantType"];
+  actionType: "minor";
+};
+
+type InitiativeCardDefinition = MajorInitiativeCardDefinition | MinorInitiativeCardDefinition;
+
+const INITIATIVE_CARD_DEFINITIONS: readonly InitiativeCardDefinition[] = [
   { id: "player-1-3", participantType: "player", actionType: "major", tierIndex: 0 },
   { id: "player-4-6", participantType: "player", actionType: "major", tierIndex: 1 },
   { id: "player-7-8", participantType: "player", actionType: "major", tierIndex: 2 },
@@ -33,7 +51,7 @@ const INITIATIVE_CARD_DEFINITIONS = [
   { id: "monsters-minor", participantType: "monster", actionType: "minor" },
 ] as const;
 
-const LEVEL_INITIATIVE_RANGES = [
+const LEVEL_INITIATIVE_RANGES: readonly InitiativeRangeSet[] = [
   [
     [1, 2],
     [3, 4],
@@ -64,7 +82,7 @@ const LEVEL_INITIATIVE_RANGES = [
     [13, 15],
     [16, null],
   ],
-] as const satisfies readonly (readonly [readonly [number, number | null], ...(readonly [number, number | null][])])[];
+] as const;
 
 function getLevelRangeIndex(level: number): number {
   if (level <= 4) return 0;
@@ -74,7 +92,7 @@ function getLevelRangeIndex(level: number): number {
   return 4;
 }
 
-function getInitiativeRangesForLevel(level: number): (typeof LEVEL_INITIATIVE_RANGES)[number] {
+function getInitiativeRangesForLevel(level: number): InitiativeRangeSet {
   return LEVEL_INITIATIVE_RANGES[getLevelRangeIndex(level)];
 }
 
@@ -83,7 +101,7 @@ function buildCardLabel(participantType: InitiativeCard["participantType"], minI
   return maxInit >= 999 ? `${participantLabel} ${minInit}+` : `${participantLabel} ${minInit}–${maxInit}`;
 }
 
-function buildInitiativeCard(definition: (typeof INITIATIVE_CARD_DEFINITIONS)[number], level: number): InitiativeCard {
+function buildInitiativeCard(definition: InitiativeCardDefinition, level: number): InitiativeCard {
   if (definition.actionType === "minor") {
     return {
       id: definition.id,
