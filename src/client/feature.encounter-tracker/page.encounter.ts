@@ -17,6 +17,7 @@ import {
   duplicateEncounter,
   setEncounterArchived,
 } from "../../shared/service.encounters.js";
+import { STATUSES_CHANGED_EVENT, getStatuses, addStatus } from "../../shared/service.statuses.js";
 import { shuffleDeck, shuffleIds } from "../../shared/util.encounter.js";
 import { parseRouteParams } from "../../shared/util.route-params.js";
 import { searchIcon, leftArrowIcon } from "../icons.js";
@@ -584,6 +585,7 @@ export class PageEncounter extends LitElement {
 
   @state() private encounter: Encounter | null = null;
   @state() private rosterCharacters: Character[] = [];
+  @state() private statuses: string[] = [];
   @state() private toast: string | null = null;
   @state() private rosterQuery = "";
   @state() private rosterPickerOpen = false;
@@ -593,9 +595,11 @@ export class PageEncounter extends LitElement {
     super.connectedCallback();
     this.loadEncounter();
     this.syncCharacters();
+    this.statuses = getStatuses();
     window.addEventListener(CHARACTERS_CHANGED_EVENT, this.syncCharacters);
     window.addEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
     window.addEventListener(ENCOUNTERS_CHANGED_EVENT, this.onEncountersChanged);
+    window.addEventListener(STATUSES_CHANGED_EVENT, this.onStatusesChanged);
   }
 
   override disconnectedCallback() {
@@ -603,7 +607,12 @@ export class PageEncounter extends LitElement {
     window.removeEventListener(CHARACTERS_CHANGED_EVENT, this.syncCharacters);
     window.removeEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
     window.removeEventListener(ENCOUNTERS_CHANGED_EVENT, this.onEncountersChanged);
+    window.removeEventListener(STATUSES_CHANGED_EVENT, this.onStatusesChanged);
   }
+
+  private readonly onStatusesChanged = (): void => {
+    this.statuses = getStatuses();
+  };
 
   private readonly onEncountersChanged = (): void => {
     if (!this.encounter) return;
@@ -963,6 +972,21 @@ export class PageEncounter extends LitElement {
     this.updateParticipant(e.detail.id, { conditions: p.conditions.filter((c) => c !== e.detail.condition) });
   }
 
+  private handleAddCondition(e: CustomEvent<{ id: string; condition: string }>) {
+    if (!this.encounter) return;
+    const p = this.encounter.participants.find((x) => x.id === e.detail.id);
+    if (!p) return;
+    if (p.conditions.includes(e.detail.condition)) return;
+    this.updateParticipant(e.detail.id, { conditions: [...p.conditions, e.detail.condition] });
+  }
+
+  private handleCreateStatus(e: CustomEvent<{ id: string; condition: string }>) {
+    const name = e.detail.condition.trim();
+    if (!name) return;
+    addStatus(name);
+    this.handleAddCondition(e);
+  }
+
   private handleMoveUp(e: CustomEvent<{ id: string }>) {
     if (!this.encounter) return;
     const idx = this.encounter.participants.findIndex((p) => p.id === e.detail.id);
@@ -1156,6 +1180,8 @@ export class PageEncounter extends LitElement {
         @participant-remove=${this.handleRemove}
         @participant-notes=${this.handleNotes}
         @participant-remove-condition=${this.handleRemoveCondition}
+        @participant-add-condition=${this.handleAddCondition}
+        @participant-create-status=${this.handleCreateStatus}
         @participant-move-up=${this.handleMoveUp}
         @participant-move-down=${this.handleMoveDown}
         @participant-edit=${this.handleParticipantEdit}>
@@ -1167,6 +1193,7 @@ export class PageEncounter extends LitElement {
               (p, i) => html`
                 <encounter-participant
                   .participant=${p}
+                  .availableStatuses=${this.statuses}
                   .isActive=${activeIds.has(p.id)}
                   .isFirst=${i === 0}
                   .isLast=${i === enc.participants.length - 1}></encounter-participant>
