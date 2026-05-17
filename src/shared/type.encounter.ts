@@ -37,6 +37,7 @@ type MinorInitiativeCardDefinition = {
 };
 
 type InitiativeCardDefinition = MajorInitiativeCardDefinition | MinorInitiativeCardDefinition;
+const UNBOUNDED_INITIATIVE_MAX = 999;
 
 const INITIATIVE_CARD_DEFINITIONS: readonly InitiativeCardDefinition[] = [
   { id: "player-1-3", participantType: "player", actionType: "major", tierIndex: 0 },
@@ -96,9 +97,13 @@ function getInitiativeRangesForLevel(level: number): InitiativeRangeSet {
   return LEVEL_INITIATIVE_RANGES[getLevelRangeIndex(level)];
 }
 
-function buildCardLabel(participantType: InitiativeCard["participantType"], minInit: number, maxInit: number): string {
+function buildCardLabel(
+  participantType: InitiativeCard["participantType"],
+  minInit: number,
+  maxInit: number | null,
+): string {
   const participantLabel = participantType === "player" ? "Players" : "Monsters";
-  return maxInit >= 999 ? `${participantLabel} ${minInit}+` : `${participantLabel} ${minInit}–${maxInit}`;
+  return maxInit === null ? `${participantLabel} ${minInit}+` : `${participantLabel} ${minInit}–${maxInit}`;
 }
 
 function buildInitiativeCard(definition: InitiativeCardDefinition, level: number): InitiativeCard {
@@ -114,11 +119,11 @@ function buildInitiativeCard(definition: InitiativeCardDefinition, level: number
   }
 
   const [minInit, maxInitValue] = getInitiativeRangesForLevel(level)[definition.tierIndex];
-  const maxInit = maxInitValue ?? 999;
+  const maxInit = maxInitValue ?? UNBOUNDED_INITIATIVE_MAX;
 
   return {
     id: definition.id,
-    label: buildCardLabel(definition.participantType, minInit, maxInit),
+    label: buildCardLabel(definition.participantType, minInit, maxInitValue),
     participantType: definition.participantType,
     minInit,
     maxInit,
