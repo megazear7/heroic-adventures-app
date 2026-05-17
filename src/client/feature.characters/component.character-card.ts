@@ -1,7 +1,12 @@
 import { css, html, LitElement, nothing, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { globalStyles } from "../styles.global.js";
-import { deleteCharacter, getCharacters, upsertCharacter } from "../../shared/service.characters.js";
+import {
+  deleteCharacter,
+  getCharacters,
+  setCharacterArchived,
+  upsertCharacter,
+} from "../../shared/service.characters.js";
 import {
   Character,
   CharacterContentLink,
@@ -273,6 +278,11 @@ export class CharacterCard extends LitElement {
               <span class="pill">${c.class.title}</span>
               <span class="pill">${c.background.title}</span>
               <span class="pill">${c.flaw.title}</span>
+              ${c.archived
+                ? html`
+                    <span class="pill">Archived</span>
+                  `
+                : nothing}
             </div>
           </div>
           <div class="menu-wrap">
@@ -287,6 +297,9 @@ export class CharacterCard extends LitElement {
                     <button type="button" @click=${this.copyCharacter}>Copy</button>
                     <button type="button" @click=${this.openCharacterEditor}>Edit Character</button>
                     <button type="button" @click=${this.duplicateCharacter}>Duplicate</button>
+                    <button type="button" @click=${this.toggleArchiveCharacter}>
+                      ${this.character.archived ? "Restore" : "Archive"}
+                    </button>
                     <button type="button" @click=${this.removeCharacter}>Delete</button>
                   </div>
                 `
@@ -486,6 +499,7 @@ export class CharacterCard extends LitElement {
       ...this.character,
       id: crypto.randomUUID(),
       name: nextName,
+      archived: false,
       createdAt: now,
       updatedAt: now,
     };
@@ -538,6 +552,13 @@ export class CharacterCard extends LitElement {
   private removeCharacter = (): void => {
     this.menuOpen = false;
     deleteCharacter(this.character.id);
+  };
+
+  private toggleArchiveCharacter = (): void => {
+    this.menuOpen = false;
+    const archived = !this.character.archived;
+    setCharacterArchived(this.character.id, archived);
+    this.feedback = archived ? "Character archived." : "Character restored.";
   };
 
   private toggleMenu = (event: Event): void => {

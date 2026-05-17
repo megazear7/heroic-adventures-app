@@ -98,6 +98,7 @@ export class PageCharacters extends LitElement {
   ];
 
   @state() private characters: Character[] = [];
+  @state() private showArchived = false;
 
   private readonly syncCharacters = (): void => {
     this.characters = getCharacters();
@@ -117,6 +118,10 @@ export class PageCharacters extends LitElement {
   }
 
   override render(): TemplateResult {
+    const activeCharacters = this.characters.filter((character) => !character.archived);
+    const archivedCharacters = this.characters.filter((character) => character.archived);
+    const visibleCharacters = this.showArchived ? this.characters : activeCharacters;
+
     return html`
       <main>
         <section class="hero">
@@ -129,8 +134,13 @@ export class PageCharacters extends LitElement {
           </div>
           <div class="hero-stats">
             <div class="hero-stat">
-              ${this.characters.length} saved ${this.characters.length === 1 ? "character" : "characters"}
+              ${activeCharacters.length} active ${activeCharacters.length === 1 ? "character" : "characters"}
             </div>
+            ${archivedCharacters.length > 0
+              ? html`
+                  <div class="hero-stat">${archivedCharacters.length} archived</div>
+                `
+              : ""}
             <div class="hero-stat">Content-linked selections</div>
             <div class="hero-stat">Profile-scoped local storage</div>
             <a class="btn btn-primary" href="/character/create">Create Character</a>
@@ -144,18 +154,26 @@ export class PageCharacters extends LitElement {
                 <h2>Roster</h2>
                 <p>Every saved character updates when you add compatible entries from their source pages.</p>
               </div>
+              ${archivedCharacters.length > 0
+                ? html`
+                    <button class="btn" type="button" @click=${this.toggleArchived}>
+                      ${this.showArchived ? "Hide archived" : `Show archived (${archivedCharacters.length})`}
+                    </button>
+                  `
+                : ""}
             </div>
 
-            ${this.characters.length === 0
+            ${visibleCharacters.length === 0
               ? html`
                   <div class="empty">
-                    No characters yet. Build one on the left, then start adding features, spells, and gear from entry
-                    pages.
+                    ${this.characters.length === 0
+                      ? "No characters yet. Build one on the left, then start adding features, spells, and gear from entry pages."
+                      : "No active characters. Show archived to restore one."}
                   </div>
                 `
               : html`
                   <div class="characters-list">
-                    ${this.characters.map(
+                    ${visibleCharacters.map(
                       (character) => html`
                         <character-card .character=${character}></character-card>
                       `,
@@ -167,4 +185,8 @@ export class PageCharacters extends LitElement {
       </main>
     `;
   }
+
+  private toggleArchived = (): void => {
+    this.showArchived = !this.showArchived;
+  };
 }

@@ -84,9 +84,27 @@ export function duplicateEncounter(encounter: Encounter): Encounter {
     ...encounter,
     id: crypto.randomUUID(),
     name: `${encounter.name} (copy)`,
+    archived: false,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
   upsertEncounter(copy);
   return copy;
+}
+
+export function setEncounterArchived(id: string, archived: boolean): Encounter | null {
+  const encounters = getEncounters();
+  const index = encounters.findIndex((encounter) => encounter.id === id);
+  if (index === -1) {
+    return null;
+  }
+
+  const updatedEncounter = {
+    ...encounters[index],
+    archived,
+    updatedAt: Date.now(),
+  };
+  encounters[index] = updatedEncounter;
+  saveEncounterList(encounters);
+  return updatedEncounter;
 }

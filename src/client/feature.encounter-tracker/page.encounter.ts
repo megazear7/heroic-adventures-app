@@ -2,18 +2,14 @@ import { LitElement, html, css, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { CHARACTERS_CHANGED_EVENT, getCharacters, upsertCharacter } from "../../shared/service.characters.js";
 import { Character } from "../../shared/type.character.js";
-import {
-  Encounter,
-  Participant,
-  INITIATIVE_CARDS,
-  InitiativeCard,
-} from "../../shared/type.encounter.js";
+import { Encounter, Participant, INITIATIVE_CARDS, InitiativeCard } from "../../shared/type.encounter.js";
 import { PROFILE_CHANGED_EVENT } from "../../shared/service.profile.js";
 import {
   ENCOUNTERS_CHANGED_EVENT,
   getEncounter,
   upsertEncounter,
   duplicateEncounter,
+  setEncounterArchived,
 } from "../../shared/service.encounters.js";
 import { shuffleDeck, shuffleIds } from "../../shared/util.encounter.js";
 import { parseRouteParams } from "../../shared/util.route-params.js";
@@ -782,6 +778,16 @@ export class PageEncounter extends LitElement {
     );
   };
 
+  private handleToggleArchive = (): void => {
+    if (!this.encounter) return;
+    const archived = !this.encounter.archived;
+    const updated = setEncounterArchived(this.encounter.id, archived);
+    if (updated) {
+      this.encounter = updated;
+      this.showToast(archived ? "Encounter archived." : "Encounter restored.");
+    }
+  };
+
   /* ---- Participant handlers ---- */
 
   private handleParticipantAdded(e: CustomEvent<Participant>) {
@@ -1049,6 +1055,11 @@ export class PageEncounter extends LitElement {
           Round
           <span class="round-number">${enc.round}</span>
         </div>
+        ${enc.archived
+          ? html`
+              <div class="round-badge">Archived</div>
+            `
+          : nothing}
       </div>
 
       <!-- Card Deck Section -->
@@ -1121,6 +1132,9 @@ export class PageEncounter extends LitElement {
               `}
           <button class="btn btn-muted" @click=${this.shuffleRemainingCards}>🔀 Shuffle Remaining</button>
           <button class="btn btn-muted" @click=${this.handleDuplicate}>⧉ Duplicate</button>
+          <button class="btn btn-muted" @click=${this.handleToggleArchive}>
+            ${enc.archived ? "↩ Restore" : "🗄 Archive"}
+          </button>
         </div>
       </div>
 

@@ -173,6 +173,23 @@ export function deleteCharacter(characterId: string): void {
   saveCharacters(getCharacters().filter((character) => character.id !== characterId));
 }
 
+export function setCharacterArchived(characterId: string, archived: boolean): Character | null {
+  const characters = getCharacters();
+  const index = characters.findIndex((character) => character.id === characterId);
+  if (index === -1) {
+    return null;
+  }
+
+  const nextCharacter = {
+    ...characters[index],
+    archived,
+    updatedAt: Date.now(),
+  };
+  characters[index] = nextCharacter;
+  saveCharacters(characters);
+  return nextCharacter;
+}
+
 export function createCharacterContentLink(entry: {
   id: string;
   title: string;
