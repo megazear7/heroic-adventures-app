@@ -8,6 +8,7 @@ import {
   getEncounters,
   deleteEncounter,
   duplicateEncounter,
+  setEncounterArchived,
 } from "../../shared/service.encounters.js";
 
 function formatDate(timestamp: number): string {
@@ -145,6 +146,7 @@ export class PageEncounters extends LitElement {
   ];
 
   @state() private encounters: Encounter[] = [];
+  @state() private showArchived = false;
 
   private readonly syncEncounters = (): void => {
     this.encounters = getEncounters();
@@ -164,31 +166,42 @@ export class PageEncounters extends LitElement {
   }
 
   override render(): TemplateResult {
+    const activeEncounters = this.encounters.filter((encounter) => !encounter.archived);
+    const archivedEncounters = this.encounters.filter((encounter) => encounter.archived);
+    const visibleEncounters = this.showArchived ? this.encounters : activeEncounters;
+
     return html`
       <main>
         <section class="hero">
           <div class="hero-copy">
             <h1>Encounters</h1>
-            <p>
-              Prep, run, pause, and resume encounters. Each encounter auto-saves as you make changes.
-            </p>
+            <p>Prep, run, pause, and resume encounters. Each encounter auto-saves as you make changes.</p>
           </div>
           <div class="hero-actions">
             <div class="hero-stat">
-              ${this.encounters.length} saved ${this.encounters.length === 1 ? "encounter" : "encounters"}
+              ${activeEncounters.length} active ${activeEncounters.length === 1 ? "encounter" : "encounters"}
             </div>
+            ${archivedEncounters.length > 0
+              ? html`
+                  <button class="btn btn-muted" type="button" @click=${this.toggleArchived}>
+                    ${this.showArchived ? "Hide archived" : `Show archived (${archivedEncounters.length})`}
+                  </button>
+                `
+              : ""}
             <a class="btn btn-primary" href="/encounter/create">New Encounter</a>
           </div>
         </section>
 
-        ${this.encounters.length === 0
+        ${visibleEncounters.length === 0
           ? html`
-              <div class="empty">No encounters yet. Create one to get started.</div>
+              <div class="empty">
+                ${this.encounters.length === 0
+                  ? "No encounters yet. Create one to get started."
+                  : "No active encounters. Show archived to restore one."}
+              </div>
             `
           : html`
-              <div class="encounters-list">
-                ${this.encounters.map((enc) => this.renderEncounterCard(enc))}
-              </div>
+              <div class="encounters-list">${visibleEncounters.map((enc) => this.renderEncounterCard(enc))}</div>
             `}
       </main>
     `;
@@ -202,13 +215,23 @@ export class PageEncounters extends LitElement {
           <div class="encounter-meta">
             <span class="meta-badge">Level ${enc.level}</span>
             <span class="meta-badge">Round ${enc.round}</span>
-            <span class="meta-badge">${enc.participants.length} participant${enc.participants.length === 1 ? "" : "s"}</span>
+            <span class="meta-badge">
+              ${enc.participants.length} participant${enc.participants.length === 1 ? "" : "s"}
+            </span>
+            ${enc.archived
+              ? html`
+                  <span class="meta-badge">Archived</span>
+                `
+              : ""}
             <span>Updated ${formatDate(enc.updatedAt)}</span>
           </div>
         </div>
         <div class="encounter-actions">
           <a class="btn btn-primary" href="/encounter/${enc.id}">Resume</a>
           <button class="btn btn-muted" @click=${() => this.handleDuplicate(enc)}>Duplicate</button>
+          <button class="btn btn-muted" @click=${() => this.handleToggleArchive(enc)}>
+            ${enc.archived ? "Restore" : "Archive"}
+          </button>
           <button class="btn btn-danger" @click=${() => this.handleDelete(enc)}>Delete</button>
         </div>
       </div>
@@ -230,4 +253,12 @@ export class PageEncounters extends LitElement {
     if (!confirm(`Delete "${enc.name}"? This cannot be undone.`)) return;
     deleteEncounter(enc.id);
   }
+
+  private handleToggleArchive(enc: Encounter): void {
+    setEncounterArchived(enc.id, !enc.archived);
+  }
+
+  private toggleArchived = (): void => {
+    this.showArchived = !this.showArchived;
+  };
 }
