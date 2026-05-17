@@ -11,6 +11,7 @@ import {
   getInitiativeCardById,
 } from "../../shared/type.encounter.js";
 import { PROFILE_CHANGED_EVENT } from "../../shared/service.profile.js";
+import { STATUSES_CHANGED_EVENT, getStatuses, addStatus } from "../../shared/service.statuses.js";
 import { searchIcon } from "../icons.js";
 import "./component.encounter-add-form.js";
 import "./component.encounter-participant.js";
@@ -581,6 +582,7 @@ export class PageEncounterTracker extends LitElement {
 
   @state() private encounter: Encounter = newEncounter();
   @state() private rosterCharacters: Character[] = [];
+  @state() private statuses: string[] = [];
   @state() private toast: string | null = null;
   @state() private rosterQuery = "";
   @state() private rosterPickerOpen = false;
@@ -590,15 +592,22 @@ export class PageEncounterTracker extends LitElement {
     super.connectedCallback();
     this.loadEncounter();
     this.syncCharacters();
+    this.statuses = getStatuses();
     window.addEventListener(CHARACTERS_CHANGED_EVENT, this.syncCharacters);
     window.addEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
+    window.addEventListener(STATUSES_CHANGED_EVENT, this.onStatusesChanged);
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener(CHARACTERS_CHANGED_EVENT, this.syncCharacters);
     window.removeEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
+    window.removeEventListener(STATUSES_CHANGED_EVENT, this.onStatusesChanged);
   }
+
+  private readonly onStatusesChanged = (): void => {
+    this.statuses = getStatuses();
+  };
 
   private readonly syncCharacters = (): void => {
     this.rosterCharacters = getCharacters();
@@ -927,6 +936,20 @@ export class PageEncounterTracker extends LitElement {
     this.updateParticipant(e.detail.id, { conditions: p.conditions.filter((c) => c !== e.detail.condition) });
   }
 
+  private handleAddCondition(e: CustomEvent<{ id: string; condition: string }>) {
+    const p = this.encounter.participants.find((x) => x.id === e.detail.id);
+    if (!p) return;
+    if (p.conditions.includes(e.detail.condition)) return;
+    this.updateParticipant(e.detail.id, { conditions: [...p.conditions, e.detail.condition] });
+  }
+
+  private handleCreateStatus(e: CustomEvent<{ id: string; condition: string }>) {
+    const name = e.detail.condition.trim();
+    if (!name) return;
+    addStatus(name);
+    this.handleAddCondition(e);
+  }
+
   private handleMoveUp(e: CustomEvent<{ id: string }>) {
     const idx = this.encounter.participants.findIndex((p) => p.id === e.detail.id);
     if (idx <= 0) return;
@@ -1100,6 +1123,8 @@ export class PageEncounterTracker extends LitElement {
         @participant-remove=${this.handleRemove}
         @participant-notes=${this.handleNotes}
         @participant-remove-condition=${this.handleRemoveCondition}
+        @participant-add-condition=${this.handleAddCondition}
+        @participant-create-status=${this.handleCreateStatus}
         @participant-move-up=${this.handleMoveUp}
         @participant-move-down=${this.handleMoveDown}
         @participant-edit=${this.handleParticipantEdit}>
@@ -1111,6 +1136,7 @@ export class PageEncounterTracker extends LitElement {
               (p, i) => html`
                 <encounter-participant
                   .participant=${p}
+                  .availableStatuses=${this.statuses}
                   .isActive=${activeIds.has(p.id)}
                   .isFirst=${i === 0}
                   .isLast=${i === enc.participants.length - 1}></encounter-participant>

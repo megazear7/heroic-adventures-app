@@ -312,22 +312,131 @@ export class EncounterParticipant extends LitElement {
     textarea.notes-input:focus {
       border-color: var(--color-1, #c9a84c);
     }
-    .conditions-row {
+    .statuses-section {
+      margin-top: 0.5rem;
+    }
+    .status-chips-row {
       display: flex;
       gap: 0.35rem;
       flex-wrap: wrap;
-      margin-top: 0.35rem;
+      margin-bottom: 0.35rem;
     }
-    .condition-chip {
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
       font-size: 0.7rem;
-      padding: 1px 8px;
+      padding: 2px 8px;
       border-radius: 20px;
       background: rgba(201, 168, 76, 0.15);
       color: var(--color-1, #c9a84c);
-      cursor: pointer;
     }
-    .condition-chip:hover {
-      background: rgba(201, 168, 76, 0.28);
+    .status-chip-remove {
+      border: none;
+      background: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      font-size: 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      opacity: 0.7;
+    }
+    .status-chip-remove:hover {
+      opacity: 1;
+    }
+    .status-picker-shell {
+      position: relative;
+    }
+    .status-picker-trigger {
+      background: none;
+      border: 1px dashed rgba(201, 168, 76, 0.3);
+      color: var(--color-primary-text-muted, #8a8780);
+      font-size: 0.75rem;
+      border-radius: 20px;
+      padding: 2px 10px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .status-picker-trigger:hover {
+      border-color: var(--color-1, #c9a84c);
+      color: var(--color-1, #c9a84c);
+    }
+    .status-search-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--color-primary-surface-raised, #16162a);
+      border: 1px solid rgba(201, 168, 76, 0.35);
+      border-radius: 8px;
+      padding: 6px 10px;
+    }
+    .status-search-wrapper:focus-within {
+      border-color: var(--color-1, #c9a84c);
+    }
+    .status-search-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--color-primary-text, #e2e0d6);
+      font-size: 0.85rem;
+      font-family: var(--font-family, sans-serif);
+      min-width: 0;
+    }
+    .status-search-cancel {
+      border: none;
+      background: none;
+      color: var(--color-primary-text-muted, #8a8780);
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 0;
+      touch-action: manipulation;
+    }
+    .status-search-cancel:hover {
+      color: var(--color-primary-text, #e2e0d6);
+    }
+    .status-results {
+      position: absolute;
+      inset: calc(100% + 4px) 0 auto;
+      z-index: 100;
+      background: var(--color-primary-surface-raised, #16162a);
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      border-radius: 8px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      max-height: min(220px, 40vh);
+      overflow-y: auto;
+    }
+    .status-result {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: none;
+      border-bottom: 1px solid rgba(201, 168, 76, 0.07);
+      background: transparent;
+      color: var(--color-primary-text, #e2e0d6);
+      cursor: pointer;
+      padding: 0.55rem 0.85rem;
+      font: inherit;
+      font-size: 0.85rem;
+      touch-action: manipulation;
+    }
+    .status-result:last-child {
+      border-bottom: none;
+    }
+    .status-result.active,
+    .status-result:hover {
+      background: rgba(201, 168, 76, 0.1);
+    }
+    .status-result.create-new {
+      color: var(--color-1, #c9a84c);
+      font-style: italic;
+    }
+    .status-empty {
+      padding: 0.5rem 0.85rem;
+      color: var(--color-primary-text-muted, #8a8780);
+      font-size: 0.8rem;
     }
     .overlay {
       position: fixed;
@@ -432,6 +541,8 @@ export class EncounterParticipant extends LitElement {
   @property({ type: Boolean }) isActive = false;
   @property({ type: Boolean }) isFirst = false;
   @property({ type: Boolean }) isLast = false;
+  /** Full list of available status names from the user's status library */
+  @property({ type: Array }) availableStatuses: string[] = [];
 
   @state() private adjustAmount = 1;
   @state() private showNotes = false;
@@ -439,7 +550,11 @@ export class EncounterParticipant extends LitElement {
   @state() private editNameDraft = "";
   @state() private editHealthDraft = "1";
   @state() private editInitiativeDraft = "1";
+  @state() private statusPickerOpen = false;
+  @state() private statusQuery = "";
+  @state() private statusActiveIndex = -1;
   private editTriggerButton: HTMLButtonElement | null = null;
+  private statusInputRef: HTMLInputElement | null = null;
 
   private hpClass(): string {
     const pct = this.participant.hp / this.participant.maxHp;
@@ -482,6 +597,100 @@ export class EncounterParticipant extends LitElement {
       id: this.participant.id,
       notes: (e.target as HTMLTextAreaElement).value,
     });
+  }
+
+  private get statusResults(): string[] {
+    const query = this.statusQuery.trim().toLowerCase();
+    const assigned = new Set(this.participant.conditions.map((c) => c.toLowerCase()));
+    const pool = this.availableStatuses.filter((s) => !assigned.has(s.toLowerCase()));
+    if (!query) return pool;
+    return pool.filter((s) => s.toLowerCase().includes(query));
+  }
+
+  private get showCreateOption(): boolean {
+    const query = this.statusQuery.trim();
+    if (!query) return false;
+    const assigned = new Set(this.participant.conditions.map((c) => c.toLowerCase()));
+    if (assigned.has(query.toLowerCase())) return false;
+    const exact = this.availableStatuses.some((s) => s.toLowerCase() === query.toLowerCase());
+    return !exact;
+  }
+
+  private openStatusPicker() {
+    this.statusPickerOpen = true;
+    this.statusQuery = "";
+    this.statusActiveIndex = -1;
+    void this.focusStatusInput();
+  }
+
+  private closeStatusPicker() {
+    this.statusPickerOpen = false;
+    this.statusQuery = "";
+    this.statusActiveIndex = -1;
+  }
+
+  private async focusStatusInput(): Promise<void> {
+    await this.updateComplete;
+    this.statusInputRef = this.renderRoot.querySelector<HTMLInputElement>(".status-search-input");
+    this.statusInputRef?.focus();
+  }
+
+  private handleStatusInput = (e: Event): void => {
+    this.statusQuery = (e.target as HTMLInputElement).value;
+    this.statusActiveIndex = -1;
+  };
+
+  private handleStatusKeyDown = (e: KeyboardEvent): void => {
+    const results = this.statusResults;
+    const hasCreate = this.showCreateOption;
+    const totalItems = results.length + (hasCreate ? 1 : 0);
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      this.statusActiveIndex = Math.min(this.statusActiveIndex + 1, totalItems - 1);
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this.statusActiveIndex = Math.max(this.statusActiveIndex - 1, -1);
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (this.statusActiveIndex >= 0 && this.statusActiveIndex < results.length) {
+        this.selectStatus(results[this.statusActiveIndex]);
+      } else if (hasCreate && this.statusActiveIndex === results.length) {
+        this.createAndSelectStatus(this.statusQuery.trim());
+      } else if (hasCreate && this.statusActiveIndex < 0) {
+        // Enter with no selection and a create option: create directly
+        this.createAndSelectStatus(this.statusQuery.trim());
+      } else if (results.length === 1) {
+        this.selectStatus(results[0]);
+      }
+      return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      this.closeStatusPicker();
+    }
+  };
+
+  private handleStatusBlur = (e: FocusEvent): void => {
+    const shell = this.renderRoot.querySelector(".status-picker-shell");
+    const next = e.relatedTarget as Node | null;
+    if (shell && next && shell.contains(next)) return;
+    this.closeStatusPicker();
+  };
+
+  private selectStatus(name: string): void {
+    this.dispatch("participant-add-condition", { id: this.participant.id, condition: name });
+    this.closeStatusPicker();
+  }
+
+  private createAndSelectStatus(name: string): void {
+    if (!name) return;
+    this.dispatch("participant-create-status", { id: this.participant.id, condition: name });
+    this.closeStatusPicker();
   }
 
   private openEditModal(event: Event) {
@@ -612,22 +821,102 @@ export class EncounterParticipant extends LitElement {
           <button class="btn btn-remove" @click=${this.handleRemove} title="Remove participant">Remove</button>
         </div>
 
-        ${p.conditions.length > 0
-          ? html`
-              <div class="conditions-row">
-                ${p.conditions.map(
-                  (c) => html`
-                    <span
-                      class="condition-chip"
-                      @click=${() => this.dispatch("participant-remove-condition", { id: p.id, condition: c })}
-                      title="Click to remove condition">
-                      ${c} ×
-                    </span>
-                  `,
-                )}
+        <div class="statuses-section">
+          ${p.conditions.length > 0
+                  ? html`
+                      <div class="status-chips-row">
+                        ${p.conditions.map(
+                          (c) => html`
+                            <span class="status-chip">
+                              ${c}
+                              <button
+                                class="status-chip-remove"
+                                type="button"
+                                title="Remove ${c}"
+                                aria-label="Remove status ${c}"
+                                @click=${() =>
+                                  this.dispatch("participant-remove-condition", { id: p.id, condition: c })}>
+                                ×
+                              </button>
+                            </span>
+                          `,
+                        )}
+                      </div>
+                    `
+                  : nothing}
+                <div class="status-picker-shell">
+                  ${this.statusPickerOpen
+                    ? html`
+                        <div class="status-search-wrapper">
+                          <input
+                            class="status-search-input"
+                            type="text"
+                            placeholder="Search or create status…"
+                            .value=${this.statusQuery}
+                            @input=${this.handleStatusInput}
+                            @keydown=${this.handleStatusKeyDown}
+                            @blur=${this.handleStatusBlur}
+                            aria-label="Search statuses"
+                            autocomplete="off" />
+                          <button
+                            class="status-search-cancel"
+                            type="button"
+                            aria-label="Cancel status search"
+                            @click=${this.closeStatusPicker}>
+                            ✕
+                          </button>
+                        </div>
+                        <div class="status-results" role="listbox">
+                          ${this.statusResults.length === 0 && !this.showCreateOption
+                            ? html`
+                                <div class="status-empty">
+                                  ${this.statusQuery.trim()
+                                    ? `Type a name and press Enter to create "${this.statusQuery.trim()}"`
+                                    : "No statuses in library yet. Type to create one."}
+                                </div>
+                              `
+                            : nothing}
+                          ${this.statusResults.map(
+                            (s, i) => html`
+                              <button
+                                class="status-result ${i === this.statusActiveIndex ? "active" : ""}"
+                                role="option"
+                                type="button"
+                                @mousedown=${(e: Event) => {
+                                  e.preventDefault();
+                                  this.selectStatus(s);
+                                }}>
+                                ${s}
+                              </button>
+                            `,
+                          )}
+                          ${this.showCreateOption
+                            ? html`
+                                <button
+                                  class="status-result create-new ${this.statusActiveIndex === this.statusResults.length ? "active" : ""}"
+                                  role="option"
+                                  type="button"
+                                  @mousedown=${(e: Event) => {
+                                    e.preventDefault();
+                                    this.createAndSelectStatus(this.statusQuery.trim());
+                                  }}>
+                                  + Create "${this.statusQuery.trim()}"
+                                </button>
+                              `
+                            : nothing}
+                        </div>
+                      `
+                    : html`
+                        <button
+                          class="status-picker-trigger"
+                          type="button"
+                          aria-label="Add status to participant"
+                          @click=${this.openStatusPicker}>
+                          + Add status
+                        </button>
+                      `}
+                </div>
               </div>
-            `
-          : nothing}
 
         <div class="notes-section">
           <button class="notes-toggle" @click=${() => (this.showNotes = !this.showNotes)}>
