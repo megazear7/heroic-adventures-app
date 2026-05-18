@@ -8,20 +8,6 @@ export class HeroicLinkCard extends LitElement {
   static override styles = [
     globalStyles,
     css`
-      a {
-        display: block;
-        text-decoration: none;
-        color: inherit;
-      }
-
-      .card {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        cursor: pointer;
-        min-height: 48px;
-      }
-
       .card-body {
         display: flex;
         align-items: center;
@@ -49,24 +35,8 @@ export class HeroicLinkCard extends LitElement {
       }
 
       .card-count {
-        font-size: var(--font-small);
-        color: var(--color-primary-text-muted);
         margin-left: auto;
         margin-right: 12px;
-      }
-
-      .card-arrow {
-        color: var(--color-primary-text-muted);
-        transition: var(--transition-fast);
-      }
-
-      .card:hover .card-arrow {
-        color: var(--color-1);
-        transform: translateX(4px);
-      }
-
-      .card:hover .card-title {
-        color: var(--color-1);
       }
     `,
   ];
@@ -77,14 +47,18 @@ export class HeroicLinkCard extends LitElement {
 
   override render(): TemplateResult {
     return html`
-      <a href="${this.href}">
-        <div class="card">
-          <div class="card-body">
+      <a class="card-link" href="${this.href}">
+        <div class="card card-row">
+          <div class="card-row-body card-body">
             <span class="card-icon"><slot name="icon"></slot></span>
-            <div class="card-title">${this.label}</div>
+            <div class="card-row-title card-title">${this.label}</div>
           </div>
-          ${this.count > 0 ? html`<span class="card-count">${this.count}</span>` : ""}
-          <span class="card-arrow">${chevronRightIcon}</span>
+          ${this.count > 0
+            ? html`
+                <span class="card-row-count card-count">${this.count}</span>
+              `
+            : ""}
+          <span class="card-row-arrow card-arrow">${chevronRightIcon}</span>
         </div>
       </a>
     `;

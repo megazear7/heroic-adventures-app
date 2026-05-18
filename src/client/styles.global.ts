@@ -1,6 +1,10 @@
 import { css } from "lit";
 
 export const globalStyles = css`
+  /* Style guide:
+   * - Prefer composing these shared card/modal/button utility classes before creating component-local variants.
+   * - Keep customizations as variable overrides or small modifier classes near the component.
+   */
   :host {
     display: block;
   }
@@ -60,6 +64,112 @@ export const globalStyles = css`
     border-color: rgba(201, 168, 76, 0.35);
     box-shadow: var(--shadow-glow);
     transform: translateY(-2px);
+  }
+
+  .card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    min-height: 48px;
+  }
+
+  .card-row-body {
+    flex: 1;
+  }
+
+  .card-row-title {
+    font-family: var(--font-family-display);
+    font-size: var(--font-medium);
+    color: var(--color-primary-text);
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .card-row-count {
+    font-size: var(--font-small);
+    color: var(--color-primary-text-muted);
+  }
+
+  .card-row-arrow {
+    color: var(--color-primary-text-muted);
+    transition: var(--transition-fast);
+  }
+
+  .card-row:hover .card-row-arrow {
+    color: var(--color-1);
+    transform: translateX(4px);
+  }
+
+  .card-row:hover .card-row-title {
+    color: var(--color-1);
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--modal-overlay-bg, rgba(0, 0, 0, 0.65));
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-surface {
+    width: min(var(--modal-max-width, 760px), 100%);
+    background: var(--color-primary-surface-raised);
+    border: var(--modal-border, var(--border-normal));
+    border-radius: var(--border-radius-medium);
+    padding: var(--modal-padding, var(--size-large));
+    box-shadow: var(--modal-shadow, var(--shadow-medium));
+    display: grid;
+    gap: var(--modal-gap, var(--size-medium));
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--size-small);
+  }
+
+  .modal-close {
+    border: none;
+    background: none;
+    color: var(--color-primary-text-muted);
+    cursor: pointer;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--size-small);
+  }
+
+  .form-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--form-input-padding, 10px 12px);
+    border-radius: var(--border-radius-small);
+    border: var(--form-input-border, var(--border-normal));
+    background: var(--color-primary-surface-overlay);
+    color: var(--color-primary-text);
+    font-family: var(--font-family);
+    font-size: var(--font-medium);
+    outline: none;
+    transition: var(--transition-fast);
+  }
+
+  .form-input:focus {
+    border-color: var(--color-1);
+    box-shadow: var(--shadow-glow);
   }
 
   .btn {
