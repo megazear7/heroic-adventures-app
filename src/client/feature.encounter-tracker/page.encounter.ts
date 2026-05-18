@@ -190,6 +190,10 @@ export class PageEncounter extends LitElement {
       font: inherit;
       appearance: none;
       text-align: left;
+      background: var(--color-primary-surface-raised, #16162a);
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      border-radius: 8px;
+      padding: 0.4rem 0.9rem;
       transition:
         border-color 120ms ease,
         box-shadow 120ms ease;
@@ -714,6 +718,7 @@ export class PageEncounter extends LitElement {
     window.addEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
     window.addEventListener(ENCOUNTERS_CHANGED_EVENT, this.onEncountersChanged);
     window.addEventListener(STATUSES_CHANGED_EVENT, this.onStatusesChanged);
+    window.addEventListener("keydown", this.onWindowKeyDown);
   }
 
   override disconnectedCallback() {
@@ -722,10 +727,17 @@ export class PageEncounter extends LitElement {
     window.removeEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
     window.removeEventListener(ENCOUNTERS_CHANGED_EVENT, this.onEncountersChanged);
     window.removeEventListener(STATUSES_CHANGED_EVENT, this.onStatusesChanged);
+    window.removeEventListener("keydown", this.onWindowKeyDown);
   }
 
   private readonly onStatusesChanged = (): void => {
     this.statuses = getStatuses();
+  };
+
+  private readonly onWindowKeyDown = (event: KeyboardEvent): void => {
+    if (event.key === "Escape" && this.roundHistoryOpen) {
+      this.closeRoundHistory();
+    }
   };
 
   private readonly onEncountersChanged = (): void => {
@@ -1263,7 +1275,7 @@ export class PageEncounter extends LitElement {
           type="button"
           class="round-badge round-badge-button"
           @click=${this.openRoundHistory}
-          aria-label="View previous round card order">
+          aria-label="View card order from previous rounds">
           Round
           <span class="round-number">${enc.round}</span>
         </button>
@@ -1451,8 +1463,8 @@ export class PageEncounter extends LitElement {
                     type="button"
                     class="btn btn-muted round-history-close"
                     @click=${this.closeRoundHistory}
-                    aria-label="Close previous rounds">
-                    ✕
+                    aria-label="Close previous rounds history dialog">
+                    Close
                   </button>
                 </div>
                 ${priorRounds.length === 0
