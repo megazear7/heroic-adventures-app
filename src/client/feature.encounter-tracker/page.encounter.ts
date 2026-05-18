@@ -736,9 +736,18 @@ export class PageEncounter extends LitElement {
 
   private readonly onWindowKeyDown = (event: KeyboardEvent): void => {
     if (event.key === "Escape" && this.roundHistoryOpen) {
+      event.preventDefault();
+      event.stopPropagation();
       this.closeRoundHistory();
     }
   };
+
+  private handleRoundHistoryOverlayKeyDown(event: KeyboardEvent): void {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      this.closeRoundHistory();
+    }
+  }
 
   private readonly onEncountersChanged = (): void => {
     if (!this.encounter) return;
@@ -1448,15 +1457,21 @@ export class PageEncounter extends LitElement {
 
       ${this.roundHistoryOpen
         ? html`
-            <div class="round-history-overlay" @click=${this.closeRoundHistory}>
+            <div
+              class="round-history-overlay"
+              role="button"
+              tabindex="0"
+              @click=${this.closeRoundHistory}
+              @keydown=${this.handleRoundHistoryOverlayKeyDown}>
               <div
                 class="round-history-modal"
                 role="dialog"
                 aria-modal="true"
+                aria-labelledby="round-history-title"
                 @click=${(event: Event) => event.stopPropagation()}>
                 <div class="round-history-header">
                   <div>
-                    <h2 class="round-history-title">Previous Rounds</h2>
+                    <h2 id="round-history-title" class="round-history-title">Previous Rounds</h2>
                     <p class="round-history-subtitle">Exact shuffled card order</p>
                   </div>
                   <button
