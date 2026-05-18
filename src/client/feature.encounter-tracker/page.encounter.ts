@@ -846,13 +846,13 @@ export class PageEncounter extends LitElement {
     this.saveRoundHistory(encounter.id, history);
   }
 
-  private openRoundHistory = (): void => {
+  private openRoundHistory(): void {
     this.roundHistoryOpen = true;
-  };
+  }
 
-  private closeRoundHistory = (): void => {
+  private closeRoundHistory(): void {
     this.roundHistoryOpen = false;
-  };
+  }
 
   private saveEncounter() {
     if (!this.encounter) return;
@@ -1468,10 +1468,13 @@ export class PageEncounter extends LitElement {
                               <ol class="round-history-cards">
                                 ${entry.deck.map((cardId) => {
                                   const historicalCard = cardById(cardId, entry.level);
+                                  const actionTypeLabel = historicalCard
+                                    ? cardActionTypeLabel(historicalCard.actionType)
+                                    : "Unknown action type";
                                   return html`
                                     <li class="round-history-card">
                                       <strong>${historicalCard?.label ?? cardId}</strong>
-                                      <span>(${cardActionTypeLabel(historicalCard?.actionType ?? "major")})</span>
+                                      <span>(${actionTypeLabel})</span>
                                     </li>
                                   `;
                                 })}
