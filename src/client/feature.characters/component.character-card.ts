@@ -320,8 +320,8 @@ export class CharacterCard extends LitElement {
 
   private renderEditModal(): TemplateResult {
     return html`
-      <div class="modal-overlay overlay" @click=${this.closeModal}>
-        <div class="modal-surface modal" @click=${(event: Event) => event.stopPropagation()}>
+      <div class="modal-overlay" @click=${this.closeModal}>
+        <div class="modal-surface" @click=${(event: Event) => event.stopPropagation()}>
           <div class="modal-header">
             <h3>Edit ${this.modalSectionLabel}</h3>
             <button class="modal-close" type="button" @click=${this.closeModal}>Close</button>
@@ -343,8 +343,8 @@ export class CharacterCard extends LitElement {
 
   private renderCharacterEditModal(): TemplateResult {
     return html`
-      <div class="modal-overlay overlay" @click=${this.closeCharacterEditor}>
-        <div class="modal-surface modal" @click=${(event: Event) => event.stopPropagation()}>
+      <div class="modal-overlay" @click=${this.closeCharacterEditor}>
+        <div class="modal-surface" @click=${(event: Event) => event.stopPropagation()}>
           <div class="modal-header">
             <h3>Edit Character</h3>
             <button class="modal-close" type="button" @click=${this.closeCharacterEditor}>Close</button>

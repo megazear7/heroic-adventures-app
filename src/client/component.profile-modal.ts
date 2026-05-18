@@ -9,9 +9,6 @@ export class HeroicProfileModal extends LitElement {
   static override styles = [
     globalStyles,
     css`
-      /* Style guide:
-       * Compose modal primitives from globalStyles, then override via local CSS variables/modifiers.
-       */
       .overlay {
         --modal-overlay-bg: rgba(0, 0, 0, 0.7);
         animation: fadeIn 0.2s ease;
@@ -74,7 +71,7 @@ export class HeroicProfileModal extends LitElement {
       }
 
       .actions {
-        gap: 10px;
+        --modal-actions-gap: 10px;
       }
 
       .existing-profiles {

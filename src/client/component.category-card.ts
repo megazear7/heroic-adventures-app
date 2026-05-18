@@ -9,7 +9,7 @@ export class HeroicCategoryCard extends LitElement {
     globalStyles,
     css`
       .card-title {
-        margin: 0 0 4px 0;
+        margin: 0 0 var(--size-tiny) 0;
       }
     `,
   ];
@@ -21,8 +21,8 @@ export class HeroicCategoryCard extends LitElement {
   override render(): TemplateResult {
     return html`
       <a class="card-link" href="/${this.categoryId}">
-        <div class="card card-row">
-          <div class="card-row-body card-body">
+        <div class="card-surface card-row">
+          <div class="card-row-body">
             <div class="card-row-title card-title">${this.name}</div>
             <div class="card-row-count card-count">${this.count} ${this.count === 1 ? "entry" : "entries"}</div>
           </div>

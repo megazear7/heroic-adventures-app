@@ -8,11 +8,10 @@ export class HeroicLinkCard extends LitElement {
   static override styles = [
     globalStyles,
     css`
-      .card-body {
+      .card-row-body-icon {
         display: flex;
         align-items: center;
-        gap: 10px;
-        flex: 1;
+        gap: var(--size-small);
       }
 
       .card-icon {
@@ -34,9 +33,9 @@ export class HeroicLinkCard extends LitElement {
         font-weight: 600;
       }
 
-      .card-count {
+      .card-row-count-trailing {
         margin-left: auto;
-        margin-right: 12px;
+        margin-right: var(--size-medium);
       }
     `,
   ];
@@ -48,14 +47,14 @@ export class HeroicLinkCard extends LitElement {
   override render(): TemplateResult {
     return html`
       <a class="card-link" href="${this.href}">
-        <div class="card card-row">
-          <div class="card-row-body card-body">
+        <div class="card-surface card-row">
+          <div class="card-row-body card-row-body-icon">
             <span class="card-icon"><slot name="icon"></slot></span>
             <div class="card-row-title card-title">${this.label}</div>
           </div>
           ${this.count > 0
             ? html`
-                <span class="card-row-count card-count">${this.count}</span>
+                <span class="card-row-count card-row-count-trailing">${this.count}</span>
               `
             : ""}
           <span class="card-row-arrow card-arrow">${chevronRightIcon}</span>

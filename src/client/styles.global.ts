@@ -52,7 +52,8 @@ export const globalStyles = css`
     padding: var(--size-large);
   }
 
-  .card {
+  .card,
+  .card-surface {
     background: var(--color-primary-surface-raised);
     border: var(--border-normal);
     border-radius: var(--border-radius-medium);
@@ -60,7 +61,8 @@ export const globalStyles = css`
     transition: var(--transition-all);
   }
 
-  .card:hover {
+  .card:hover,
+  .card-surface:hover {
     border-color: rgba(201, 168, 76, 0.35);
     box-shadow: var(--shadow-glow);
     transform: translateY(-2px);
@@ -150,7 +152,7 @@ export const globalStyles = css`
   .modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: var(--size-small);
+    gap: var(--modal-actions-gap, var(--size-small));
   }
 
   .form-input {
