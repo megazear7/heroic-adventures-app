@@ -138,19 +138,24 @@ export class CharacterCard extends LitElement {
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
-        transition: opacity 120ms ease;
+        transition:
+          opacity 150ms ease,
+          visibility 0s linear 150ms;
       }
 
       .edit-btn:hover {
         color: var(--color-1);
       }
 
-      .sheet:hover .edit-btn,
+      .section:hover .edit-btn,
       .section:focus-within .edit-btn,
       .edit-btn:focus-visible {
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
+        transition:
+          opacity 150ms ease,
+          visibility 0s linear 0s;
       }
 
       @media (hover: none) {
