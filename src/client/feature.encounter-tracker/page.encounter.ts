@@ -7,6 +7,8 @@ import {
   Participant,
   INITIATIVE_CARDS,
   InitiativeCard,
+  MonsterType,
+  MONSTER_TYPE_DEFAULT_INITIATIVE,
   getInitiativeCardById,
 } from "../../shared/type.encounter.js";
 import { PROFILE_CHANGED_EVENT } from "../../shared/service.profile.js";
@@ -18,9 +20,20 @@ import {
   setEncounterArchived,
 } from "../../shared/service.encounters.js";
 import { STATUSES_CHANGED_EVENT, getStatuses, addStatus } from "../../shared/service.statuses.js";
-import { shuffleDeck, shuffleIds } from "../../shared/util.encounter.js";
+import {
+  buildMonsterParticipantFromTemplate,
+  shuffleDeck,
+  shuffleIds,
+  syncTemplateMonsterNames,
+} from "../../shared/util.encounter.js";
 import { parseRouteParams } from "../../shared/util.route-params.js";
 import { searchIcon, leftArrowIcon } from "../icons.js";
+import {
+  getMonsterTemplates,
+  MONSTER_TEMPLATES_CHANGED_EVENT,
+  upsertMonsterTemplate,
+} from "../../shared/service.monster-templates.js";
+import { MonsterTemplate } from "../../shared/type.monster-template.js";
 import "./component.encounter-add-form.js";
 import "./component.encounter-participant.js";
 
@@ -69,6 +82,10 @@ function cardById(id: string, level: number): InitiativeCard | undefined {
 
 function cardActionTypeLabel(actionType: InitiativeCard["actionType"]): string {
   return actionType === "minor" ? "Minor/Heroic action" : "Major action";
+}
+
+function stripMonsterCounter(name: string): string {
+  return name.replace(/\s+#\d+$/, "").trim();
 }
 
 function participantsForCard(participants: Participant[], card: InitiativeCard): Participant[] {
@@ -702,6 +719,7 @@ export class PageEncounter extends LitElement {
   @state() private encounter: Encounter | null = null;
   @state() private rosterCharacters: Character[] = [];
   @state() private statuses: string[] = [];
+  @state() private monsterTemplates: MonsterTemplate[] = [];
   @state() private toast: string | null = null;
   @state() private rosterQuery = "";
   @state() private rosterPickerOpen = false;
@@ -713,11 +731,14 @@ export class PageEncounter extends LitElement {
     super.connectedCallback();
     this.loadEncounter();
     this.syncCharacters();
+    this.syncMonsterTemplates();
     this.statuses = getStatuses();
     window.addEventListener(CHARACTERS_CHANGED_EVENT, this.syncCharacters);
     window.addEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
+    window.addEventListener(PROFILE_CHANGED_EVENT, this.syncMonsterTemplates);
     window.addEventListener(ENCOUNTERS_CHANGED_EVENT, this.onEncountersChanged);
     window.addEventListener(STATUSES_CHANGED_EVENT, this.onStatusesChanged);
+    window.addEventListener(MONSTER_TEMPLATES_CHANGED_EVENT, this.onMonsterTemplatesChanged);
     window.addEventListener("keydown", this.onWindowKeyDown);
   }
 
@@ -725,8 +746,10 @@ export class PageEncounter extends LitElement {
     super.disconnectedCallback();
     window.removeEventListener(CHARACTERS_CHANGED_EVENT, this.syncCharacters);
     window.removeEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
+    window.removeEventListener(PROFILE_CHANGED_EVENT, this.syncMonsterTemplates);
     window.removeEventListener(ENCOUNTERS_CHANGED_EVENT, this.onEncountersChanged);
     window.removeEventListener(STATUSES_CHANGED_EVENT, this.onStatusesChanged);
+    window.removeEventListener(MONSTER_TEMPLATES_CHANGED_EVENT, this.onMonsterTemplatesChanged);
     window.removeEventListener("keydown", this.onWindowKeyDown);
   }
 
@@ -762,6 +785,10 @@ export class PageEncounter extends LitElement {
   private readonly syncCharacters = (): void => {
     this.rosterCharacters = getCharacters();
     this.syncParticipantsFromRoster();
+  };
+
+  private readonly onMonsterTemplatesChanged = (): void => {
+    this.syncMonsterTemplates();
   };
 
   private syncParticipantsFromRoster(): void {
@@ -807,6 +834,30 @@ export class PageEncounter extends LitElement {
       this.encounter = { ...this.encounter, participants };
       this.saveEncounter();
     }
+  }
+
+  private readonly syncMonsterTemplates = (): void => {
+    this.monsterTemplates = getMonsterTemplates();
+    if (!this.encounter) return;
+    const participants = this.syncTemplateParticipants(this.encounter.participants);
+    if (participants !== this.encounter.participants) {
+      this.encounter = { ...this.encounter, participants };
+      this.saveEncounter();
+    }
+  };
+
+  private syncTemplateParticipants(participants: Participant[]): Participant[] {
+    if (this.monsterTemplates.length === 0) return participants;
+    let updated = participants;
+    let changed = false;
+    for (const template of this.monsterTemplates) {
+      const synced = syncTemplateMonsterNames(updated, template.id, template.name);
+      if (synced.some((participant, index) => participant.name !== updated[index].name)) {
+        changed = true;
+      }
+      updated = synced;
+    }
+    return changed ? updated : participants;
   }
 
   private get rosterResults(): Character[] {
@@ -1002,10 +1053,16 @@ export class PageEncounter extends LitElement {
 
   private handleParticipantAdded(e: CustomEvent<Participant>) {
     if (!this.encounter) return;
-    const updated = [
-      ...this.encounter.participants,
-      { ...e.detail, pendingInitiative: e.detail.pendingInitiative ?? null },
-    ];
+    const incoming = { ...e.detail, pendingInitiative: e.detail.pendingInitiative ?? null };
+    let updated = [...this.encounter.participants, incoming];
+    if (incoming.monsterTemplateId) {
+      const template = this.monsterTemplates.find((item) => item.id === incoming.monsterTemplateId);
+      if (template) {
+        const templatedParticipant = buildMonsterParticipantFromTemplate(template, this.encounter.participants);
+        updated = [...this.encounter.participants, templatedParticipant];
+      }
+    }
+    updated = this.syncTemplateParticipants(updated);
     this.encounter = { ...this.encounter, participants: updated };
     this.saveEncounter();
   }
@@ -1150,8 +1207,28 @@ export class PageEncounter extends LitElement {
   private handleRemove(e: CustomEvent<{ id: string }>) {
     if (!this.encounter) return;
     const participants = this.encounter.participants.filter((p) => p.id !== e.detail.id);
-    this.encounter = { ...this.encounter, participants };
+    this.encounter = { ...this.encounter, participants: this.syncTemplateParticipants(participants) };
     this.saveEncounter();
+  }
+
+  private handleConvertToTemplate(e: CustomEvent<{ id: string }>) {
+    if (!this.encounter) return;
+    const participant = this.encounter.participants.find((item) => item.id === e.detail.id);
+    if (!participant || participant.type !== "monster") return;
+
+    const now = Date.now();
+    const template: MonsterTemplate = {
+      id: crypto.randomUUID(),
+      name: stripMonsterCounter(participant.name),
+      monsterType: participant.monsterType ?? "minion",
+      initiative: participant.initiative || MONSTER_TYPE_DEFAULT_INITIATIVE.minion,
+      maxHp: Math.max(1, participant.maxHp),
+      notes: participant.notes,
+      createdAt: now,
+      updatedAt: now,
+    };
+    upsertMonsterTemplate(template);
+    this.showToast(`${template.name} saved as a monster template.`);
   }
 
   private handleNotes(e: CustomEvent<{ id: string; notes: string }>) {
@@ -1200,7 +1277,9 @@ export class PageEncounter extends LitElement {
     this.saveEncounter();
   }
 
-  private handleParticipantEdit(e: CustomEvent<{ id: string; name: string; health: number; initiative: number }>) {
+  private handleParticipantEdit(
+    e: CustomEvent<{ id: string; name: string; health: number; initiative: number; monsterType?: MonsterType }>,
+  ) {
     if (!this.encounter) return;
     const participant = this.encounter.participants.find((item) => item.id === e.detail.id);
     if (!participant) {
@@ -1213,6 +1292,7 @@ export class PageEncounter extends LitElement {
       hp: e.detail.health,
       maxHp: e.detail.health,
       pendingInitiative,
+      monsterType: participant.type === "monster" ? (e.detail.monsterType ?? participant.monsterType) : undefined,
     });
 
     if (participant.characterId) {
@@ -1385,7 +1465,8 @@ export class PageEncounter extends LitElement {
         @participant-create-status=${this.handleCreateStatus}
         @participant-move-up=${this.handleMoveUp}
         @participant-move-down=${this.handleMoveDown}
-        @participant-edit=${this.handleParticipantEdit}>
+        @participant-edit=${this.handleParticipantEdit}
+        @participant-convert-to-template=${this.handleConvertToTemplate}>
         ${enc.participants.length === 0
           ? html`
               <div class="empty-state">No participants yet. Add monsters or players below to start the encounter.</div>
@@ -1517,7 +1598,10 @@ export class PageEncounter extends LitElement {
         : nothing}
 
       <!-- Add form -->
-      <encounter-add-form @participant-added=${this.handleParticipantAdded}></encounter-add-form>
+      <encounter-add-form
+        .monsterTemplates=${this.monsterTemplates}
+        @participant-added=${this.handleParticipantAdded}></encounter-add-form>
+      <a href="/monster-templates" class="back-link" style="margin-bottom: 0;">Manage monster templates</a>
 
       <!-- Toast notification -->
       ${this.toast

@@ -8,11 +8,19 @@ import {
   Participant,
   INITIATIVE_CARDS,
   InitiativeCard,
+  MonsterType,
+  MONSTER_TYPE_DEFAULT_INITIATIVE,
   getInitiativeCardById,
 } from "../../shared/type.encounter.js";
 import { PROFILE_CHANGED_EVENT } from "../../shared/service.profile.js";
 import { STATUSES_CHANGED_EVENT, getStatuses, addStatus } from "../../shared/service.statuses.js";
 import { searchIcon } from "../icons.js";
+import {
+  getMonsterTemplates,
+  MONSTER_TEMPLATES_CHANGED_EVENT,
+  upsertMonsterTemplate,
+} from "../../shared/service.monster-templates.js";
+import { MonsterTemplate } from "../../shared/type.monster-template.js";
 import "./component.encounter-add-form.js";
 import "./component.encounter-participant.js";
 
@@ -81,6 +89,14 @@ function cardById(id: string, level: number): InitiativeCard | undefined {
 
 function cardActionTypeLabel(actionType: InitiativeCard["actionType"]): string {
   return actionType === "minor" ? "Minor/Heroic action" : "Major action";
+}
+
+function stripMonsterCounter(name: string): string {
+  return name.replace(/\s+#\d+$/, "").trim();
+}
+
+function numberedMonsterName(baseName: string, index: number): string {
+  return index === 1 ? baseName : `${baseName} #${index}`;
 }
 
 function participantsForCard(participants: Participant[], card: InitiativeCard): Participant[] {
@@ -583,6 +599,7 @@ export class PageEncounterTracker extends LitElement {
   @state() private encounter: Encounter = newEncounter();
   @state() private rosterCharacters: Character[] = [];
   @state() private statuses: string[] = [];
+  @state() private monsterTemplates: MonsterTemplate[] = [];
   @state() private toast: string | null = null;
   @state() private rosterQuery = "";
   @state() private rosterPickerOpen = false;
@@ -592,17 +609,22 @@ export class PageEncounterTracker extends LitElement {
     super.connectedCallback();
     this.loadEncounter();
     this.syncCharacters();
+    this.syncMonsterTemplates();
     this.statuses = getStatuses();
     window.addEventListener(CHARACTERS_CHANGED_EVENT, this.syncCharacters);
     window.addEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
+    window.addEventListener(PROFILE_CHANGED_EVENT, this.syncMonsterTemplates);
     window.addEventListener(STATUSES_CHANGED_EVENT, this.onStatusesChanged);
+    window.addEventListener(MONSTER_TEMPLATES_CHANGED_EVENT, this.onMonsterTemplatesChanged);
   }
 
   override disconnectedCallback() {
     super.disconnectedCallback();
     window.removeEventListener(CHARACTERS_CHANGED_EVENT, this.syncCharacters);
     window.removeEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
+    window.removeEventListener(PROFILE_CHANGED_EVENT, this.syncMonsterTemplates);
     window.removeEventListener(STATUSES_CHANGED_EVENT, this.onStatusesChanged);
+    window.removeEventListener(MONSTER_TEMPLATES_CHANGED_EVENT, this.onMonsterTemplatesChanged);
   }
 
   private readonly onStatusesChanged = (): void => {
@@ -612,6 +634,10 @@ export class PageEncounterTracker extends LitElement {
   private readonly syncCharacters = (): void => {
     this.rosterCharacters = getCharacters();
     this.syncParticipantsFromRoster();
+  };
+
+  private readonly onMonsterTemplatesChanged = (): void => {
+    this.syncMonsterTemplates();
   };
 
   private syncParticipantsFromRoster(): void {
@@ -656,6 +682,35 @@ export class PageEncounterTracker extends LitElement {
       this.encounter = { ...this.encounter, participants };
       this.saveEncounter();
     }
+  }
+
+  private readonly syncMonsterTemplates = (): void => {
+    this.monsterTemplates = getMonsterTemplates();
+    const participants = this.syncTemplateParticipants(this.encounter.participants);
+    if (participants !== this.encounter.participants) {
+      this.encounter = { ...this.encounter, participants };
+      this.saveEncounter();
+    }
+  };
+
+  private syncTemplateParticipants(participants: Participant[]): Participant[] {
+    if (this.monsterTemplates.length === 0) return participants;
+    let changed = false;
+    const templateCounter = new Map<string, number>();
+    const templateById = new Map(this.monsterTemplates.map((template) => [template.id, template]));
+    const updated = participants.map((participant) => {
+      const templateId = participant.monsterTemplateId;
+      if (!templateId) return participant;
+      const template = templateById.get(templateId);
+      if (!template) return participant;
+      const index = (templateCounter.get(templateId) ?? 0) + 1;
+      templateCounter.set(templateId, index);
+      const name = numberedMonsterName(template.name, index);
+      if (name === participant.name) return participant;
+      changed = true;
+      return { ...participant, name };
+    });
+    return changed ? updated : participants;
   }
 
   private get rosterResults(): Character[] {
@@ -780,10 +835,33 @@ export class PageEncounterTracker extends LitElement {
   /* ---- Participant handlers ---- */
 
   private handleParticipantAdded(e: CustomEvent<Participant>) {
-    const updated = [
-      ...this.encounter.participants,
-      { ...e.detail, pendingInitiative: e.detail.pendingInitiative ?? null },
-    ];
+    const incoming = { ...e.detail, pendingInitiative: e.detail.pendingInitiative ?? null };
+    let updated = [...this.encounter.participants, incoming];
+    if (incoming.monsterTemplateId) {
+      const template = this.monsterTemplates.find((item) => item.id === incoming.monsterTemplateId);
+      if (template) {
+        const existingCount = this.encounter.participants.filter(
+          (participant) => participant.monsterTemplateId === template.id,
+        ).length;
+        updated = [
+          ...this.encounter.participants,
+          {
+            id: crypto.randomUUID(),
+            monsterTemplateId: template.id,
+            name: numberedMonsterName(template.name, existingCount + 1),
+            type: "monster",
+            monsterType: template.monsterType,
+            initiative: template.initiative,
+            pendingInitiative: null,
+            hp: template.maxHp,
+            maxHp: template.maxHp,
+            notes: template.notes,
+            conditions: [],
+          },
+        ];
+      }
+    }
+    updated = this.syncTemplateParticipants(updated);
     this.encounter = { ...this.encounter, participants: updated };
     this.saveEncounter();
   }
@@ -922,8 +1000,27 @@ export class PageEncounterTracker extends LitElement {
 
   private handleRemove(e: CustomEvent<{ id: string }>) {
     const participants = this.encounter.participants.filter((p) => p.id !== e.detail.id);
-    this.encounter = { ...this.encounter, participants };
+    this.encounter = { ...this.encounter, participants: this.syncTemplateParticipants(participants) };
     this.saveEncounter();
+  }
+
+  private handleConvertToTemplate(e: CustomEvent<{ id: string }>) {
+    const participant = this.encounter.participants.find((item) => item.id === e.detail.id);
+    if (!participant || participant.type !== "monster") return;
+
+    const now = Date.now();
+    const template: MonsterTemplate = {
+      id: crypto.randomUUID(),
+      name: stripMonsterCounter(participant.name),
+      monsterType: participant.monsterType ?? "minion",
+      initiative: participant.initiative || MONSTER_TYPE_DEFAULT_INITIATIVE.minion,
+      maxHp: Math.max(1, participant.maxHp),
+      notes: participant.notes,
+      createdAt: now,
+      updatedAt: now,
+    };
+    upsertMonsterTemplate(template);
+    this.showToast(`${template.name} saved as a monster template.`);
   }
 
   private handleNotes(e: CustomEvent<{ id: string; notes: string }>) {
@@ -968,7 +1065,9 @@ export class PageEncounterTracker extends LitElement {
     this.saveEncounter();
   }
 
-  private handleParticipantEdit(e: CustomEvent<{ id: string; name: string; health: number; initiative: number }>) {
+  private handleParticipantEdit(
+    e: CustomEvent<{ id: string; name: string; health: number; initiative: number; monsterType?: MonsterType }>,
+  ) {
     const participant = this.encounter.participants.find((item) => item.id === e.detail.id);
     if (!participant) {
       return;
@@ -980,6 +1079,7 @@ export class PageEncounterTracker extends LitElement {
       hp: e.detail.health,
       maxHp: e.detail.health,
       pendingInitiative,
+      monsterType: participant.type === "monster" ? (e.detail.monsterType ?? participant.monsterType) : undefined,
     });
 
     if (participant.characterId) {
@@ -1127,7 +1227,8 @@ export class PageEncounterTracker extends LitElement {
         @participant-create-status=${this.handleCreateStatus}
         @participant-move-up=${this.handleMoveUp}
         @participant-move-down=${this.handleMoveDown}
-        @participant-edit=${this.handleParticipantEdit}>
+        @participant-edit=${this.handleParticipantEdit}
+        @participant-convert-to-template=${this.handleConvertToTemplate}>
         ${enc.participants.length === 0
           ? html`
               <div class="empty-state">No participants yet. Add monsters or players below to start the encounter.</div>
@@ -1198,7 +1299,10 @@ export class PageEncounterTracker extends LitElement {
       </div>
 
       <!-- Add form -->
-      <encounter-add-form @participant-added=${this.handleParticipantAdded}></encounter-add-form>
+      <encounter-add-form
+        .monsterTemplates=${this.monsterTemplates}
+        @participant-added=${this.handleParticipantAdded}></encounter-add-form>
+      <a class="btn btn-muted" href="/monster-templates">Manage monster templates</a>
 
       <!-- Toast notification -->
       ${this.toast

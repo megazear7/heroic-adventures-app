@@ -160,11 +160,36 @@ export function getInitiativeCardById(id: string, level: number): InitiativeCard
 export const ParticipantType = z.enum(["monster", "player"]);
 export type ParticipantType = z.infer<typeof ParticipantType>;
 
+export const MonsterType = z.enum([
+  "minion",
+  "soldier",
+  "beast",
+  "brute",
+  "slayer",
+  "leader",
+  "commander",
+  "behemoth",
+]);
+export type MonsterType = z.infer<typeof MonsterType>;
+
+export const MONSTER_TYPE_DEFAULT_INITIATIVE: Record<MonsterType, number> = {
+  minion: 2,
+  soldier: 4,
+  beast: 5,
+  brute: 3,
+  slayer: 7,
+  leader: 6,
+  commander: 8,
+  behemoth: 1,
+};
+
 export const ParticipantSchema = z.object({
   id: z.string(),
   characterId: z.string().optional(),
+  monsterTemplateId: z.string().optional(),
   name: z.string().min(1),
   type: ParticipantType,
+  monsterType: MonsterType.optional(),
   /** Initiative value determines which major-action card activates them for the encounter level */
   initiative: z.number().int().min(1),
   pendingInitiative: z.number().int().min(1).nullable().optional().default(null),
