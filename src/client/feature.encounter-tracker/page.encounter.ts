@@ -26,6 +26,13 @@ import "./component.encounter-participant.js";
 
 const DECK_SIZE = INITIATIVE_CARDS.length; // 10
 const MAX_ROSTER_SEARCH_RESULTS = 8;
+const ROUND_HISTORY_STORAGE_PREFIX = "ha-encounter-round-history";
+
+interface RoundDeckHistoryEntry {
+  round: number;
+  level: number;
+  deck: string[];
+}
 
 function buildRosterSearchText(character: Character): string {
   return `${character.name} ${character.race.title} ${character.class.title}`.toLowerCase();
@@ -177,6 +184,25 @@ export class PageEncounter extends LitElement {
       font-size: 0.85rem;
       color: var(--color-primary-text-muted, #8a8780);
       white-space: nowrap;
+    }
+    .round-badge-button {
+      cursor: pointer;
+      font: inherit;
+      appearance: none;
+      text-align: left;
+      background: var(--color-primary-surface-raised, #16162a);
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      border-radius: 8px;
+      padding: 0.4rem 0.9rem;
+      transition:
+        border-color 120ms ease,
+        box-shadow 120ms ease;
+    }
+    .round-badge-button:hover,
+    .round-badge-button:focus-visible {
+      border-color: var(--color-1, #c9a84c);
+      box-shadow: var(--shadow-glow);
+      outline: none;
     }
     .round-number {
       font-size: 1.1rem;
@@ -566,6 +592,85 @@ export class PageEncounter extends LitElement {
       color: var(--color-primary-text-muted, #8a8780);
       font-size: 0.95rem;
     }
+    .round-history-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .round-history-modal {
+      width: min(100%, 760px);
+      max-height: min(80vh, 820px);
+      overflow: auto;
+      background: var(--color-primary-surface-raised, #16162a);
+      border: 1px solid rgba(201, 168, 76, 0.22);
+      border-radius: 16px;
+      box-shadow: var(--shadow-active, 0 16px 40px rgba(0, 0, 0, 0.45));
+      padding: 1rem 1rem 1.1rem;
+    }
+    .round-history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .round-history-title {
+      margin: 0;
+      font-size: 1.05rem;
+      color: var(--color-1, #c9a84c);
+    }
+    .round-history-subtitle {
+      margin: 0;
+      font-size: 0.76rem;
+      color: var(--color-primary-text-muted, #8a8780);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .round-history-close {
+      min-width: 44px;
+      justify-content: center;
+      padding-inline: 0.75rem;
+    }
+    .round-history-empty {
+      margin: 0.5rem 0 0;
+      color: var(--color-primary-text-muted, #8a8780);
+      font-size: 0.9rem;
+    }
+    .round-history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .round-history-round {
+      border: 1px solid rgba(201, 168, 76, 0.16);
+      border-radius: 10px;
+      padding: 0.75rem;
+      background: rgba(201, 168, 76, 0.04);
+    }
+    .round-history-round-label {
+      font-size: 0.88rem;
+      color: var(--color-primary-text, #e2e0d6);
+      font-weight: 700;
+      margin-bottom: 0.55rem;
+    }
+    .round-history-cards {
+      margin: 0;
+      padding-left: 1.1rem;
+      display: grid;
+      gap: 0.35rem;
+    }
+    .round-history-card {
+      color: var(--color-primary-text-muted, #8a8780);
+      font-size: 0.82rem;
+    }
+    .round-history-card strong {
+      color: var(--color-primary-text, #e2e0d6);
+    }
     @media (max-width: 600px) {
       :host {
         padding: 0.75rem 0.5rem;
@@ -580,6 +685,17 @@ export class PageEncounter extends LitElement {
         padding: 0.875rem;
         border-radius: 10px;
       }
+      .round-history-overlay {
+        align-items: flex-end;
+        padding: 0;
+      }
+      .round-history-modal {
+        width: 100%;
+        max-height: 88vh;
+        border-radius: 16px 16px 0 0;
+        border-bottom: none;
+        padding: 0.9rem 0.85rem 1rem;
+      }
     }
   `;
 
@@ -590,6 +706,8 @@ export class PageEncounter extends LitElement {
   @state() private rosterQuery = "";
   @state() private rosterPickerOpen = false;
   @state() private rosterActiveIndex = -1;
+  @state() private roundHistory: RoundDeckHistoryEntry[] = [];
+  @state() private roundHistoryOpen = false;
 
   override connectedCallback() {
     super.connectedCallback();
@@ -600,6 +718,7 @@ export class PageEncounter extends LitElement {
     window.addEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
     window.addEventListener(ENCOUNTERS_CHANGED_EVENT, this.onEncountersChanged);
     window.addEventListener(STATUSES_CHANGED_EVENT, this.onStatusesChanged);
+    window.addEventListener("keydown", this.onWindowKeyDown);
   }
 
   override disconnectedCallback() {
@@ -608,11 +727,27 @@ export class PageEncounter extends LitElement {
     window.removeEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
     window.removeEventListener(ENCOUNTERS_CHANGED_EVENT, this.onEncountersChanged);
     window.removeEventListener(STATUSES_CHANGED_EVENT, this.onStatusesChanged);
+    window.removeEventListener("keydown", this.onWindowKeyDown);
   }
 
   private readonly onStatusesChanged = (): void => {
     this.statuses = getStatuses();
   };
+
+  private readonly onWindowKeyDown = (event: KeyboardEvent): void => {
+    if (event.key === "Escape" && this.roundHistoryOpen) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.closeRoundHistory();
+    }
+  };
+
+  private handleRoundHistoryOverlayKeyDown(event: KeyboardEvent): void {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      this.closeRoundHistory();
+    }
+  }
 
   private readonly onEncountersChanged = (): void => {
     if (!this.encounter) return;
@@ -620,6 +755,7 @@ export class PageEncounter extends LitElement {
     const fresh = getEncounter(this.encounter.id);
     if (fresh && fresh.updatedAt !== this.encounter.updatedAt) {
       this.encounter = fresh;
+      this.roundHistory = this.loadRoundHistory(fresh.id);
     }
   };
 
@@ -681,6 +817,62 @@ export class PageEncounter extends LitElement {
     const params = parseRouteParams("/encounter/:encounterId", window.location.pathname);
     const enc = getEncounter(params.encounterId);
     this.encounter = enc;
+    this.roundHistory = enc ? this.loadRoundHistory(enc.id) : [];
+    this.roundHistoryOpen = false;
+  }
+
+  private roundHistoryStorageKey(encounterId: string): string {
+    return `${ROUND_HISTORY_STORAGE_PREFIX}:${encounterId}`;
+  }
+
+  private loadRoundHistory(encounterId: string): RoundDeckHistoryEntry[] {
+    try {
+      const raw = localStorage.getItem(this.roundHistoryStorageKey(encounterId));
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter(
+          (entry) =>
+            typeof entry?.round === "number" &&
+            typeof entry?.level === "number" &&
+            Array.isArray(entry?.deck) &&
+            entry.deck.every((cardId: unknown) => typeof cardId === "string"),
+        )
+        .map((entry) => ({
+          round: Math.max(1, Math.floor(entry.round)),
+          level: Math.max(1, Math.floor(entry.level)),
+          deck: entry.deck.slice(),
+        }))
+        .sort((left, right) => left.round - right.round);
+    } catch {
+      return [];
+    }
+  }
+
+  private saveRoundHistory(encounterId: string, history: RoundDeckHistoryEntry[]): void {
+    localStorage.setItem(this.roundHistoryStorageKey(encounterId), JSON.stringify(history));
+  }
+
+  private rememberRoundDeck(encounter: Encounter): void {
+    const entry: RoundDeckHistoryEntry = {
+      round: encounter.round,
+      level: encounter.level,
+      deck: encounter.deck.slice(),
+    };
+    const history = [...this.roundHistory.filter((item) => item.round !== entry.round), entry].sort(
+      (left, right) => left.round - right.round,
+    );
+    this.roundHistory = history;
+    this.saveRoundHistory(encounter.id, history);
+  }
+
+  private openRoundHistory(): void {
+    this.roundHistoryOpen = true;
+  }
+
+  private closeRoundHistory(): void {
+    this.roundHistoryOpen = false;
   }
 
   private saveEncounter() {
@@ -738,6 +930,7 @@ export class PageEncounter extends LitElement {
 
   private startNewRound() {
     if (!this.encounter) return;
+    this.rememberRoundDeck(this.encounter);
     const newRound = this.encounter.round + 1;
     const participants = this.encounter.participants.map((participant) =>
       participant.pendingInitiative !== null
@@ -1047,6 +1240,10 @@ export class PageEncounter extends LitElement {
     const rosterResults = this.rosterResults;
     const cardsRemaining = DECK_SIZE - (enc.currentCardIndex + 1);
     const allCardsDrawn = enc.currentCardIndex >= DECK_SIZE - 1;
+    const priorRounds = this.roundHistory
+      .filter((entry) => entry.round < enc.round)
+      .slice()
+      .reverse();
 
     const actionLabel =
       actionType === "bonus"
@@ -1083,10 +1280,14 @@ export class PageEncounter extends LitElement {
             )}
           </select>
         </label>
-        <div class="round-badge">
+        <button
+          type="button"
+          class="round-badge round-badge-button"
+          @click=${this.openRoundHistory}
+          aria-label="View card order from previous rounds">
           Round
           <span class="round-number">${enc.round}</span>
-        </div>
+        </button>
         ${enc.archived
           ? html`
               <div class="round-badge">Archived</div>
@@ -1253,6 +1454,67 @@ export class PageEncounter extends LitElement {
               </div>
             `}
       </div>
+
+      ${this.roundHistoryOpen
+        ? html`
+            <div
+              class="round-history-overlay"
+              role="button"
+              tabindex="0"
+              @click=${this.closeRoundHistory}
+              @keydown=${this.handleRoundHistoryOverlayKeyDown}>
+              <div
+                class="round-history-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="round-history-title"
+                @click=${(event: Event) => event.stopPropagation()}>
+                <div class="round-history-header">
+                  <div>
+                    <h2 id="round-history-title" class="round-history-title">Previous Rounds</h2>
+                    <p class="round-history-subtitle">Exact shuffled card order</p>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-muted round-history-close"
+                    @click=${this.closeRoundHistory}
+                    aria-label="Close previous rounds history dialog">
+                    Close
+                  </button>
+                </div>
+                ${priorRounds.length === 0
+                  ? html`
+                      <p class="round-history-empty">No completed rounds yet.</p>
+                    `
+                  : html`
+                      <div class="round-history-list">
+                        ${priorRounds.map(
+                          (entry) => html`
+                            <div class="round-history-round">
+                              <div class="round-history-round-label">Round ${entry.round}</div>
+                              <ol class="round-history-cards">
+                                ${entry.deck.map((cardId) => {
+                                  const historicalCard = cardById(cardId, entry.level);
+                                  const actionTypeLabel = historicalCard
+                                    ? cardActionTypeLabel(historicalCard.actionType)
+                                    : "Unknown action type";
+                                  return html`
+                                    <li class="round-history-card">
+                                      <strong>${historicalCard?.label ?? cardId}</strong>
+                                      <span>(${actionTypeLabel})</span>
+                                    </li>
+                                  `;
+                                })}
+                              </ol>
+                            </div>
+                          `,
+                        )}
+                      </div>
+                    `}
+              </div>
+            </div>
+          `
+        : nothing}
 
       <!-- Add form -->
       <encounter-add-form @participant-added=${this.handleParticipantAdded}></encounter-add-form>
