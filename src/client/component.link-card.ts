@@ -8,25 +8,10 @@ export class HeroicLinkCard extends LitElement {
   static override styles = [
     globalStyles,
     css`
-      a {
-        display: block;
-        text-decoration: none;
-        color: inherit;
-      }
-
-      .card {
+      .card-row-body-icon {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        cursor: pointer;
-        min-height: 48px;
-      }
-
-      .card-body {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex: 1;
+        gap: var(--size-small);
       }
 
       .card-icon {
@@ -48,25 +33,9 @@ export class HeroicLinkCard extends LitElement {
         font-weight: 600;
       }
 
-      .card-count {
-        font-size: var(--font-small);
-        color: var(--color-primary-text-muted);
+      .card-row-count-trailing {
         margin-left: auto;
-        margin-right: 12px;
-      }
-
-      .card-arrow {
-        color: var(--color-primary-text-muted);
-        transition: var(--transition-fast);
-      }
-
-      .card:hover .card-arrow {
-        color: var(--color-1);
-        transform: translateX(4px);
-      }
-
-      .card:hover .card-title {
-        color: var(--color-1);
+        margin-right: var(--size-medium);
       }
     `,
   ];
@@ -77,14 +46,18 @@ export class HeroicLinkCard extends LitElement {
 
   override render(): TemplateResult {
     return html`
-      <a href="${this.href}">
-        <div class="card">
-          <div class="card-body">
+      <a class="card-link" href="${this.href}">
+        <div class="card-surface card-row">
+          <div class="card-row-body card-row-body-icon">
             <span class="card-icon"><slot name="icon"></slot></span>
-            <div class="card-title">${this.label}</div>
+            <div class="card-row-title card-title">${this.label}</div>
           </div>
-          ${this.count > 0 ? html`<span class="card-count">${this.count}</span>` : ""}
-          <span class="card-arrow">${chevronRightIcon}</span>
+          ${this.count > 0
+            ? html`
+                <span class="card-row-count card-row-count-trailing">${this.count}</span>
+              `
+            : ""}
+          <span class="card-row-arrow card-arrow">${chevronRightIcon}</span>
         </div>
       </a>
     `;

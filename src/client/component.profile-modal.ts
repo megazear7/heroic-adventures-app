@@ -1,12 +1,7 @@
 import { html, css, LitElement, TemplateResult, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { globalStyles } from "./styles.global.js";
-import {
-  getAllProfiles,
-  createProfile,
-  switchProfile,
-  UserProfile,
-} from "../shared/service.profile.js";
+import { getAllProfiles, createProfile, switchProfile, UserProfile } from "../shared/service.profile.js";
 import "./component.profile-avatar.js";
 
 @customElement("heroic-profile-modal")
@@ -15,36 +10,35 @@ export class HeroicProfileModal extends LitElement {
     globalStyles,
     css`
       .overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.7);
-        z-index: 2000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        --modal-overlay-bg: rgba(0, 0, 0, 0.7);
         animation: fadeIn 0.2s ease;
-        padding: 20px;
       }
 
       @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
 
       .modal {
-        background: var(--color-primary-surface-raised);
-        border: 1px solid rgba(201, 168, 76, 0.2);
-        border-radius: var(--border-radius-medium);
-        padding: 32px;
-        max-width: 400px;
-        width: 100%;
-        box-shadow: var(--shadow-medium);
+        --modal-max-width: 400px;
+        --modal-border: 1px solid rgba(201, 168, 76, 0.2);
+        --modal-padding: 32px;
         animation: slideUp 0.25s ease;
       }
 
       @keyframes slideUp {
-        from { opacity: 0; transform: translateY(16px); }
-        to { opacity: 1; transform: translateY(0); }
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
 
       h2 {
@@ -72,28 +66,12 @@ export class HeroicProfileModal extends LitElement {
       }
 
       input {
-        width: 100%;
-        padding: 10px 14px;
-        background: var(--color-primary-surface-overlay);
-        border: 1px solid rgba(201, 168, 76, 0.15);
-        border-radius: var(--border-radius-small);
-        color: var(--color-primary-text);
-        font-family: var(--font-family);
-        font-size: var(--font-medium);
-        outline: none;
-        transition: var(--transition-fast);
-        box-sizing: border-box;
-      }
-
-      input:focus {
-        border-color: var(--color-1);
-        box-shadow: var(--shadow-glow);
+        --form-input-border: 1px solid rgba(201, 168, 76, 0.15);
+        --form-input-padding: 10px 14px;
       }
 
       .actions {
-        display: flex;
-        gap: 10px;
-        justify-content: flex-end;
+        --modal-actions-gap: 10px;
       }
 
       .existing-profiles {
@@ -171,8 +149,8 @@ export class HeroicProfileModal extends LitElement {
     const existingProfiles = this.showExisting ? this.profiles : [];
 
     return html`
-      <div class="overlay" @click=${this.handleOverlayClick}>
-        <div class="modal" @click=${(e: Event) => e.stopPropagation()}>
+      <div class="modal-overlay overlay" @click=${this.handleOverlayClick}>
+        <div class="modal-surface modal" @click=${(e: Event) => e.stopPropagation()}>
           <h2>${this.showExisting ? "Switch Profile" : "Welcome, Adventurer!"}</h2>
           <p class="subtitle">
             ${this.showExisting
@@ -206,6 +184,7 @@ export class HeroicProfileModal extends LitElement {
           <div class="form-group">
             <label for="profile-name">Name</label>
             <input
+              class="form-input"
               id="profile-name"
               type="text"
               placeholder="Enter your name"
@@ -214,14 +193,13 @@ export class HeroicProfileModal extends LitElement {
               @keydown=${this.handleKeydown} />
           </div>
 
-          <div class="actions">
+          <div class="modal-actions actions">
             ${this.showExisting
-              ? html`<button class="btn" @click=${this.handleCancel}>Cancel</button>`
+              ? html`
+                  <button class="btn" @click=${this.handleCancel}>Cancel</button>
+                `
               : nothing}
-            <button
-              class="btn btn-primary"
-              ?disabled=${!this.name.trim()}
-              @click=${this.handleCreate}>
+            <button class="btn btn-primary" ?disabled=${!this.name.trim()} @click=${this.handleCreate}>
               Create Profile
             </button>
           </div>

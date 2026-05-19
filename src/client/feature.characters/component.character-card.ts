@@ -171,47 +171,7 @@ export class CharacterCard extends LitElement {
         font-size: var(--font-small);
       }
 
-      .overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.65);
-        z-index: 2000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-      }
-
-      .modal {
-        width: min(760px, 100%);
-        background: var(--color-primary-surface-raised);
-        border: var(--border-normal);
-        border-radius: var(--border-radius-medium);
-        padding: var(--size-large);
-        display: grid;
-        gap: var(--size-medium);
-      }
-
-      .modal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: var(--size-small);
-      }
-
-      .modal-close {
-        border: none;
-        background: none;
-        color: var(--color-primary-text-muted);
-        cursor: pointer;
-      }
-
-      .modal-actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: var(--size-small);
-      }
-
+      /* Style guide: modal overlay/surface/header/actions/close come from globalStyles. */
       .modal-form {
         display: grid;
         gap: var(--size-medium);
@@ -225,14 +185,7 @@ export class CharacterCard extends LitElement {
       }
 
       .modal-form input {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 10px 12px;
-        border-radius: var(--border-radius-small);
-        border: var(--border-normal);
-        background: var(--color-primary-surface-overlay);
-        color: var(--color-primary-text);
-        font-family: var(--font-family);
+        --form-input-border: var(--border-normal);
       }
 
       @media (max-width: 800px) {
@@ -367,8 +320,8 @@ export class CharacterCard extends LitElement {
 
   private renderEditModal(): TemplateResult {
     return html`
-      <div class="overlay" @click=${this.closeModal}>
-        <div class="modal" @click=${(event: Event) => event.stopPropagation()}>
+      <div class="modal-overlay" @click=${this.closeModal}>
+        <div class="modal-surface" @click=${(event: Event) => event.stopPropagation()}>
           <div class="modal-header">
             <h3>Edit ${this.modalSectionLabel}</h3>
             <button class="modal-close" type="button" @click=${this.closeModal}>Close</button>
@@ -390,8 +343,8 @@ export class CharacterCard extends LitElement {
 
   private renderCharacterEditModal(): TemplateResult {
     return html`
-      <div class="overlay" @click=${this.closeCharacterEditor}>
-        <div class="modal" @click=${(event: Event) => event.stopPropagation()}>
+      <div class="modal-overlay" @click=${this.closeCharacterEditor}>
+        <div class="modal-surface" @click=${(event: Event) => event.stopPropagation()}>
           <div class="modal-header">
             <h3>Edit Character</h3>
             <button class="modal-close" type="button" @click=${this.closeCharacterEditor}>Close</button>
@@ -400,6 +353,7 @@ export class CharacterCard extends LitElement {
             <label>
               Name
               <input
+                class="form-input"
                 .value=${this.characterNameDraft}
                 @input=${(event: Event) => {
                   this.characterNameDraft = (event.target as HTMLInputElement).value;
@@ -409,6 +363,7 @@ export class CharacterCard extends LitElement {
             <label>
               Health
               <input
+                class="form-input"
                 type="number"
                 min="1"
                 .value=${this.characterHealthDraft}
@@ -420,6 +375,7 @@ export class CharacterCard extends LitElement {
             <label>
               Initiative
               <input
+                class="form-input"
                 type="number"
                 min="1"
                 .value=${this.characterInitiativeDraft}
