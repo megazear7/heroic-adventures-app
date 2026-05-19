@@ -241,6 +241,9 @@ export class HeroicNavDrawer extends LitElement {
           <li class="nav-item">
             <a href="/encounters" @click=${this.close}>Encounters</a>
           </li>
+          <li class="nav-item">
+            <a href="/monster-templates" @click=${this.close}>Monster Templates</a>
+          </li>
 
           <li class="nav-section">Core</li>
           ${core.map(

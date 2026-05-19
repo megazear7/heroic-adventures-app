@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { Participant } from "../../shared/type.encounter.js";
-import { pencilIcon } from "../icons.js";
+import { MonsterType, Participant } from "../../shared/type.encounter.js";
+import { kebabIcon, pencilIcon } from "../icons.js";
 
 @customElement("encounter-participant")
 export class EncounterParticipant extends LitElement {
@@ -72,6 +72,10 @@ export class EncounterParticipant extends LitElement {
     .type-badge.player {
       background: rgba(100, 180, 255, 0.18);
       color: #88ccff;
+    }
+    .type-badge.monster-type {
+      background: rgba(201, 168, 76, 0.2);
+      color: var(--color-1, #c9a84c);
     }
     .name {
       font-size: 1rem;
@@ -257,10 +261,57 @@ export class EncounterParticipant extends LitElement {
       color: #ff8888;
       border-color: rgba(255, 100, 100, 0.35);
     }
+    .menu-wrap {
+      position: relative;
+    }
+    .menu-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: var(--color-primary-text-muted, #8a8780);
+      cursor: pointer;
+      min-height: 32px;
+      min-width: 32px;
+      padding: 4px;
+      border-radius: 999px;
+    }
+    .menu-trigger:hover {
+      color: var(--color-1, #c9a84c);
+      background: rgba(201, 168, 76, 0.08);
+    }
+    .menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      background: var(--color-primary-surface-raised, #16162a);
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      border-radius: 8px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      z-index: 20;
+      overflow: hidden;
+      min-width: 170px;
+    }
+    .menu button {
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: none;
+      color: var(--color-primary-text, #e2e0d6);
+      padding: 10px 12px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.82rem;
+    }
+    .menu button:hover {
+      background: rgba(201, 168, 76, 0.08);
+    }
     .order-btns {
       display: flex;
       flex-direction: column;
       gap: 2px;
+      margin-left: auto;
     }
     .btn-order {
       padding: 0.15rem 0.5rem;
@@ -484,7 +535,8 @@ export class EncounterParticipant extends LitElement {
       font-size: 0.8rem;
       color: var(--color-primary-text-muted, #8a8780);
     }
-    .modal-form input {
+    .modal-form input,
+    .modal-form select {
       font-size: 0.95rem;
       font-family: var(--font-family, sans-serif);
       padding: 0.5rem 0.75rem;
@@ -497,7 +549,8 @@ export class EncounterParticipant extends LitElement {
       width: 100%;
       box-sizing: border-box;
     }
-    .modal-form input:focus {
+    .modal-form input:focus,
+    .modal-form select:focus {
       border-color: var(--color-1, #c9a84c);
     }
     .modal-hint {
@@ -550,9 +603,11 @@ export class EncounterParticipant extends LitElement {
   @state() private editNameDraft = "";
   @state() private editHealthDraft = "1";
   @state() private editInitiativeDraft = "1";
+  @state() private editMonsterTypeDraft: MonsterType = "minion";
   @state() private statusPickerOpen = false;
   @state() private statusQuery = "";
   @state() private statusActiveIndex = -1;
+  @state() private menuOpen = false;
   private editTriggerButton: HTMLButtonElement | null = null;
   private statusInputRef: HTMLInputElement | null = null;
 
@@ -590,6 +645,11 @@ export class EncounterParticipant extends LitElement {
 
   private handleMoveDown() {
     this.dispatch("participant-move-down", { id: this.participant.id });
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    document.removeEventListener("click", this.handleDocumentClick);
   }
 
   private handleNotesChange(e: Event) {
@@ -693,12 +753,38 @@ export class EncounterParticipant extends LitElement {
     this.closeStatusPicker();
   }
 
+  private toggleMenu = (): void => {
+    this.menuOpen = !this.menuOpen;
+    if (this.menuOpen) {
+      document.addEventListener("click", this.handleDocumentClick);
+    } else {
+      document.removeEventListener("click", this.handleDocumentClick);
+    }
+  };
+
+  private closeMenu = (): void => {
+    this.menuOpen = false;
+    document.removeEventListener("click", this.handleDocumentClick);
+  };
+
+  private handleDocumentClick = (event: Event): void => {
+    if (this.menuOpen && !event.composedPath().includes(this)) {
+      this.closeMenu();
+    }
+  };
+
+  private handleConvertToTemplate = (): void => {
+    this.dispatch("participant-convert-to-template", { id: this.participant.id });
+    this.closeMenu();
+  };
+
   private openEditModal(event: Event) {
     const p = this.participant;
     this.editTriggerButton = event.currentTarget as HTMLButtonElement;
     this.editNameDraft = p.name;
     this.editHealthDraft = String(p.maxHp);
     this.editInitiativeDraft = String(this.displayInitiative(p));
+    this.editMonsterTypeDraft = p.monsterType ?? "minion";
     this.editModalOpen = true;
     void this.focusModalNameInput();
   }
@@ -733,6 +819,7 @@ export class EncounterParticipant extends LitElement {
       name,
       health,
       initiative,
+      monsterType: this.participant.type === "monster" ? this.editMonsterTypeDraft : undefined,
     });
     this.closeEditModal();
   };
@@ -751,6 +838,11 @@ export class EncounterParticipant extends LitElement {
               `
             : nothing}
           <span class="type-badge ${p.type}">${p.type === "monster" ? "Monster" : "Player"}</span>
+          ${p.type === "monster" && p.monsterType
+            ? html`
+                <span class="type-badge monster-type">${p.monsterType}</span>
+              `
+            : nothing}
           <span class="name-wrap">
             <span class="name">${p.name}</span>
             <button
@@ -774,6 +866,22 @@ export class EncounterParticipant extends LitElement {
                 `
               : nothing}
           </span>
+          ${p.type === "monster"
+            ? html`
+                <div class="menu-wrap">
+                  <button class="menu-trigger" type="button" @click=${this.toggleMenu} aria-label="Monster actions">
+                    ${kebabIcon}
+                  </button>
+                  ${this.menuOpen
+                    ? html`
+                        <div class="menu">
+                          <button type="button" @click=${this.handleConvertToTemplate}>Convert to template</button>
+                        </div>
+                      `
+                    : nothing}
+                </div>
+              `
+            : nothing}
           <div class="order-btns">
             <button
               class="btn-order"
@@ -983,6 +1091,27 @@ export class EncounterParticipant extends LitElement {
                         this.editInitiativeDraft = (event.target as HTMLInputElement).value;
                       }} />
                   </label>
+                  ${p.type === "monster"
+                    ? html`
+                        <label>
+                          Monster Type
+                          <select
+                            .value=${this.editMonsterTypeDraft}
+                            @change=${(event: Event) => {
+                              this.editMonsterTypeDraft = (event.target as HTMLSelectElement).value as MonsterType;
+                            }}>
+                            <option value="minion">Minion</option>
+                            <option value="soldier">Soldier</option>
+                            <option value="beast">Beast</option>
+                            <option value="brute">Brute</option>
+                            <option value="slayer">Slayer</option>
+                            <option value="leader">Leader</option>
+                            <option value="commander">Commander</option>
+                            <option value="behemoth">Behemoth</option>
+                          </select>
+                        </label>
+                      `
+                    : nothing}
                 </div>
                 <p class="modal-hint">Initiative changes take effect at the start of the next round.</p>
                 <div class="modal-actions">

@@ -188,6 +188,7 @@ export class PageEncounters extends LitElement {
                   </button>
                 `
               : ""}
+            <a class="btn btn-muted" href="/monster-templates">Monster Templates</a>
             <a class="btn btn-primary" href="/encounter/create">New Encounter</a>
           </div>
         </section>
