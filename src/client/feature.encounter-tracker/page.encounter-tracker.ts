@@ -21,6 +21,7 @@ import {
   upsertMonsterTemplate,
 } from "../../shared/service.monster-templates.js";
 import { MonsterTemplate } from "../../shared/type.monster-template.js";
+import { buildMonsterParticipantFromTemplate, stripMonsterCounter, syncTemplateMonsterNames } from "../../shared/util.encounter.js";
 import "./component.encounter-add-form.js";
 import "./component.encounter-participant.js";
 
@@ -89,14 +90,6 @@ function cardById(id: string, level: number): InitiativeCard | undefined {
 
 function cardActionTypeLabel(actionType: InitiativeCard["actionType"]): string {
   return actionType === "minor" ? "Minor/Heroic action" : "Major action";
-}
-
-function stripMonsterCounter(name: string): string {
-  return name.replace(/\s+#\d+$/, "").trim();
-}
-
-function numberedMonsterName(baseName: string, index: number): string {
-  return index === 1 ? baseName : `${baseName} #${index}`;
 }
 
 function participantsForCard(participants: Participant[], card: InitiativeCard): Participant[] {
@@ -695,21 +688,15 @@ export class PageEncounterTracker extends LitElement {
 
   private syncTemplateParticipants(participants: Participant[]): Participant[] {
     if (this.monsterTemplates.length === 0) return participants;
+    let updated = participants;
     let changed = false;
-    const templateCounter = new Map<string, number>();
-    const templateById = new Map(this.monsterTemplates.map((template) => [template.id, template]));
-    const updated = participants.map((participant) => {
-      const templateId = participant.monsterTemplateId;
-      if (!templateId) return participant;
-      const template = templateById.get(templateId);
-      if (!template) return participant;
-      const index = (templateCounter.get(templateId) ?? 0) + 1;
-      templateCounter.set(templateId, index);
-      const name = numberedMonsterName(template.name, index);
-      if (name === participant.name) return participant;
-      changed = true;
-      return { ...participant, name };
-    });
+    for (const template of this.monsterTemplates) {
+      const synced = syncTemplateMonsterNames(updated, template.id, template.name);
+      if (synced.some((participant, index) => participant.name !== updated[index].name)) {
+        changed = true;
+      }
+      updated = synced;
+    }
     return changed ? updated : participants;
   }
 
@@ -840,25 +827,7 @@ export class PageEncounterTracker extends LitElement {
     if (incoming.monsterTemplateId) {
       const template = this.monsterTemplates.find((item) => item.id === incoming.monsterTemplateId);
       if (template) {
-        const existingCount = this.encounter.participants.filter(
-          (participant) => participant.monsterTemplateId === template.id,
-        ).length;
-        updated = [
-          ...this.encounter.participants,
-          {
-            id: crypto.randomUUID(),
-            monsterTemplateId: template.id,
-            name: numberedMonsterName(template.name, existingCount + 1),
-            type: "monster",
-            monsterType: template.monsterType,
-            initiative: template.initiative,
-            pendingInitiative: null,
-            hp: template.maxHp,
-            maxHp: template.maxHp,
-            notes: template.notes,
-            conditions: [],
-          },
-        ];
+        updated = [...this.encounter.participants, buildMonsterParticipantFromTemplate(template, this.encounter.participants)];
       }
     }
     updated = this.syncTemplateParticipants(updated);

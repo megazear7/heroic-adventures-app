@@ -73,6 +73,9 @@ export class PageMonsterTemplates extends LitElement {
         color: var(--color-1);
         font-size: var(--font-small);
       }
+      .span-2 {
+        grid-column: span 2;
+      }
       @media (max-width: 720px) {
         .row {
           grid-template-columns: 1fr;
@@ -136,7 +139,7 @@ export class PageMonsterTemplates extends LitElement {
 
         ${this.feedback
           ? html`
-              <p class="feedback">${this.feedback}</p>
+              <p class="feedback" role="status" aria-live="polite">${this.feedback}</p>
             `
           : nothing}
 
@@ -227,7 +230,7 @@ export class PageMonsterTemplates extends LitElement {
               else this.editMaxHp = value;
             }} />
         </label>
-        <label style="grid-column: span 2;">
+        <label class="span-2">
           Notes
           <input
             class="form-input"

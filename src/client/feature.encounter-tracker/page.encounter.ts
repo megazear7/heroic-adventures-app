@@ -22,6 +22,7 @@ import {
 import { STATUSES_CHANGED_EVENT, getStatuses, addStatus } from "../../shared/service.statuses.js";
 import {
   buildMonsterParticipantFromTemplate,
+  stripMonsterCounter,
   shuffleDeck,
   shuffleIds,
   syncTemplateMonsterNames,
@@ -82,10 +83,6 @@ function cardById(id: string, level: number): InitiativeCard | undefined {
 
 function cardActionTypeLabel(actionType: InitiativeCard["actionType"]): string {
   return actionType === "minor" ? "Minor/Heroic action" : "Major action";
-}
-
-function stripMonsterCounter(name: string): string {
-  return name.replace(/\s+#\d+$/, "").trim();
 }
 
 function participantsForCard(participants: Participant[], card: InitiativeCard): Participant[] {
@@ -1054,14 +1051,11 @@ export class PageEncounter extends LitElement {
   private handleParticipantAdded(e: CustomEvent<Participant>) {
     if (!this.encounter) return;
     const incoming = { ...e.detail, pendingInitiative: e.detail.pendingInitiative ?? null };
-    let updated = [...this.encounter.participants, incoming];
-    if (incoming.monsterTemplateId) {
-      const template = this.monsterTemplates.find((item) => item.id === incoming.monsterTemplateId);
-      if (template) {
-        const templatedParticipant = buildMonsterParticipantFromTemplate(template, this.encounter.participants);
-        updated = [...this.encounter.participants, templatedParticipant];
-      }
-    }
+    const template = incoming.monsterTemplateId
+      ? this.monsterTemplates.find((item) => item.id === incoming.monsterTemplateId)
+      : null;
+    const participant = template ? buildMonsterParticipantFromTemplate(template, this.encounter.participants) : incoming;
+    let updated = [...this.encounter.participants, participant];
     updated = this.syncTemplateParticipants(updated);
     this.encounter = { ...this.encounter, participants: updated };
     this.saveEncounter();

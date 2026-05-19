@@ -8,6 +8,8 @@ import {
 } from "../../shared/type.encounter.js";
 import { MonsterTemplate } from "../../shared/type.monster-template.js";
 
+const DEFAULT_MONSTER_TYPE: MonsterType = "minion";
+
 @customElement("encounter-add-form")
 export class EncounterAddForm extends LitElement {
   static override styles = css`
@@ -110,8 +112,8 @@ export class EncounterAddForm extends LitElement {
 
   @state() private name = "";
   @state() private type: "monster" | "player" = "monster";
-  @state() private monsterType: MonsterType = "minion";
-  @state() private initiative = String(MONSTER_TYPE_DEFAULT_INITIATIVE.minion);
+  @state() private monsterType: MonsterType = DEFAULT_MONSTER_TYPE;
+  @state() private initiative = String(MONSTER_TYPE_DEFAULT_INITIATIVE[DEFAULT_MONSTER_TYPE]);
   @state() private maxHp = "";
   @state() private selectedTemplateId = "";
   @state() private error: string | null = null;
@@ -168,8 +170,8 @@ export class EncounterAddForm extends LitElement {
     );
 
     this.name = "";
-    this.monsterType = "minion";
-    this.initiative = String(MONSTER_TYPE_DEFAULT_INITIATIVE.minion);
+    this.monsterType = DEFAULT_MONSTER_TYPE;
+    this.initiative = String(MONSTER_TYPE_DEFAULT_INITIATIVE[DEFAULT_MONSTER_TYPE]);
     this.maxHp = "";
     this.selectedTemplateId = "";
     (e.target as HTMLFormElement).reset();
@@ -202,6 +204,7 @@ export class EncounterAddForm extends LitElement {
                     this.applyMonsterTypeDefault(this.monsterType);
                   } else {
                     this.selectedTemplateId = "";
+                    this.monsterType = DEFAULT_MONSTER_TYPE;
                   }
                 }}>
                 <option value="monster">Monster</option>

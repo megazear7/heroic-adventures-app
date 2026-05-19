@@ -647,11 +647,6 @@ export class EncounterParticipant extends LitElement {
     this.dispatch("participant-move-down", { id: this.participant.id });
   }
 
-  override connectedCallback(): void {
-    super.connectedCallback();
-    document.addEventListener("click", this.handleDocumentClick);
-  }
-
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     document.removeEventListener("click", this.handleDocumentClick);
@@ -760,17 +755,21 @@ export class EncounterParticipant extends LitElement {
 
   private toggleMenu = (): void => {
     this.menuOpen = !this.menuOpen;
+    if (this.menuOpen) {
+      document.addEventListener("click", this.handleDocumentClick);
+    } else {
+      document.removeEventListener("click", this.handleDocumentClick);
+    }
   };
 
   private closeMenu = (): void => {
     this.menuOpen = false;
+    document.removeEventListener("click", this.handleDocumentClick);
   };
 
   private handleDocumentClick = (event: Event): void => {
-    const menuWrap = this.renderRoot.querySelector(".menu-wrap");
-    const clickedInsideMenu = menuWrap ? event.composedPath().includes(menuWrap) : false;
-    if (this.menuOpen && !clickedInsideMenu) {
-      this.menuOpen = false;
+    if (this.menuOpen && !event.composedPath().includes(this)) {
+      this.closeMenu();
     }
   };
 
