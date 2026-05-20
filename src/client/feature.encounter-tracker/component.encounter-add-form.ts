@@ -1,6 +1,14 @@
 import { LitElement, html, css } from "lit";
-import { customElement, state } from "lit/decorators.js";
-import { Participant, ParticipantSchema } from "../../shared/type.encounter.js";
+import { customElement, property, state } from "lit/decorators.js";
+import {
+  MONSTER_TYPE_DEFAULT_INITIATIVE,
+  MonsterType,
+  Participant,
+  ParticipantSchema,
+} from "../../shared/type.encounter.js";
+import { MonsterTemplate } from "../../shared/type.monster-template.js";
+
+const DEFAULT_MONSTER_TYPE: MonsterType = "minion";
 
 @customElement("encounter-add-form")
 export class EncounterAddForm extends LitElement {
@@ -104,9 +112,28 @@ export class EncounterAddForm extends LitElement {
 
   @state() private name = "";
   @state() private type: "monster" | "player" = "monster";
-  @state() private initiative = "1";
+  @state() private monsterType: MonsterType = DEFAULT_MONSTER_TYPE;
+  @state() private initiative = String(MONSTER_TYPE_DEFAULT_INITIATIVE[DEFAULT_MONSTER_TYPE]);
   @state() private maxHp = "";
+  @state() private selectedTemplateId = "";
   @state() private error: string | null = null;
+  @property({ type: Array }) monsterTemplates: MonsterTemplate[] = [];
+
+  private applyTemplate(templateId: string): void {
+    this.selectedTemplateId = templateId;
+    const template = this.monsterTemplates.find((item) => item.id === templateId);
+    if (!template) return;
+    this.type = "monster";
+    this.name = template.name;
+    this.monsterType = template.monsterType;
+    this.initiative = String(template.initiative);
+    this.maxHp = String(template.maxHp);
+  }
+
+  private applyMonsterTypeDefault(monsterType: MonsterType): void {
+    this.monsterType = monsterType;
+    this.initiative = String(MONSTER_TYPE_DEFAULT_INITIATIVE[monsterType]);
+  }
 
   private handleSubmit(e: Event) {
     e.preventDefault();
@@ -119,6 +146,8 @@ export class EncounterAddForm extends LitElement {
       id: crypto.randomUUID(),
       name: this.name.trim(),
       type: this.type,
+      monsterType: this.type === "monster" ? this.monsterType : undefined,
+      monsterTemplateId: this.type === "monster" && this.selectedTemplateId ? this.selectedTemplateId : undefined,
       initiative: isNaN(init) || init < 1 ? 1 : init > 99 ? 99 : init,
       hp: isNaN(hp) ? 10 : hp,
       maxHp: isNaN(hp) ? 10 : hp,
@@ -141,8 +170,10 @@ export class EncounterAddForm extends LitElement {
     );
 
     this.name = "";
-    this.initiative = "1";
+    this.monsterType = DEFAULT_MONSTER_TYPE;
+    this.initiative = String(MONSTER_TYPE_DEFAULT_INITIATIVE[DEFAULT_MONSTER_TYPE]);
     this.maxHp = "";
+    this.selectedTemplateId = "";
     (e.target as HTMLFormElement).reset();
   }
 
@@ -166,12 +197,61 @@ export class EncounterAddForm extends LitElement {
               <select
                 name="type"
                 .value=${this.type}
-                @change=${(e: Event) =>
-                  (this.type = (e.target as HTMLSelectElement).value as "monster" | "player")}>
+                @change=${(e: Event) => {
+                  const nextType = (e.target as HTMLSelectElement).value as "monster" | "player";
+                  this.type = nextType;
+                  if (nextType === "monster") {
+                    this.applyMonsterTypeDefault(this.monsterType);
+                  } else {
+                    this.selectedTemplateId = "";
+                    this.monsterType = DEFAULT_MONSTER_TYPE;
+                  }
+                }}>
                 <option value="monster">Monster</option>
                 <option value="player">Player / PC</option>
               </select>
             </label>
+            ${this.type === "monster"
+              ? html`
+                  <label>
+                    Template
+                    <select
+                      name="monsterTemplate"
+                      .value=${this.selectedTemplateId}
+                      @change=${(e: Event) => this.applyTemplate((e.target as HTMLSelectElement).value)}>
+                      <option value="">Custom monster</option>
+                      ${this.monsterTemplates.map(
+                        (template) => html`
+                          <option value=${template.id}>${template.name}</option>
+                        `,
+                      )}
+                    </select>
+                  </label>
+                `
+              : ""}
+          </div>
+          <div class="row">
+            ${this.type === "monster"
+              ? html`
+                  <label>
+                    Monster Type
+                    <select
+                      name="monsterType"
+                      .value=${this.monsterType}
+                      @change=${(e: Event) =>
+                        this.applyMonsterTypeDefault((e.target as HTMLSelectElement).value as MonsterType)}>
+                      <option value="minion">Minion</option>
+                      <option value="soldier">Soldier</option>
+                      <option value="beast">Beast</option>
+                      <option value="brute">Brute</option>
+                      <option value="slayer">Slayer</option>
+                      <option value="leader">Leader</option>
+                      <option value="commander">Commander</option>
+                      <option value="behemoth">Behemoth</option>
+                    </select>
+                  </label>
+                `
+              : ""}
             <label>
               Initiative
               <input
@@ -183,7 +263,11 @@ export class EncounterAddForm extends LitElement {
                 .value=${this.initiative}
                 @input=${(e: Event) => (this.initiative = (e.target as HTMLInputElement).value)}
                 placeholder="1" />
-              <span class="hint">Single initiative value — card ranges determine activation</span>
+              <span class="hint">
+                ${this.type === "monster"
+                  ? "Monster type sets a default initiative; you can override it."
+                  : "Single initiative value — card ranges determine activation"}
+              </span>
             </label>
             <label>
               Max HP

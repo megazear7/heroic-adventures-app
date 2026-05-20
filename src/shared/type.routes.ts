@@ -17,6 +17,7 @@ export const RouteName = z.enum([
   "adventure_log",
   "encounter_tracker",
   "encounters",
+  "monster_templates",
   "encounter_create",
   "encounter",
   "not_found",

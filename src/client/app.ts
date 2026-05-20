@@ -24,6 +24,7 @@ import "./feature.characters/page.character.js";
 import "./feature.adventure-log/page.adventure-log.js";
 import "./feature.encounter-tracker/page.encounter-tracker.js";
 import "./feature.encounter-tracker/page.encounters.js";
+import "./feature.encounter-tracker/page.monster-templates.js";
 import "./feature.encounter-tracker/page.encounter-create.js";
 import "./feature.encounter-tracker/page.encounter.js";
 import "./component.nav-drawer.js";
@@ -281,6 +282,10 @@ export class HeroicApp extends LitElement {
         return html`
           <page-encounters></page-encounters>
         `;
+      case RouteName.enum.monster_templates:
+        return html`
+          <page-monster-templates></page-monster-templates>
+        `;
       case RouteName.enum.encounter_create:
         return html`
           <page-encounter-create></page-encounter-create>
@@ -329,6 +334,9 @@ export class HeroicApp extends LitElement {
     }
     if (pathname === "/encounters") {
       return { name: RouteName.enum.encounters, path: "/encounters" };
+    }
+    if (pathname === "/monster-templates") {
+      return { name: RouteName.enum.monster_templates, path: "/monster-templates" };
     }
     if (pathname === "/encounter/create") {
       return { name: RouteName.enum.encounter_create, path: "/encounter/create" };

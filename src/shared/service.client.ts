@@ -57,6 +57,10 @@ export const routes = [
     path: "/encounters",
   },
   {
+    name: RouteName.enum.monster_templates,
+    path: "/monster-templates",
+  },
+  {
     name: RouteName.enum.encounter_create,
     path: "/encounter/create",
   },
