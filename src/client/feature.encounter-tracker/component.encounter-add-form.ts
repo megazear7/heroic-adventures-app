@@ -54,6 +54,7 @@ export class EncounterAddForm extends LitElement {
       font-size: 0.95rem;
       font-family: var(--font-family, sans-serif);
       padding: 0.5rem 0.75rem;
+      min-height: 44px;
       border-radius: 6px;
       border: 1px solid rgba(201, 168, 76, 0.2);
       background: var(--color-primary-surface-overlay, #1e1e38);
@@ -106,6 +107,18 @@ export class EncounterAddForm extends LitElement {
       .form-card {
         padding: 0.875rem;
         border-radius: 8px;
+      }
+      input,
+      select {
+        font-size: 16px;
+      }
+      .actions {
+        width: 100%;
+      }
+      button[type="submit"] {
+        width: 100%;
+        min-height: 48px;
+        justify-content: center;
       }
     }
   `;

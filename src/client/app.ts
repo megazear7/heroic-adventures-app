@@ -48,7 +48,8 @@ export class HeroicApp extends LitElement {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 12px 20px;
+        padding: calc(8px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) 10px
+          calc(12px + env(safe-area-inset-left, 0px));
         background: var(--color-primary-surface-raised);
         border-bottom: 1px solid rgba(201, 168, 76, 0.12);
         backdrop-filter: blur(10px);
@@ -59,8 +60,12 @@ export class HeroicApp extends LitElement {
         border: none;
         color: var(--color-primary-text-muted);
         cursor: pointer;
-        padding: 4px;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 10px;
         display: flex;
+        align-items: center;
+        justify-content: center;
         transition: color var(--time-fast) ease;
       }
 
@@ -107,7 +112,23 @@ export class HeroicApp extends LitElement {
 
       .page-container {
         animation: fadeIn var(--time-normal) ease;
-        padding-bottom: 72px;
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+      }
+
+      @media (max-width: 600px) {
+        .top-bar {
+          gap: 8px;
+        }
+
+        .brand {
+          font-size: var(--font-small);
+          letter-spacing: 0.02em;
+        }
+
+        .offline-badge {
+          padding: 6px 10px;
+          min-height: 32px;
+        }
       }
 
       @keyframes fadeIn {

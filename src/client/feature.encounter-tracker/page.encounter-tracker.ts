@@ -21,7 +21,11 @@ import {
   upsertMonsterTemplate,
 } from "../../shared/service.monster-templates.js";
 import { MonsterTemplate } from "../../shared/type.monster-template.js";
-import { buildMonsterParticipantFromTemplate, stripMonsterCounter, syncTemplateMonsterNames } from "../../shared/util.encounter.js";
+import {
+  buildMonsterParticipantFromTemplate,
+  stripMonsterCounter,
+  syncTemplateMonsterNames,
+} from "../../shared/util.encounter.js";
 import "./component.encounter-add-form.js";
 import "./component.encounter-participant.js";
 
@@ -139,7 +143,8 @@ export class PageEncounterTracker extends LitElement {
   static override styles = css`
     :host {
       display: block;
-      padding: 1.5rem 1rem;
+      padding: 1.5rem calc(1rem + env(safe-area-inset-right, 0px)) calc(1.5rem + env(safe-area-inset-bottom, 0px))
+        calc(1rem + env(safe-area-inset-left, 0px));
       min-height: 100vh;
       background: var(--color-primary-surface, #0f0f1a);
     }
@@ -168,6 +173,7 @@ export class PageEncounterTracker extends LitElement {
       font-weight: 600;
       font-family: var(--font-family, sans-serif);
       padding: 0.4rem 0.75rem;
+      min-height: 44px;
       border-radius: 8px;
       border: 1px solid rgba(201, 168, 76, 0.25);
       background: var(--color-primary-surface-raised, #16162a);
@@ -185,6 +191,7 @@ export class PageEncounterTracker extends LitElement {
       border: 1px solid rgba(201, 168, 76, 0.2);
       border-radius: 8px;
       padding: 0.4rem 0.9rem;
+      min-height: 44px;
       font-size: 0.85rem;
       color: var(--color-primary-text-muted, #8a8780);
       white-space: nowrap;
@@ -208,6 +215,7 @@ export class PageEncounterTracker extends LitElement {
       font-weight: 600;
       font-family: var(--font-family, sans-serif);
       padding: 0.4rem 0.75rem;
+      min-height: 44px;
       border-radius: 8px;
       border: 1px solid rgba(201, 168, 76, 0.25);
       background: var(--color-primary-surface-raised, #16162a);
@@ -517,6 +525,7 @@ export class PageEncounterTracker extends LitElement {
       color: inherit;
       cursor: pointer;
       padding: 0.75rem 0.9rem;
+      min-height: 48px;
       font: inherit;
     }
     .roster-result:last-child {
@@ -574,13 +583,34 @@ export class PageEncounterTracker extends LitElement {
     }
     @media (max-width: 600px) {
       :host {
-        padding: 0.75rem 0.5rem;
+        padding: 0.75rem calc(0.5rem + env(safe-area-inset-right, 0px)) calc(0.9rem + env(safe-area-inset-bottom, 0px))
+          calc(0.5rem + env(safe-area-inset-left, 0px));
       }
       h1 {
         font-size: 1.4rem;
       }
+      .encounter-header {
+        align-items: stretch;
+      }
+      .encounter-name-input {
+        width: 100%;
+        min-width: 0;
+        font-size: 16px;
+      }
+      .level-select,
+      .roster-search-input {
+        font-size: 16px;
+      }
+      .level-input-wrap,
+      .round-badge {
+        flex: 1 1 140px;
+      }
       .controls-bar {
         gap: 0.5rem;
+      }
+      .controls-bar .btn {
+        flex: 1 1 100%;
+        justify-content: center;
       }
       .deck-section {
         padding: 0.875rem;
@@ -827,7 +857,10 @@ export class PageEncounterTracker extends LitElement {
     if (incoming.monsterTemplateId) {
       const template = this.monsterTemplates.find((item) => item.id === incoming.monsterTemplateId);
       if (template) {
-        updated = [...this.encounter.participants, buildMonsterParticipantFromTemplate(template, this.encounter.participants)];
+        updated = [
+          ...this.encounter.participants,
+          buildMonsterParticipantFromTemplate(template, this.encounter.participants),
+        ];
       }
     }
     updated = this.syncTemplateParticipants(updated);

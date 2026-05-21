@@ -44,6 +44,8 @@ export class HeroicNavDrawer extends LitElement {
         overflow-y: auto;
         display: flex;
         flex-direction: column;
+        touch-action: pan-y;
+        will-change: transform;
       }
 
       .drawer.open {
@@ -54,7 +56,7 @@ export class HeroicNavDrawer extends LitElement {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 16px 20px;
+        padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 16px;
         border-bottom: var(--border-normal);
       }
 
@@ -70,8 +72,12 @@ export class HeroicNavDrawer extends LitElement {
         border: none;
         color: var(--color-primary-text-muted);
         cursor: pointer;
-        padding: 4px;
+        min-width: 44px;
+        min-height: 44px;
+        padding: 10px;
         display: flex;
+        align-items: center;
+        justify-content: center;
         transition: var(--transition-fast);
       }
 
@@ -91,6 +97,7 @@ export class HeroicNavDrawer extends LitElement {
         align-items: center;
         justify-content: space-between;
         padding: 12px 20px;
+        min-height: 48px;
         color: var(--color-primary-text);
         text-decoration: none;
         font-size: var(--font-small);
@@ -166,6 +173,8 @@ export class HeroicNavDrawer extends LitElement {
 
   @state() private favCount = 0;
   @state() private recentCount = 0;
+  @state() private swipeStartX: number | null = null;
+  @state() private swipeStartY: number | null = null;
 
   private onFavoritesChanged = (): void => {
     this.favCount = getFavorites().length;
@@ -196,7 +205,11 @@ export class HeroicNavDrawer extends LitElement {
 
     return html`
       <div class="overlay ${this.open ? "open" : ""}" @click=${this.close}></div>
-      <nav class="drawer ${this.open ? "open" : ""}">
+      <nav
+        class="drawer ${this.open ? "open" : ""}"
+        @pointerdown=${this.handleDrawerPointerDown}
+        @pointerup=${this.handleDrawerPointerUp}
+        @pointercancel=${this.resetSwipeState}>
         <div class="drawer-header">
           <span class="drawer-title">Menu</span>
           <button class="close-btn" @click=${this.close}>${closeIcon}</button>
@@ -293,6 +306,33 @@ export class HeroicNavDrawer extends LitElement {
 
   private close(): void {
     this.open = false;
+    this.resetSwipeState();
     this.dispatchEvent(new CustomEvent("drawer-close"));
   }
+
+  private handleDrawerPointerDown = (event: PointerEvent): void => {
+    if (!this.open || event.pointerType === "mouse") return;
+    this.swipeStartX = event.clientX;
+    this.swipeStartY = event.clientY;
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  };
+
+  private handleDrawerPointerUp = (event: PointerEvent): void => {
+    if (!this.open || this.swipeStartX === null || this.swipeStartY === null) {
+      this.resetSwipeState();
+      return;
+    }
+    const deltaX = event.clientX - this.swipeStartX;
+    const deltaY = Math.abs(event.clientY - this.swipeStartY);
+    if (deltaX <= -64 && deltaY <= 56) {
+      this.close();
+      return;
+    }
+    this.resetSwipeState();
+  };
+
+  private resetSwipeState = (): void => {
+    this.swipeStartX = null;
+    this.swipeStartY = null;
+  };
 }

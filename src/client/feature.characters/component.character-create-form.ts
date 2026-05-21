@@ -79,6 +79,7 @@ export class CharacterCreateForm extends LitElement {
 
       .step-tab {
         padding: 10px 12px;
+        min-height: 44px;
         border-radius: var(--border-radius-small);
         border: var(--border-normal);
         background: rgba(255, 255, 255, 0.02);
@@ -137,6 +138,7 @@ export class CharacterCreateForm extends LitElement {
         width: 100%;
         box-sizing: border-box;
         padding: 12px 14px;
+        min-height: 44px;
         border-radius: var(--border-radius-small);
         border: var(--border-normal);
         background: var(--color-primary-surface-raised);
@@ -194,6 +196,10 @@ export class CharacterCreateForm extends LitElement {
         flex-wrap: wrap;
       }
 
+      .actions .btn {
+        min-height: 44px;
+      }
+
       .actions .spacer {
         flex: 1;
       }
@@ -207,6 +213,10 @@ export class CharacterCreateForm extends LitElement {
         .grid.two-up,
         .step-tabs {
           grid-template-columns: 1fr;
+        }
+        .name-field input,
+        .summary-input {
+          font-size: 16px;
         }
       }
     `,
