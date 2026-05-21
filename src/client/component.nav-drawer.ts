@@ -324,6 +324,8 @@ export class HeroicNavDrawer extends LitElement {
     }
     const deltaX = event.clientX - this.swipeStartX;
     const deltaY = Math.abs(event.clientY - this.swipeStartY);
+    // Close if the gesture is a deliberate left swipe:
+    // horizontal movement of at least 64px to the left and vertical drift no greater than 56px.
     if (deltaX <= -64 && deltaY <= 56) {
       this.close();
       return;
