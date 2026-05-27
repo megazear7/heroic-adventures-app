@@ -1,14 +1,11 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import {
-  MONSTER_TYPE_DEFAULT_INITIATIVE,
-  MonsterType,
-  Participant,
-  ParticipantSchema,
-} from "../../shared/type.encounter.js";
+import { MonsterType, Participant, ParticipantSchema } from "../../shared/type.encounter.js";
+import { getMonsterStatsForEncounterLevel } from "../../shared/util.monster-stats.js";
 import { MonsterTemplate } from "../../shared/type.monster-template.js";
 
 const DEFAULT_MONSTER_TYPE: MonsterType = "minion";
+const DEFAULT_MONSTER_STATS = getMonsterStatsForEncounterLevel(1, DEFAULT_MONSTER_TYPE);
 
 @customElement("encounter-add-form")
 export class EncounterAddForm extends LitElement {
@@ -113,16 +110,40 @@ export class EncounterAddForm extends LitElement {
   @state() private name = "";
   @state() private type: "monster" | "player" = "monster";
   @state() private monsterType: MonsterType = DEFAULT_MONSTER_TYPE;
-  @state() private initiative = String(MONSTER_TYPE_DEFAULT_INITIATIVE[DEFAULT_MONSTER_TYPE]);
-  @state() private maxHp = "";
+  @state() private initiative = String(DEFAULT_MONSTER_STATS.init);
+  @state() private maxHp = String(DEFAULT_MONSTER_STATS.health);
   @state() private selectedTemplateId = "";
   @state() private error: string | null = null;
   @property({ type: Array }) monsterTemplates: MonsterTemplate[] = [];
+  @property({ type: Number }) encounterLevel = 1;
+
+  protected override willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
+    if ((changedProperties.has("encounterLevel") || changedProperties.has("monsterTemplates")) && this.type === "monster") {
+      if (this.selectedTemplateId) {
+        const template = this.monsterTemplates.find((item) => item.id === this.selectedTemplateId);
+        if (template) {
+          this.applyTemplate(template.id);
+          return;
+        }
+        this.selectedTemplateId = "";
+      }
+      this.applyMonsterTypeDefault(this.monsterType);
+    }
+  }
+
+  private applyMonsterTypeStats(monsterType: MonsterType): void {
+    const stats = getMonsterStatsForEncounterLevel(this.encounterLevel, monsterType);
+    this.initiative = String(stats.init);
+    this.maxHp = String(stats.health);
+  }
 
   private applyTemplate(templateId: string): void {
     this.selectedTemplateId = templateId;
     const template = this.monsterTemplates.find((item) => item.id === templateId);
-    if (!template) return;
+    if (!template) {
+      this.applyMonsterTypeDefault(this.monsterType);
+      return;
+    }
     this.type = "monster";
     this.name = template.name;
     this.monsterType = template.monsterType;
@@ -132,7 +153,7 @@ export class EncounterAddForm extends LitElement {
 
   private applyMonsterTypeDefault(monsterType: MonsterType): void {
     this.monsterType = monsterType;
-    this.initiative = String(MONSTER_TYPE_DEFAULT_INITIATIVE[monsterType]);
+    this.applyMonsterTypeStats(monsterType);
   }
 
   private handleSubmit(e: Event) {
@@ -171,8 +192,7 @@ export class EncounterAddForm extends LitElement {
 
     this.name = "";
     this.monsterType = DEFAULT_MONSTER_TYPE;
-    this.initiative = String(MONSTER_TYPE_DEFAULT_INITIATIVE[DEFAULT_MONSTER_TYPE]);
-    this.maxHp = "";
+  this.applyMonsterTypeStats(DEFAULT_MONSTER_TYPE);
     this.selectedTemplateId = "";
     (e.target as HTMLFormElement).reset();
   }
@@ -182,16 +202,16 @@ export class EncounterAddForm extends LitElement {
       <div class="form-card">
         <div class="form-title">Add Participant</div>
         <form @submit=${this.handleSubmit} autocomplete="off">
-          <label>
-            Name
-            <input
-              name="name"
-              .value=${this.name}
-              @input=${(e: Event) => (this.name = (e.target as HTMLInputElement).value)}
-              placeholder="e.g. Goblin, Fighter"
-              required />
-          </label>
           <div class="row">
+            <label>
+              Name
+              <input
+                name="name"
+                .value=${this.name}
+                @input=${(e: Event) => (this.name = (e.target as HTMLInputElement).value)}
+                placeholder="e.g. Goblin, Fighter"
+                required />
+            </label>
             <label>
               Type
               <select
@@ -263,11 +283,6 @@ export class EncounterAddForm extends LitElement {
                 .value=${this.initiative}
                 @input=${(e: Event) => (this.initiative = (e.target as HTMLInputElement).value)}
                 placeholder="1" />
-              <span class="hint">
-                ${this.type === "monster"
-                  ? "Monster type sets a default initiative; you can override it."
-                  : "Single initiative value — card ranges determine activation"}
-              </span>
             </label>
             <label>
               Max HP

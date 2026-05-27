@@ -27,8 +27,10 @@ import {
   shuffleIds,
   syncTemplateMonsterNames,
 } from "../../shared/util.encounter.js";
+import { getDefaultMonsterTemplatesForLevel } from "../../shared/util.default-monster-templates.js";
+import { getMonsterStatsForEncounterLevel } from "../../shared/util.monster-stats.js";
 import { parseRouteParams } from "../../shared/util.route-params.js";
-import { searchIcon, leftArrowIcon } from "../icons.js";
+import { searchIcon, leftArrowIcon, kebabIcon } from "../icons.js";
 import {
   getMonsterTemplates,
   MONSTER_TEMPLATES_CHANGED_EVENT,
@@ -135,6 +137,8 @@ export class PageEncounter extends LitElement {
       padding: 1.5rem 1rem;
       min-height: 100vh;
       background: var(--color-primary-surface, #0f0f1a);
+      max-width: var(--content-width);
+      margin: auto;
     }
     .back-link {
       display: inline-flex;
@@ -255,17 +259,71 @@ export class PageEncounter extends LitElement {
       padding: 1.25rem;
       margin-bottom: 1.5rem;
     }
+    .deck-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.875rem;
+    }
     .deck-section-title {
       font-size: 0.82rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--color-primary-text-muted, #8a8780);
-      margin: 0 0 0.875rem;
+      margin: 0;
+    }
+    .deck-menu-wrap {
+      position: relative;
+      margin-left: auto;
+    }
+    .deck-menu-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: var(--color-primary-text-muted, #8a8780);
+      cursor: pointer;
+      min-height: 32px;
+      min-width: 32px;
+      padding: 4px;
+      border-radius: 999px;
+    }
+    .deck-menu-trigger:hover {
+      color: var(--color-1, #c9a84c);
+      background: rgba(201, 168, 76, 0.08);
+    }
+    .deck-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      background: var(--color-primary-surface-raised, #16162a);
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      border-radius: 8px;
+      box-shadow: var(--shadow-active, 0 8px 20px rgba(0, 0, 0, 0.35));
+      z-index: 20;
+      overflow: hidden;
+      min-width: 170px;
+    }
+    .deck-menu button {
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: none;
+      color: var(--color-primary-text, #e2e0d6);
+      padding: 10px 12px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.82rem;
+    }
+    .deck-menu button:hover {
+      background: rgba(201, 168, 76, 0.08);
     }
     .current-card {
       border-radius: 10px;
-      height: 90px;
+      height: 120px;
       box-sizing: border-box;
       padding: 1rem 1.25rem;
       margin-bottom: 1rem;
@@ -468,8 +526,7 @@ export class PageEncounter extends LitElement {
       margin-bottom: 2rem;
     }
     .empty-state {
-      text-align: center;
-      padding: 2rem 1rem;
+      padding: 0 0 var(--size-medium) 0;
       color: var(--color-primary-text-muted, #8a8780);
       font-size: 0.9rem;
     }
@@ -723,6 +780,7 @@ export class PageEncounter extends LitElement {
   @state() private rosterActiveIndex = -1;
   @state() private roundHistory: RoundDeckHistoryEntry[] = [];
   @state() private roundHistoryOpen = false;
+  @state() private deckMenuOpen = false;
 
   override connectedCallback() {
     super.connectedCallback();
@@ -741,6 +799,7 @@ export class PageEncounter extends LitElement {
 
   override disconnectedCallback() {
     super.disconnectedCallback();
+    document.removeEventListener("click", this.handleDeckMenuDocumentClick);
     window.removeEventListener(CHARACTERS_CHANGED_EVENT, this.syncCharacters);
     window.removeEventListener(PROFILE_CHANGED_EVENT, this.syncCharacters);
     window.removeEventListener(PROFILE_CHANGED_EVENT, this.syncMonsterTemplates);
@@ -834,7 +893,9 @@ export class PageEncounter extends LitElement {
   }
 
   private readonly syncMonsterTemplates = (): void => {
-    this.monsterTemplates = getMonsterTemplates();
+    this.monsterTemplates = this.encounter
+      ? [...getDefaultMonsterTemplatesForLevel(this.encounter.level), ...getMonsterTemplates()]
+      : getMonsterTemplates();
     if (!this.encounter) return;
     const participants = this.syncTemplateParticipants(this.encounter.participants);
     if (participants !== this.encounter.participants) {
@@ -923,6 +984,27 @@ export class PageEncounter extends LitElement {
     this.roundHistoryOpen = false;
   }
 
+  private toggleDeckMenu = (): void => {
+    this.deckMenuOpen = !this.deckMenuOpen;
+    if (this.deckMenuOpen) {
+      document.addEventListener("click", this.handleDeckMenuDocumentClick);
+    } else {
+      document.removeEventListener("click", this.handleDeckMenuDocumentClick);
+    }
+  };
+
+  private closeDeckMenu = (): void => {
+    this.deckMenuOpen = false;
+    document.removeEventListener("click", this.handleDeckMenuDocumentClick);
+  };
+
+  private handleDeckMenuDocumentClick = (event: Event): void => {
+    const menuWrap = this.renderRoot.querySelector(".deck-menu-wrap");
+    if (this.deckMenuOpen && menuWrap && !event.composedPath().includes(menuWrap)) {
+      this.closeDeckMenu();
+    }
+  };
+
   private saveEncounter() {
     if (!this.encounter) return;
     const updated = { ...this.encounter, updatedAt: Date.now() };
@@ -952,8 +1034,30 @@ export class PageEncounter extends LitElement {
   private handleLevelChange(e: Event) {
     if (!this.encounter) return;
     const level = parseInt((e.target as HTMLSelectElement).value, 10);
-    this.encounter = { ...this.encounter, level: Number.isNaN(level) ? 1 : level };
-    this.saveEncounter();
+    const nextLevel = Number.isNaN(level) ? 1 : level;
+    const updatedEncounter = {
+      ...this.encounter,
+      level: nextLevel,
+      updatedAt: Date.now(),
+    };
+    this.encounter = updatedEncounter;
+    upsertEncounter(updatedEncounter);
+  }
+
+  private applyMonsterEncounterStats(participant: Participant, level: number): Participant {
+    if (participant.type !== "monster" || !participant.monsterType) {
+      return participant;
+    }
+
+    const stats = getMonsterStatsForEncounterLevel(level, participant.monsterType);
+    const damageTaken = Math.max(0, participant.maxHp - participant.hp);
+    return {
+      ...participant,
+      initiative: stats.init,
+      pendingInitiative: participant.pendingInitiative === null ? null : stats.init,
+      hp: Math.max(0, stats.health - damageTaken),
+      maxHp: stats.health,
+    };
   }
 
   private drawNextCard() {
@@ -1026,6 +1130,7 @@ export class PageEncounter extends LitElement {
 
   private handleDuplicate = (): void => {
     if (!this.encounter) return;
+    this.closeDeckMenu();
     const copy = duplicateEncounter(this.encounter);
     this.dispatchEvent(
       new CustomEvent("NavigationEvent", {
@@ -1038,6 +1143,7 @@ export class PageEncounter extends LitElement {
 
   private handleToggleArchive = (): void => {
     if (!this.encounter) return;
+    this.closeDeckMenu();
     const archived = !this.encounter.archived;
     const updated = setEncounterArchived(this.encounter.id, archived);
     if (updated) {
@@ -1054,7 +1160,10 @@ export class PageEncounter extends LitElement {
     const template = incoming.monsterTemplateId
       ? this.monsterTemplates.find((item) => item.id === incoming.monsterTemplateId)
       : null;
-    const participant = template ? buildMonsterParticipantFromTemplate(template, this.encounter.participants) : incoming;
+    const participant = this.applyMonsterEncounterStats(
+      template ? buildMonsterParticipantFromTemplate(template, this.encounter.participants) : incoming,
+      this.encounter.level,
+    );
     let updated = [...this.encounter.participants, participant];
     updated = this.syncTemplateParticipants(updated);
     this.encounter = { ...this.encounter, participants: updated };
@@ -1342,14 +1451,10 @@ export class PageEncounter extends LitElement {
           placeholder="Encounter name" />
         <label class="level-input-wrap">
           Level
-          <select
-            class="level-select"
-            .value=${String(enc.level)}
-            @change=${this.handleLevelChange}
-            aria-label="Encounter level">
+          <select class="level-select" @change=${this.handleLevelChange} aria-label="Encounter level">
             ${Array.from({ length: 30 }, (_, index) => index + 1).map(
               (level) => html`
-                <option value=${String(level)}>${level}</option>
+                <option value=${String(level)} ?selected=${level === enc.level}>${level}</option>
               `,
             )}
           </select>
@@ -1371,7 +1476,28 @@ export class PageEncounter extends LitElement {
 
       <!-- Card Deck Section -->
       <div class="deck-section">
-        <div class="deck-section-title">Initiative Deck</div>
+        <div class="deck-section-header">
+          <div class="deck-section-title">Initiative Deck</div>
+          <div class="deck-menu-wrap">
+            <button
+              class="deck-menu-trigger"
+              type="button"
+              @click=${this.toggleDeckMenu}
+              aria-label="Encounter actions">
+              ${kebabIcon}
+            </button>
+            ${this.deckMenuOpen
+              ? html`
+                  <div class="deck-menu">
+                    <button type="button" @click=${this.handleDuplicate}>Duplicate</button>
+                    <button type="button" @click=${this.handleToggleArchive}>
+                      ${enc.archived ? "Restore" : "Archive"}
+                    </button>
+                  </div>
+                `
+              : nothing}
+          </div>
+        </div>
 
         <!-- Progress pips -->
         <div class="deck-progress">
@@ -1437,11 +1563,7 @@ export class PageEncounter extends LitElement {
                   ▶ Draw Next Card
                 </button>
               `}
-          <button class="btn btn-muted" @click=${this.shuffleRemainingCards}>🔀 Shuffle Remaining</button>
-          <button class="btn btn-muted" @click=${this.handleDuplicate}>⧉ Duplicate</button>
-          <button class="btn btn-muted" @click=${this.handleToggleArchive}>
-            ${enc.archived ? "↩ Restore" : "🗄 Archive"}
-          </button>
+          <button class="btn btn-muted" @click=${this.shuffleRemainingCards}>Shuffle Remaining</button>
         </div>
       </div>
 
@@ -1593,6 +1715,7 @@ export class PageEncounter extends LitElement {
 
       <!-- Add form -->
       <encounter-add-form
+        .encounterLevel=${enc.level}
         .monsterTemplates=${this.monsterTemplates}
         @participant-added=${this.handleParticipantAdded}></encounter-add-form>
       <a href="/monster-templates" class="back-link" style="margin-bottom: 0;">Manage monster templates</a>
