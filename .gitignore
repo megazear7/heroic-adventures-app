@@ -4,3 +4,4 @@ dist
 .env
 debug
 data/
+.work

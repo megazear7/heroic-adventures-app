@@ -6,9 +6,9 @@ html {
   /* Primary surface colors */
   --color-primary-surface: #0f0f1a;
   --color-primary-surface-raised: #16162a;
-  --color-primary-surface-overlay: #1e1e38;
+  --color-primary-surface-overlay: #22223f;
   --color-primary-text: #e2e0d6;
-  --color-primary-text-muted: #8a8780;
+  --color-primary-text-muted: #9d9b95;
   --color-primary-text-bold: #c9a84c;
 
   /* Secondary surface colors */

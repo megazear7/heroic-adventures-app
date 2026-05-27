@@ -49,10 +49,6 @@ export const routes = [
     path: "/adventure-log",
   },
   {
-    name: RouteName.enum.encounter_tracker,
-    path: "/encounter-tracker",
-  },
-  {
     name: RouteName.enum.encounters,
     path: "/encounters",
   },
