@@ -38,17 +38,17 @@ export class EncounterAddForm extends LitElement {
       display: block;
     }
     .form-card {
-      background: var(--color-primary-surface-raised, #16162a);
+      background: var(--color-primary-surface-raised);
       border: 1px solid rgba(201, 168, 76, 0.15);
       border-radius: 12px;
       padding: 1.25rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: var(--size-lg);
     }
     .form-title {
-      font-size: 1rem;
+      font-size: var(--font-size-base);
       font-weight: 600;
-      color: var(--color-1, #c9a84c);
-      margin: 0 0 1rem;
+      color: var(--color-1);
+      margin: 0 0 var(--size-md);
     }
     form {
       display: flex;
@@ -65,20 +65,20 @@ export class EncounterAddForm extends LitElement {
     label {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: var(--size-xs);
       font-size: 0.8rem;
       font-weight: 500;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
     }
     input,
     select {
       font-size: 0.95rem;
-      font-family: var(--font-family, sans-serif);
-      padding: 0.5rem 0.75rem;
+      font-family: var(--font-family);
+      padding: var(--size-sm) 0.75rem;
       border-radius: 6px;
       border: 1px solid rgba(201, 168, 76, 0.2);
-      background: var(--color-primary-surface-overlay, #1e1e38);
-      color: var(--color-primary-text, #e2e0d6);
+      background: var(--color-primary-surface-overlay);
+      color: var(--color-primary-text);
       outline: none;
       transition: border-color 200ms ease;
       width: 100%;
@@ -86,11 +86,11 @@ export class EncounterAddForm extends LitElement {
     }
     input:focus,
     select:focus {
-      border-color: var(--color-1, #c9a84c);
+      border-color: var(--color-1);
     }
     .hint {
       font-size: 0.72rem;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       margin-top: 1px;
       line-height: 1.4;
     }
@@ -100,14 +100,14 @@ export class EncounterAddForm extends LitElement {
     .template-search-wrapper {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: var(--size-sm);
       border: 1px solid rgba(201, 168, 76, 0.2);
-      background: var(--color-primary-surface-overlay, #1e1e38);
+      background: var(--color-primary-surface-overlay);
       border-radius: 6px;
       padding: 0 0.75rem;
     }
     .template-search-wrapper:focus-within {
-      border-color: var(--color-1, #c9a84c);
+      border-color: var(--color-1);
     }
     .template-filter-row {
       display: flex;
@@ -119,7 +119,7 @@ export class EncounterAddForm extends LitElement {
     .template-filter-btn {
       border: 1px solid rgba(201, 168, 76, 0.2);
       background: rgba(201, 168, 76, 0.04);
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       border-radius: 999px;
       padding: 0.3rem 0.7rem;
       font: inherit;
@@ -128,12 +128,12 @@ export class EncounterAddForm extends LitElement {
       cursor: pointer;
     }
     .template-filter-btn.active {
-      color: var(--color-1, #c9a84c);
+      color: var(--color-1);
       border-color: rgba(201, 168, 76, 0.35);
       background: rgba(201, 168, 76, 0.12);
     }
     .template-search-icon {
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       display: inline-flex;
       align-items: center;
     }
@@ -144,7 +144,7 @@ export class EncounterAddForm extends LitElement {
     .template-search-input {
       border: none;
       background: transparent;
-      padding: 0.5rem 0;
+      padding: var(--size-sm) 0;
       border-radius: 0;
     }
     .template-search-input:focus {
@@ -158,7 +158,7 @@ export class EncounterAddForm extends LitElement {
       z-index: 10;
       border: 1px solid rgba(201, 168, 76, 0.2);
       border-radius: 8px;
-      background: var(--color-primary-surface-raised, #16162a);
+      background: var(--color-primary-surface-raised);
       box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
       overflow: hidden;
       max-height: 240px;
@@ -170,7 +170,7 @@ export class EncounterAddForm extends LitElement {
       text-align: left;
       border: none;
       background: none;
-      color: var(--color-primary-text, #e2e0d6);
+      color: var(--color-primary-text);
       padding: 0.65rem 0.75rem;
       font: inherit;
       font-size: 0.85rem;
@@ -189,7 +189,7 @@ export class EncounterAddForm extends LitElement {
     }
     .template-result-meta {
       margin-top: 0.15rem;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       font-size: 0.75rem;
     }
     .template-result-source {
@@ -203,7 +203,7 @@ export class EncounterAddForm extends LitElement {
       font-weight: 700;
     }
     .template-empty {
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       cursor: default;
     }
     .actions {
@@ -213,9 +213,9 @@ export class EncounterAddForm extends LitElement {
       flex-wrap: wrap;
     }
     button[type="submit"] {
-      padding: 0.6rem 1.5rem;
-      background: var(--color-1, #c9a84c);
-      color: #1a1a2e;
+      padding: 0.6rem var(--size-lg);
+      background: var(--color-1);
+      color: var(--color-secondary-surface);
       border: none;
       border-radius: 8px;
       font-size: 0.95rem;
@@ -229,7 +229,7 @@ export class EncounterAddForm extends LitElement {
       opacity: 0.88;
     }
     .error {
-      color: var(--color-error, #ff6b6b);
+      color: var(--color-error);
       font-size: 0.82rem;
     }
     @media (max-width: 480px) {

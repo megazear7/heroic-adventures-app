@@ -10,7 +10,7 @@ export class AdventureLogCard extends LitElement {
       max-width: 600px;
       margin: 0 auto;
       padding: 1.25rem;
-      background: var(--color-primary-surface-raised, #16162a);
+      background: var(--color-primary-surface-raised);
       border: 1px solid rgba(201, 168, 76, 0.15);
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -19,32 +19,32 @@ export class AdventureLogCard extends LitElement {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      gap: 1rem;
+      gap: var(--size-md);
       flex-wrap: wrap;
-      margin-bottom: 0.5rem;
+      margin-bottom: var(--size-sm);
     }
     h2 {
       margin: 0;
       font-size: 1.25rem;
-      color: var(--color-1, #c9a84c);
+      color: var(--color-1);
     }
     .session-badge {
       font-size: 0.75rem;
       font-weight: 600;
-      color: var(--color-primary-text-muted, #8a8780);
-      background: var(--color-primary-surface-overlay, #1e1e38);
+      color: var(--color-primary-text-muted);
+      background: var(--color-primary-surface-overlay);
       padding: 2px 10px;
       border-radius: 10px;
       white-space: nowrap;
     }
     .date {
       font-size: 0.8rem;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       margin-bottom: 0.75rem;
     }
     .summary {
       font-size: 0.95rem;
-      color: var(--color-primary-text, #e2e0d6);
+      color: var(--color-primary-text);
       line-height: 1.6;
       white-space: pre-wrap;
     }
@@ -59,7 +59,7 @@ export class AdventureLogCard extends LitElement {
       padding: 2px 8px;
       border-radius: 8px;
       background: rgba(201, 168, 76, 0.12);
-      color: var(--color-1, #c9a84c);
+      color: var(--color-1);
       border: 1px solid rgba(201, 168, 76, 0.2);
     }
     @media (max-width: 600px) {

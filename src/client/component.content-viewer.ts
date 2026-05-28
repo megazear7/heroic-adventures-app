@@ -18,14 +18,14 @@ export class HeroicContentViewer extends LitElement {
         font-family: var(--font-family-display);
         font-size: var(--font-xl);
         color: var(--color-primary-text-bold);
-        margin: 0 0 1rem 0;
+        margin: 0 0 var(--size-md) 0;
       }
 
       .content-wrapper h2 {
         font-family: var(--font-family-display);
         font-size: var(--font-large);
         color: var(--color-primary-text-bold);
-        margin: 2rem 0 0.75rem 0;
+        margin: var(--size-xl) 0 0.75rem 0;
         padding-bottom: 4px;
         border-bottom: 1px solid rgba(201, 168, 76, 0.15);
       }
@@ -34,24 +34,24 @@ export class HeroicContentViewer extends LitElement {
         font-size: 18px;
         font-weight: 600;
         color: var(--color-primary-text);
-        margin: 1.5rem 0 0.5rem 0;
+        margin: var(--size-lg) 0 var(--size-sm) 0;
       }
 
       .content-wrapper h4,
       .content-wrapper h5,
       .content-wrapper h6 {
         font-weight: 600;
-        margin: 1rem 0 0.5rem 0;
+        margin: var(--size-md) 0 var(--size-sm) 0;
       }
 
       .content-wrapper p {
-        margin: 0 0 1rem 0;
+        margin: 0 0 var(--size-md) 0;
       }
 
       .content-wrapper ul,
       .content-wrapper ol {
-        padding-left: 1.5rem;
-        margin: 0 0 1rem 0;
+        padding-left: var(--size-lg);
+        margin: 0 0 var(--size-md) 0;
       }
 
       .content-wrapper li {
@@ -60,8 +60,8 @@ export class HeroicContentViewer extends LitElement {
 
       .content-wrapper blockquote {
         border-left: 3px solid var(--color-1);
-        margin: 1rem 0;
-        padding: 0.5rem 1rem;
+        margin: var(--size-md) 0;
+        padding: var(--size-sm) var(--size-md);
         color: var(--color-primary-text-muted);
         background: var(--color-primary-surface-overlay);
         border-radius: 0 var(--border-radius-small) var(--border-radius-small) 0;
@@ -70,7 +70,7 @@ export class HeroicContentViewer extends LitElement {
       .content-wrapper table {
         width: 100%;
         border-collapse: collapse;
-        margin: 1rem 0;
+        margin: var(--size-md) 0;
         font-size: var(--font-small);
       }
 
@@ -106,13 +106,13 @@ export class HeroicContentViewer extends LitElement {
         max-width: 100%;
         height: auto;
         border-radius: var(--border-radius-small);
-        margin: 1rem 0;
+        margin: var(--size-md) 0;
       }
 
       .content-wrapper hr {
         border: none;
         border-top: 1px solid rgba(201, 168, 76, 0.15);
-        margin: 2rem 0;
+        margin: var(--size-xl) 0;
       }
 
       .content-wrapper code {
@@ -133,7 +133,7 @@ export class HeroicContentViewer extends LitElement {
 
       .loading {
         text-align: center;
-        padding: 2rem;
+        padding: var(--size-xl);
         color: var(--color-primary-text-muted);
       }
 

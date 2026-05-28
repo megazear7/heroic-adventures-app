@@ -6,14 +6,14 @@ export class HeroicToast extends LitElement {
   static override styles = css`
     .toast {
       position: fixed;
-      bottom: var(--toast-bottom, var(--size-xl));
+      bottom: var(--toast-bottom);
       left: 50%;
       transform: translateX(-50%);
-      background: var(--toast-background, var(--color-1, #c9a84c));
-      color: var(--toast-color, #1a1a2e);
+      background: var(--toast-background);
+      color: var(--toast-color);
       font-weight: 700;
       font-size: 0.9rem;
-      padding: 0.6rem 1.5rem;
+      padding: 0.6rem var(--size-lg);
       border-radius: 24px;
       z-index: 9999;
       pointer-events: none;

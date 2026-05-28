@@ -15,7 +15,7 @@ export class HeroicProfileAvatar extends LitElement {
         justify-content: center;
         border-radius: 50%;
         font-weight: 700;
-        font-family: var(--font-family-display, sans-serif);
+        font-family: var(--font-family-display);
         letter-spacing: 0.04em;
         user-select: none;
         flex-shrink: 0;
@@ -24,7 +24,7 @@ export class HeroicProfileAvatar extends LitElement {
   ];
 
   @property({ type: String }) initials = "";
-  @property({ type: String }) color1 = "#c9a84c";
+  @property({ type: String }) color1 = "var(--color-accent-gold)";
   @property({ type: String }) color2 = "#5b8a72";
   @property({ type: Number }) size = 32;
 

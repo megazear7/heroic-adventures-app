@@ -116,7 +116,7 @@ export class HeroicSearchPage extends HeroicAppProvider {
 
       .empty {
         text-align: center;
-        padding: 2rem;
+        padding: var(--size-xl);
         color: var(--color-primary-text-muted);
       }
 

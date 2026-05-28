@@ -140,9 +140,9 @@ export class PageEncounter extends LitElement {
   static override styles = css`
     :host {
       display: block;
-      padding: 1.5rem 1rem;
+      padding: var(--size-lg) var(--size-md);
       min-height: 100vh;
-      background: var(--color-primary-surface, #0f0f1a);
+      background: var(--color-primary-surface);
       max-width: var(--content-width);
       margin: auto;
     }
@@ -150,63 +150,63 @@ export class PageEncounter extends LitElement {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       text-decoration: none;
-      font-size: 0.875rem;
+      font-size: var(--font-size-sm);
       margin-bottom: 1.25rem;
       transition: color 150ms ease;
     }
     .back-link:hover {
-      color: var(--color-1, #c9a84c);
+      color: var(--color-1);
     }
     .back-link svg {
       width: 16px;
       height: 16px;
     }
     h1 {
-      font-family: var(--font-family-display, serif);
+      font-family: var(--font-family-display);
       font-size: 1.75rem;
-      color: var(--color-1, #c9a84c);
-      margin: 0 0 0.25rem;
+      color: var(--color-1);
+      margin: 0 0 var(--size-xs);
     }
     .subtitle {
-      font-size: 0.875rem;
-      color: var(--color-primary-text-muted, #8a8780);
-      margin: 0 0 1.5rem;
+      font-size: var(--font-size-sm);
+      color: var(--color-primary-text-muted);
+      margin: 0 0 var(--size-lg);
     }
     .encounter-header {
       display: flex;
       align-items: flex-end;
-      gap: 1rem;
+      gap: var(--size-md);
       margin-bottom: 1.25rem;
       flex-wrap: wrap;
     }
     .encounter-name-input {
       flex: 1;
       min-width: 160px;
-      font-size: 1rem;
+      font-size: var(--font-size-base);
       font-weight: 600;
-      font-family: var(--font-family, sans-serif);
+      font-family: var(--font-family);
       padding: 0.4rem 0.75rem;
       border-radius: 8px;
       border: 1px solid rgba(201, 168, 76, 0.25);
-      background: var(--color-primary-surface-raised, #16162a);
-      color: var(--color-primary-text, #e2e0d6);
+      background: var(--color-primary-surface-raised);
+      color: var(--color-primary-text);
       outline: none;
     }
     .encounter-name-input:focus {
-      border-color: var(--color-1, #c9a84c);
+      border-color: var(--color-1);
     }
     .round-badge {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      background: var(--color-primary-surface-raised, #16162a);
+      gap: var(--size-sm);
+      background: var(--color-primary-surface-raised);
       border: 1px solid rgba(201, 168, 76, 0.2);
       border-radius: 8px;
       padding: 0.4rem 0.9rem;
       font-size: 0.85rem;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       white-space: nowrap;
     }
     .round-badge-button {
@@ -214,7 +214,7 @@ export class PageEncounter extends LitElement {
       font: inherit;
       appearance: none;
       text-align: left;
-      background: var(--color-primary-surface-raised, #16162a);
+      background: var(--color-primary-surface-raised);
       border: 1px solid rgba(201, 168, 76, 0.2);
       border-radius: 8px;
       padding: 0.4rem 0.9rem;
@@ -224,46 +224,46 @@ export class PageEncounter extends LitElement {
     }
     .round-badge-button:hover,
     .round-badge-button:focus-visible {
-      border-color: var(--color-1, #c9a84c);
+      border-color: var(--color-1);
       box-shadow: var(--shadow-glow);
       outline: none;
     }
     .round-number {
       font-size: 1.1rem;
       font-weight: 700;
-      color: var(--color-1, #c9a84c);
+      color: var(--color-1);
     }
     .level-input-wrap {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: var(--size-xs);
       font-size: 0.75rem;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       text-transform: uppercase;
       letter-spacing: 0.06em;
     }
     .level-select {
-      font-size: 1rem;
+      font-size: var(--font-size-base);
       font-weight: 600;
-      font-family: var(--font-family, sans-serif);
+      font-family: var(--font-family);
       padding: 0.4rem 0.75rem;
       border-radius: 8px;
       border: 1px solid rgba(201, 168, 76, 0.25);
-      background: var(--color-primary-surface-raised, #16162a);
-      color: var(--color-primary-text, #e2e0d6);
+      background: var(--color-primary-surface-raised);
+      color: var(--color-primary-text);
       outline: none;
     }
     .level-select:focus {
-      border-color: var(--color-1, #c9a84c);
+      border-color: var(--color-1);
     }
 
     /* ---- Card Deck ---- */
     .deck-section {
-      background: var(--color-primary-surface-raised, #16162a);
+      background: var(--color-primary-surface-raised);
       border: 1px solid rgba(201, 168, 76, 0.15);
       border-radius: 14px;
       padding: 1.25rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: var(--size-lg);
     }
     .deck-section-header {
       display: flex;
@@ -277,7 +277,7 @@ export class PageEncounter extends LitElement {
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       margin: 0;
     }
     .deck-menu-wrap {
@@ -290,7 +290,7 @@ export class PageEncounter extends LitElement {
       justify-content: center;
       background: none;
       border: none;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       cursor: pointer;
       min-height: 32px;
       min-width: 32px;
@@ -298,17 +298,17 @@ export class PageEncounter extends LitElement {
       border-radius: 999px;
     }
     .deck-menu-trigger:hover {
-      color: var(--color-1, #c9a84c);
+      color: var(--color-1);
       background: rgba(201, 168, 76, 0.08);
     }
     .deck-menu {
       position: absolute;
       top: calc(100% + 4px);
       right: 0;
-      background: var(--color-primary-surface-raised, #16162a);
+      background: var(--color-primary-surface-raised);
       border: 1px solid rgba(201, 168, 76, 0.2);
       border-radius: 8px;
-      box-shadow: var(--shadow-active, 0 8px 20px rgba(0, 0, 0, 0.35));
+      box-shadow: var(--shadow-active);
       z-index: 20;
       overflow: hidden;
       min-width: 170px;
@@ -318,7 +318,7 @@ export class PageEncounter extends LitElement {
       text-align: left;
       border: none;
       background: none;
-      color: var(--color-primary-text, #e2e0d6);
+      color: var(--color-primary-text);
       padding: 10px 12px;
       cursor: pointer;
       font: inherit;
@@ -331,8 +331,8 @@ export class PageEncounter extends LitElement {
       border-radius: 10px;
       height: 120px;
       box-sizing: border-box;
-      padding: 1rem 1.25rem;
-      margin-bottom: 1rem;
+      padding: var(--size-md) 1.25rem;
+      margin-bottom: var(--size-md);
       display: flex;
       flex-direction: column;
       gap: 0.35rem;
@@ -346,21 +346,21 @@ export class PageEncounter extends LitElement {
       border: 2px solid rgba(255, 100, 100, 0.35);
     }
     .current-card.none {
-      background: var(--color-primary-surface-overlay, #1e1e38);
+      background: var(--color-primary-surface-overlay);
       border: 2px dashed rgba(201, 168, 76, 0.2);
     }
     .card-label {
       font-size: 1.15rem;
       font-weight: 700;
-      color: var(--color-primary-text, #e2e0d6);
+      color: var(--color-primary-text);
     }
     .card-action-type {
       font-size: 0.82rem;
       font-weight: 600;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
     }
     .card-action-type.major {
-      color: var(--color-1, #c9a84c);
+      color: var(--color-1);
     }
     .card-action-type.bonus {
       color: #a8e6a0;
@@ -370,24 +370,24 @@ export class PageEncounter extends LitElement {
     }
     .card-active-names {
       font-size: 0.88rem;
-      color: var(--color-primary-text, #e2e0d6);
-      margin-top: 0.25rem;
+      color: var(--color-primary-text);
+      margin-top: var(--size-xs);
     }
     .card-active-names strong {
-      color: var(--color-1, #c9a84c);
+      color: var(--color-1);
     }
     .card-no-match {
       font-size: 0.82rem;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       font-style: italic;
     }
     .deck-progress {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: var(--size-sm);
       margin-bottom: 0.75rem;
       font-size: 0.82rem;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
     }
     .deck-pips {
       display: flex;
@@ -401,16 +401,16 @@ export class PageEncounter extends LitElement {
       height: 10px;
       border-radius: 2px;
       border: 1px solid rgba(201, 168, 76, 0.2);
-      background: var(--color-primary-surface-overlay, #1e1e38);
+      background: var(--color-primary-surface-overlay);
       cursor: default;
     }
     .deck-pip.played {
       background: rgba(201, 168, 76, 0.35);
-      border-color: var(--color-1, #c9a84c);
+      border-color: var(--color-1);
     }
     .deck-pip.current {
-      background: var(--color-1, #c9a84c);
-      border-color: var(--color-1, #c9a84c);
+      background: var(--color-1);
+      border-color: var(--color-1);
     }
     .deck-pip.player-card {
       border-color: rgba(100, 180, 255, 0.5);
@@ -433,14 +433,14 @@ export class PageEncounter extends LitElement {
       transform: translateX(-50%);
       min-width: 150px;
       max-width: 220px;
-      background: var(--color-primary-surface-raised, #16162a);
+      background: var(--color-primary-surface-raised);
       border: 1px solid rgba(201, 168, 76, 0.3);
       border-radius: 8px;
-      padding: 0.5rem 0.6rem;
+      padding: var(--size-sm) 0.6rem;
       font-size: 0.75rem;
       line-height: 1.35;
-      color: var(--color-primary-text, #e2e0d6);
-      box-shadow: var(--shadow-active, 0 8px 20px rgba(0, 0, 0, 0.35));
+      color: var(--color-primary-text);
+      box-shadow: var(--shadow-active);
       opacity: 0;
       pointer-events: none;
       transition: opacity 80ms ease;
@@ -451,7 +451,7 @@ export class PageEncounter extends LitElement {
     }
     .deck-pip-tooltip-meta {
       margin-top: 0.15rem;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       font-size: 0.7rem;
     }
 
@@ -459,7 +459,7 @@ export class PageEncounter extends LitElement {
     .controls-bar {
       display: flex;
       gap: 0.75rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: var(--size-lg);
       flex-wrap: wrap;
     }
     .btn {
@@ -468,10 +468,10 @@ export class PageEncounter extends LitElement {
       gap: 6px;
       padding: 0.55rem 1.1rem;
       border-radius: 8px;
-      border: 1px solid var(--color-1, #c9a84c);
+      border: 1px solid var(--color-1);
       background: transparent;
-      color: var(--color-1, #c9a84c);
-      font-family: var(--font-family, sans-serif);
+      color: var(--color-1);
+      font-family: var(--font-family);
       font-size: 0.88rem;
       font-weight: 600;
       cursor: pointer;
@@ -482,8 +482,8 @@ export class PageEncounter extends LitElement {
       touch-action: manipulation;
     }
     .btn:hover {
-      background: var(--color-1, #c9a84c);
-      color: #1a1a2e;
+      background: var(--color-1);
+      color: var(--color-secondary-surface);
     }
     .btn:disabled {
       opacity: 0.4;
@@ -491,8 +491,8 @@ export class PageEncounter extends LitElement {
       pointer-events: none;
     }
     .btn-primary {
-      background: var(--color-1, #c9a84c);
-      color: #1a1a2e;
+      background: var(--color-1);
+      color: var(--color-secondary-surface);
     }
     .btn-primary:hover {
       background: #d4b555;
@@ -517,11 +517,11 @@ export class PageEncounter extends LitElement {
     }
     .btn-muted {
       border-color: rgba(138, 135, 128, 0.3);
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
     }
     .btn-muted:hover {
       background: rgba(138, 135, 128, 0.1);
-      color: var(--color-primary-text, #e2e0d6);
+      color: var(--color-primary-text);
     }
 
     /* ---- Participants ---- */
@@ -529,23 +529,23 @@ export class PageEncounter extends LitElement {
       display: flex;
       flex-direction: column;
       gap: 0.875rem;
-      margin-bottom: 2rem;
+      margin-bottom: var(--size-xl);
     }
     .empty-state {
       padding: 0 0 var(--size-medium) 0;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       font-size: 0.9rem;
     }
     .section-title {
       font-size: 0.85rem;
       font-weight: 600;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      margin: 2rem 0 0.75rem;
+      margin: var(--size-xl) 0 0.75rem;
     }
     .character-roster {
-      margin-bottom: 1.5rem;
+      margin-bottom: var(--size-lg);
       max-width: 560px;
     }
     .roster-field {
@@ -554,7 +554,7 @@ export class PageEncounter extends LitElement {
       gap: 0.4rem;
     }
     .roster-helper {
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       font-size: 0.76rem;
     }
     .roster-search-shell {
@@ -564,18 +564,18 @@ export class PageEncounter extends LitElement {
       display: flex;
       align-items: center;
       gap: 10px;
-      background: var(--color-primary-surface-raised, #16162a);
+      background: var(--color-primary-surface-raised);
       border: 1px solid rgba(201, 168, 76, 0.2);
       border-radius: 10px;
       padding: 10px 14px;
       transition: border-color 120ms ease;
     }
     .roster-search-wrapper:focus-within {
-      border-color: var(--color-1, #c9a84c);
+      border-color: var(--color-1);
       box-shadow: var(--shadow-glow);
     }
     .roster-search-icon {
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       display: flex;
       flex-shrink: 0;
     }
@@ -584,18 +584,18 @@ export class PageEncounter extends LitElement {
       background: none;
       border: none;
       outline: none;
-      color: var(--color-primary-text, #e2e0d6);
+      color: var(--color-primary-text);
       font-size: 0.95rem;
-      font-family: var(--font-family, sans-serif);
+      font-family: var(--font-family);
     }
     .roster-results {
       position: absolute;
       inset: calc(100% + 6px) 0 auto;
       z-index: 30;
-      background: var(--color-primary-surface-raised, #16162a);
+      background: var(--color-primary-surface-raised);
       border: 1px solid rgba(201, 168, 76, 0.2);
       border-radius: 10px;
-      box-shadow: var(--shadow-active, 0 8px 20px rgba(0, 0, 0, 0.35));
+      box-shadow: var(--shadow-active);
       max-height: min(300px, 45vh);
       overflow: auto;
     }
@@ -620,26 +620,26 @@ export class PageEncounter extends LitElement {
     }
     .roster-item {
       display: grid;
-      gap: 0.25rem;
+      gap: var(--size-xs);
     }
     .roster-item-top {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
-      gap: 0.5rem;
+      gap: var(--size-sm);
       flex-wrap: wrap;
     }
     .roster-name {
       font-weight: 700;
-      color: var(--color-primary-text, #e2e0d6);
+      color: var(--color-primary-text);
     }
     .roster-meta {
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       font-size: 0.82rem;
     }
     .not-found {
-      padding: 2rem 1rem;
-      color: var(--color-primary-text-muted, #8a8780);
+      padding: var(--size-xl) var(--size-md);
+      color: var(--color-primary-text-muted);
       font-size: 0.95rem;
     }
     .round-history-overlay {
@@ -650,17 +650,17 @@ export class PageEncounter extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1rem;
+      padding: var(--size-md);
     }
     .round-history-modal {
       width: min(100%, 760px);
       max-height: min(80vh, 820px);
       overflow: auto;
-      background: var(--color-primary-surface-raised, #16162a);
+      background: var(--color-primary-surface-raised);
       border: 1px solid rgba(201, 168, 76, 0.22);
       border-radius: 16px;
-      box-shadow: var(--shadow-active, 0 16px 40px rgba(0, 0, 0, 0.45));
-      padding: 1rem 1rem 1.1rem;
+      box-shadow: var(--shadow-active);
+      padding: var(--size-md) var(--size-md) 1.1rem;
     }
     .round-history-header {
       display: flex;
@@ -672,12 +672,12 @@ export class PageEncounter extends LitElement {
     .round-history-title {
       margin: 0;
       font-size: 1.05rem;
-      color: var(--color-1, #c9a84c);
+      color: var(--color-1);
     }
     .round-history-subtitle {
       margin: 0;
       font-size: 0.76rem;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -687,8 +687,8 @@ export class PageEncounter extends LitElement {
       padding-inline: 0.75rem;
     }
     .round-history-empty {
-      margin: 0.5rem 0 0;
-      color: var(--color-primary-text-muted, #8a8780);
+      margin: var(--size-sm) 0 0;
+      color: var(--color-primary-text-muted);
       font-size: 0.9rem;
     }
     .round-history-list {
@@ -704,7 +704,7 @@ export class PageEncounter extends LitElement {
     }
     .round-history-round-label {
       font-size: 0.88rem;
-      color: var(--color-primary-text, #e2e0d6);
+      color: var(--color-primary-text);
       font-weight: 700;
       margin-bottom: 0.55rem;
     }
@@ -715,21 +715,21 @@ export class PageEncounter extends LitElement {
       gap: 0.35rem;
     }
     .round-history-card {
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       font-size: 0.82rem;
     }
     .round-history-card strong {
-      color: var(--color-primary-text, #e2e0d6);
+      color: var(--color-primary-text);
     }
     @media (max-width: 600px) {
       :host {
-        padding: 0.75rem 0.5rem;
+        padding: 0.75rem var(--size-sm);
       }
       h1 {
         font-size: 1.4rem;
       }
       .controls-bar {
-        gap: 0.5rem;
+        gap: var(--size-sm);
       }
       .deck-section {
         padding: 0.875rem;
@@ -744,7 +744,7 @@ export class PageEncounter extends LitElement {
         max-height: 88vh;
         border-radius: 16px 16px 0 0;
         border-bottom: none;
-        padding: 0.9rem 0.85rem 1rem;
+        padding: 0.9rem 0.85rem var(--size-md);
       }
     }
   `;
