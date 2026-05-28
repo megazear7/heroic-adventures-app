@@ -1,11 +1,35 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { MonsterType, Participant, ParticipantSchema } from "../../shared/type.encounter.js";
+import { stripMonsterCounter } from "../../shared/util.encounter.js";
 import { getMonsterStatsForEncounterLevel } from "../../shared/util.monster-stats.js";
+import type { MonsterStatsLevelRange } from "../../shared/type.monster-stats.js";
 import { MonsterTemplate } from "../../shared/type.monster-template.js";
+import { searchIcon } from "../icons.js";
 
 const DEFAULT_MONSTER_TYPE: MonsterType = "minion";
 const DEFAULT_MONSTER_STATS = getMonsterStatsForEncounterLevel(1, DEFAULT_MONSTER_TYPE);
+
+type TemplateSource = "default-template" | "custom-template" | "existing-monster";
+
+type TemplatePickerOption = {
+  key: string;
+  label: string;
+  monsterType: MonsterType;
+  initiative: number;
+  maxHp: number;
+  toughness: number;
+  source: TemplateSource;
+  templateId?: string;
+  levelRange?: MonsterStatsLevelRange;
+};
+
+type TemplateFilterMode = "default" | "default-templates" | "custom-templates" | "current-monsters" | "all-levels";
+
+type AllLevelDefaultMonsterTemplate = {
+  levelRange: MonsterStatsLevelRange;
+  template: MonsterTemplate;
+};
 
 @customElement("encounter-add-form")
 export class EncounterAddForm extends LitElement {
@@ -70,6 +94,118 @@ export class EncounterAddForm extends LitElement {
       margin-top: 1px;
       line-height: 1.4;
     }
+    .template-picker-shell {
+      position: relative;
+    }
+    .template-search-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      background: var(--color-primary-surface-overlay, #1e1e38);
+      border-radius: 6px;
+      padding: 0 0.75rem;
+    }
+    .template-search-wrapper:focus-within {
+      border-color: var(--color-1, #c9a84c);
+    }
+    .template-filter-row {
+      display: flex;
+      gap: 0.4rem;
+      padding: 0.6rem;
+      border-bottom: 1px solid rgba(201, 168, 76, 0.12);
+      overflow-x: auto;
+    }
+    .template-filter-btn {
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      background: rgba(201, 168, 76, 0.04);
+      color: var(--color-primary-text-muted, #8a8780);
+      border-radius: 999px;
+      padding: 0.3rem 0.7rem;
+      font: inherit;
+      font-size: 0.72rem;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .template-filter-btn.active {
+      color: var(--color-1, #c9a84c);
+      border-color: rgba(201, 168, 76, 0.35);
+      background: rgba(201, 168, 76, 0.12);
+    }
+    .template-search-icon {
+      color: var(--color-primary-text-muted, #8a8780);
+      display: inline-flex;
+      align-items: center;
+    }
+    .template-search-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+    .template-search-input {
+      border: none;
+      background: transparent;
+      padding: 0.5rem 0;
+      border-radius: 0;
+    }
+    .template-search-input:focus {
+      border-color: transparent;
+    }
+    .template-results {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      z-index: 10;
+      border: 1px solid rgba(201, 168, 76, 0.2);
+      border-radius: 8px;
+      background: var(--color-primary-surface-raised, #16162a);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+    .template-result,
+    .template-empty {
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: none;
+      color: var(--color-primary-text, #e2e0d6);
+      padding: 0.65rem 0.75rem;
+      font: inherit;
+      font-size: 0.85rem;
+      display: block;
+      box-sizing: border-box;
+    }
+    .template-result {
+      cursor: pointer;
+    }
+    .template-result:hover,
+    .template-result.active {
+      background: rgba(201, 168, 76, 0.08);
+    }
+    .template-result-title {
+      font-weight: 600;
+    }
+    .template-result-meta {
+      margin-top: 0.15rem;
+      color: var(--color-primary-text-muted, #8a8780);
+      font-size: 0.75rem;
+    }
+    .template-result-source {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 0.45rem;
+      color: var(--color-primary-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.65rem;
+      font-weight: 700;
+    }
+    .template-empty {
+      color: var(--color-primary-text-muted, #8a8780);
+      cursor: default;
+    }
     .actions {
       display: flex;
       gap: 0.75rem;
@@ -114,22 +250,157 @@ export class EncounterAddForm extends LitElement {
   @state() private maxHp = String(DEFAULT_MONSTER_STATS.health);
   @state() private toughness = "0";
   @state() private selectedTemplateId = "";
+  @state() private selectedTemplateOptionKey = "";
+  @state() private templateQuery = "";
+  @state() private templatePickerOpen = false;
+  @state() private templateActiveIndex = -1;
+  @state() private templateFilter: TemplateFilterMode = "default";
   @state() private error: string | null = null;
-  @property({ type: Array }) monsterTemplates: MonsterTemplate[] = [];
+  @property({ type: Array }) defaultMonsterTemplates: MonsterTemplate[] = [];
+  @property({ type: Array }) customMonsterTemplates: MonsterTemplate[] = [];
+  @property({ type: Array }) currentMonsters: Participant[] = [];
+  @property({ type: Array }) allLevelDefaultMonsterTemplates: AllLevelDefaultMonsterTemplate[] = [];
   @property({ type: Number }) encounterLevel = 1;
 
   protected override willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
-    if ((changedProperties.has("encounterLevel") || changedProperties.has("monsterTemplates")) && this.type === "monster") {
-      if (this.selectedTemplateId) {
-        const template = this.monsterTemplates.find((item) => item.id === this.selectedTemplateId);
-        if (template) {
-          this.applyTemplate(template.id);
+    if (
+      (changedProperties.has("encounterLevel") ||
+        changedProperties.has("defaultMonsterTemplates") ||
+        changedProperties.has("customMonsterTemplates") ||
+        changedProperties.has("currentMonsters") ||
+        changedProperties.has("allLevelDefaultMonsterTemplates")) &&
+      this.type === "monster"
+    ) {
+      if (this.selectedTemplateOptionKey) {
+        const option = this.templateOptions.find((item) => item.key === this.selectedTemplateOptionKey);
+        if (option) {
+          this.applyTemplateOption(option);
           return;
         }
+        this.selectedTemplateOptionKey = "";
         this.selectedTemplateId = "";
       }
       this.applyMonsterTypeDefault(this.monsterType);
     }
+  }
+
+  private get templateOptions(): TemplatePickerOption[] {
+    const defaultOptions = this.defaultMonsterTemplates.map<TemplatePickerOption>((template) => ({
+      key: `default:${template.id}`,
+      label: template.name,
+      monsterType: template.monsterType,
+      initiative: template.initiative,
+      maxHp: template.maxHp,
+      toughness: getMonsterStatsForEncounterLevel(this.encounterLevel, template.monsterType).tough,
+      source: "default-template",
+      templateId: template.id,
+    }));
+
+    const customOptions = this.customMonsterTemplates.map<TemplatePickerOption>((template) => ({
+      key: `custom:${template.id}`,
+      label: template.name,
+      monsterType: template.monsterType,
+      initiative: template.initiative,
+      maxHp: template.maxHp,
+      toughness: getMonsterStatsForEncounterLevel(this.encounterLevel, template.monsterType).tough,
+      source: "custom-template",
+      templateId: template.id,
+    }));
+
+    const existingByName = new Map<string, TemplatePickerOption>();
+    for (const participant of this.currentMonsters) {
+      if (participant.type !== "monster" || !participant.monsterType) {
+        continue;
+      }
+      const label = stripMonsterCounter(participant.name);
+      const key = label.toLocaleLowerCase();
+      if (existingByName.has(key)) {
+        continue;
+      }
+      existingByName.set(key, {
+        key: `existing:${key}`,
+        label,
+        monsterType: participant.monsterType,
+        initiative: participant.initiative,
+        maxHp: participant.maxHp,
+        toughness: participant.toughness,
+        source: "existing-monster",
+      });
+    }
+
+    const allLevelDefaultOptions = this.allLevelDefaultMonsterTemplates.map<TemplatePickerOption>(({ levelRange, template }) => ({
+      key: `all-levels:${levelRange}:${template.id}`,
+      label: template.name,
+      monsterType: template.monsterType,
+      initiative: template.initiative,
+      maxHp: template.maxHp,
+      toughness: getMonsterStatsForEncounterLevel(this.levelRangeStart(levelRange), template.monsterType).tough,
+      source: "default-template",
+      templateId: template.id,
+      levelRange,
+    }));
+
+    switch (this.templateFilter) {
+      case "default-templates":
+        return defaultOptions;
+      case "custom-templates":
+        return customOptions;
+      case "current-monsters":
+        return [...existingByName.values()];
+      case "all-levels":
+        return allLevelDefaultOptions;
+      case "default":
+      default:
+        return [...defaultOptions, ...customOptions, ...existingByName.values()];
+    }
+  }
+
+  private get templateResults(): TemplatePickerOption[] {
+    const query = this.templateQuery.trim().toLowerCase();
+    if (!query) {
+      return this.templateOptions;
+    }
+
+    return this.templateOptions.filter((option) => {
+      const haystack = `${option.label} ${option.monsterType} ${this.templateSourceLabel(option.source)}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }
+
+  private templateSourceLabel(source: TemplateSource): string {
+    switch (source) {
+      case "default-template":
+        return "Default template";
+      case "custom-template":
+        return "Custom template";
+      case "existing-monster":
+        return "Existing monster";
+    }
+  }
+
+  private templateFilterLabel(filter: TemplateFilterMode): string {
+    switch (filter) {
+      case "default":
+        return "Default";
+      case "default-templates":
+        return "Default templates";
+      case "custom-templates":
+        return "Custom templates";
+      case "current-monsters":
+        return "Current monsters";
+      case "all-levels":
+        return "All levels";
+    }
+  }
+
+  private levelRangeLabel(levelRange: MonsterStatsLevelRange): string {
+    const [start, end] = levelRange.replace("levels_", "").split("_");
+    return `Levels ${start}-${end}`;
+  }
+
+  private levelRangeStart(levelRange: MonsterStatsLevelRange): number {
+    const [start] = levelRange.replace("levels_", "").split("_");
+    return parseInt(start, 10);
   }
 
   private applyMonsterTypeStats(monsterType: MonsterType): void {
@@ -139,24 +410,106 @@ export class EncounterAddForm extends LitElement {
     this.toughness = String(stats.tough);
   }
 
-  private applyTemplate(templateId: string): void {
-    this.selectedTemplateId = templateId;
-    const template = this.monsterTemplates.find((item) => item.id === templateId);
-    if (!template) {
-      this.applyMonsterTypeDefault(this.monsterType);
-      return;
-    }
+  private applyTemplateOption(option: TemplatePickerOption): void {
+    this.selectedTemplateId = option.templateId ?? "";
+    this.selectedTemplateOptionKey = option.key;
     this.type = "monster";
-    this.name = template.name;
-    this.monsterType = template.monsterType;
-    this.initiative = String(template.initiative);
-    this.maxHp = String(template.maxHp);
-    this.toughness = String(getMonsterStatsForEncounterLevel(this.encounterLevel, template.monsterType).tough);
+    this.templateQuery = option.label;
+    this.name = option.label;
+    this.monsterType = option.monsterType;
+    this.initiative = String(option.initiative);
+    this.maxHp = String(option.maxHp);
+    this.toughness = String(option.toughness);
   }
 
   private applyMonsterTypeDefault(monsterType: MonsterType): void {
     this.monsterType = monsterType;
     this.applyMonsterTypeStats(monsterType);
+  }
+
+  private handleTemplateInput = (event: Event): void => {
+    this.templateQuery = (event.target as HTMLInputElement).value;
+    this.templatePickerOpen = true;
+    this.templateActiveIndex = -1;
+    if (this.selectedTemplateOptionKey) {
+      const selectedOption = this.templateOptions.find((item) => item.key === this.selectedTemplateOptionKey);
+      if (selectedOption && selectedOption.label !== this.templateQuery) {
+        this.selectedTemplateId = "";
+        this.selectedTemplateOptionKey = "";
+      }
+    }
+  };
+
+  private handleTemplateFocus = (): void => {
+    this.templatePickerOpen = true;
+  };
+
+  private setTemplateFilter(filter: TemplateFilterMode): void {
+    this.templateFilter = filter;
+    this.templateActiveIndex = -1;
+  }
+
+  private handleTemplateBlur = (event: FocusEvent): void => {
+    const shell = this.renderRoot.querySelector(".template-picker-shell");
+    const nextTarget = event.relatedTarget as Node | null;
+    if (shell && nextTarget && shell.contains(nextTarget)) {
+      return;
+    }
+    this.templatePickerOpen = false;
+    this.templateActiveIndex = -1;
+  };
+
+  private handleTemplateKeyDown = (event: KeyboardEvent): void => {
+    if (!this.templatePickerOpen && ["ArrowDown", "ArrowUp"].includes(event.key)) {
+      this.templatePickerOpen = true;
+    }
+
+    const totalItems = this.templateResults.length + 1;
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      this.templateActiveIndex = Math.min(this.templateActiveIndex + 1, totalItems - 1);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      this.templateActiveIndex = Math.max(this.templateActiveIndex - 1, -1);
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (this.templateActiveIndex === 0) {
+        this.selectCustomMonster();
+      } else if (this.templateActiveIndex > 0) {
+        this.selectTemplate(this.templateResults[this.templateActiveIndex - 1]);
+      } else if (this.templateResults.length === 1) {
+        this.selectTemplate(this.templateResults[0]);
+      }
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      this.templatePickerOpen = false;
+      this.templateActiveIndex = -1;
+    }
+  };
+
+  private selectCustomMonster(): void {
+    this.selectedTemplateId = "";
+    this.selectedTemplateOptionKey = "";
+    this.templateQuery = "";
+    this.applyMonsterTypeDefault(this.monsterType);
+    this.templatePickerOpen = false;
+    this.templateActiveIndex = -1;
+  }
+
+  private selectTemplate(option: TemplatePickerOption): void {
+    this.applyTemplateOption(option);
+    this.templatePickerOpen = false;
+    this.templateActiveIndex = -1;
   }
 
   private handleSubmit(e: Event) {
@@ -201,6 +554,11 @@ export class EncounterAddForm extends LitElement {
     this.applyMonsterTypeStats(DEFAULT_MONSTER_TYPE);
     this.toughness = "0";
     this.selectedTemplateId = "";
+    this.selectedTemplateOptionKey = "";
+    this.templateQuery = "";
+    this.templatePickerOpen = false;
+    this.templateActiveIndex = -1;
+    this.templateFilter = "default";
     (e.target as HTMLFormElement).reset();
   }
 
@@ -242,17 +600,87 @@ export class EncounterAddForm extends LitElement {
               ? html`
                   <label>
                     Template
-                    <select
-                      name="monsterTemplate"
-                      .value=${this.selectedTemplateId}
-                      @change=${(e: Event) => this.applyTemplate((e.target as HTMLSelectElement).value)}>
-                      <option value="">Custom monster</option>
-                      ${this.monsterTemplates.map(
-                        (template) => html`
-                          <option value=${template.id}>${template.name}</option>
-                        `,
-                      )}
-                    </select>
+                    <div class="template-picker-shell">
+                      <div class="template-search-wrapper">
+                        <span class="template-search-icon">${searchIcon}</span>
+                        <input
+                          class="template-search-input"
+                          type="text"
+                          .value=${this.templateQuery}
+                          placeholder="Search templates or choose custom"
+                          @input=${this.handleTemplateInput}
+                          @keydown=${this.handleTemplateKeyDown}
+                          @focus=${this.handleTemplateFocus}
+                          @blur=${this.handleTemplateBlur}
+                          autocomplete="off"
+                          aria-label="Search monster templates" />
+                      </div>
+                      ${this.templatePickerOpen
+                        ? html`
+                            <div class="template-results" role="listbox">
+                              <div class="template-filter-row">
+                                ${(
+                                  [
+                                    "default",
+                                    "default-templates",
+                                    "custom-templates",
+                                    "current-monsters",
+                                    "all-levels",
+                                  ] as TemplateFilterMode[]
+                                ).map(
+                                  (filter) => html`
+                                    <button
+                                      class="template-filter-btn ${this.templateFilter === filter ? "active" : ""}"
+                                      type="button"
+                                      @mousedown=${(event: Event) => {
+                                        event.preventDefault();
+                                        this.setTemplateFilter(filter);
+                                      }}>
+                                      ${this.templateFilterLabel(filter)}
+                                    </button>
+                                  `,
+                                )}
+                              </div>
+                              <button
+                                class="template-result ${this.templateActiveIndex === 0 ? "active" : ""}"
+                                type="button"
+                                @mousedown=${(event: Event) => {
+                                  event.preventDefault();
+                                  this.selectCustomMonster();
+                                }}>
+                                <div class="template-result-title">Custom monster</div>
+                                <div class="template-result-meta">Use manual monster type and stats</div>
+                              </button>
+                              ${this.templateResults.length === 0
+                                ? html`
+                                    <div class="template-empty">No matching templates.</div>
+                                  `
+                                : this.templateResults.map(
+                                    (option, index) => html`
+                                      <button
+                                        class="template-result ${this.templateActiveIndex === index + 1 ? "active" : ""}"
+                                        type="button"
+                                        @mousedown=${(event: Event) => {
+                                          event.preventDefault();
+                                          this.selectTemplate(option);
+                                        }}>
+                                        <div class="template-result-title">${option.label}</div>
+                                        <div class="template-result-meta">
+                                          <span class="template-result-source">${this.templateSourceLabel(option.source)}</span>
+                                          ${option.levelRange
+                                            ? html`
+                                                <span class="template-result-source">${this.levelRangeLabel(option.levelRange)}</span>
+                                              `
+                                            : ""}
+                                          ${option.monsterType} • ${option.initiative} initiative • ${option.maxHp} HP • ${option.toughness} toughness
+                                        </div>
+                                      </button>
+                                    `,
+                                  )}
+                            </div>
+                          `
+                        : ""}
+                    </div>
                   </label>
                 `
               : ""}

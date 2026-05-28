@@ -17,6 +17,18 @@ export function getDefaultMonsterTemplatesForRange(levelRange: MonsterStatsLevel
   return DEFAULT_MONSTER_TEMPLATES[levelRange] ?? [];
 }
 
+export function getDefaultMonsterTemplatesForAllLevels(): Array<{
+  levelRange: MonsterStatsLevelRangeKey;
+  template: MonsterTemplate;
+}> {
+  return Object.entries(DEFAULT_MONSTER_TEMPLATES).flatMap(([levelRange, templates]) =>
+    templates.map((template) => ({
+      levelRange: levelRange as MonsterStatsLevelRangeKey,
+      template,
+    })),
+  );
+}
+
 export const DEFAULT_MONSTER_TEMPLATES: DefaultMonsterTemplates = {
   levels_1_2: [
     {

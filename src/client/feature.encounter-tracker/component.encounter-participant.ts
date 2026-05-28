@@ -1,6 +1,8 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import { Character } from "../../shared/type.character.js";
 import { MonsterType, Participant } from "../../shared/type.encounter.js";
+import { getMonsterStatsForEncounterLevel } from "../../shared/util.monster-stats.js";
 import { kebabIcon, shieldIcon } from "../icons.js";
 
 @customElement("encounter-participant")
@@ -560,6 +562,52 @@ export class EncounterParticipant extends LitElement {
       justify-content: flex-end;
       gap: 0.5rem;
     }
+    .stats-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.9rem;
+    }
+    .stats-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      background: var(--color-primary-surface-overlay, #1e1e38);
+      color: var(--color-primary-text-muted, #8a8780);
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.6rem;
+      margin-bottom: 0.9rem;
+    }
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 8px;
+      background: var(--color-primary-surface-overlay, #1e1e38);
+    }
+    .stats-label {
+      color: var(--color-primary-text-muted, #8a8780);
+      font-size: 0.8rem;
+    }
+    .stats-value {
+      color: var(--color-primary-text, #e2e0d6);
+      font-weight: 700;
+      text-align: right;
+    }
+    .stats-note {
+      margin: 0 0 0.9rem;
+      color: var(--color-primary-text-muted, #8a8780);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
     .modal-btn {
       padding: 0.5rem 0.85rem;
       border-radius: 6px;
@@ -593,6 +641,8 @@ export class EncounterParticipant extends LitElement {
   @property({ type: Boolean }) isLast = false;
   /** Full list of available status names from the user's status library */
   @property({ type: Array }) availableStatuses: string[] = [];
+  @property({ attribute: false }) linkedCharacter: Character | null = null;
+  @property({ type: Number }) encounterLevel = 1;
 
   @state() private adjustAmount = 1;
   @state() private showNotes = false;
@@ -606,6 +656,7 @@ export class EncounterParticipant extends LitElement {
   @state() private statusQuery = "";
   @state() private statusActiveIndex = -1;
   @state() private menuOpen = false;
+  @state() private statsModalOpen = false;
   private editTriggerButton: HTMLButtonElement | null = null;
   private statusInputRef: HTMLInputElement | null = null;
 
@@ -654,6 +705,11 @@ export class EncounterParticipant extends LitElement {
     this.closeMenu();
     this.dispatch("participant-duplicate", { id: this.participant.id });
   }
+
+  private handleViewStats = (): void => {
+    this.closeMenu();
+    this.statsModalOpen = true;
+  };
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
@@ -808,6 +864,11 @@ export class EncounterParticipant extends LitElement {
     queueMicrotask(() => this.editTriggerButton?.focus());
   };
 
+  private closeStatsModal = (): void => {
+    this.statsModalOpen = false;
+    queueMicrotask(() => this.editTriggerButton?.focus());
+  };
+
   private async focusModalNameInput(): Promise<void> {
     await this.updateComplete;
     const input = this.renderRoot.querySelector<HTMLInputElement>("#edit-participant-name");
@@ -817,9 +878,50 @@ export class EncounterParticipant extends LitElement {
   private handleModalKeyDown = (event: KeyboardEvent): void => {
     if (event.key === "Escape") {
       event.preventDefault();
+      if (this.statsModalOpen) {
+        this.closeStatsModal();
+        return;
+      }
       this.closeEditModal();
     }
   };
+
+  private get statDetails(): Array<{ label: string; value: string | number }> {
+    const participant = this.participant;
+
+    if (participant.type === "monster" && participant.monsterType) {
+      const stats = getMonsterStatsForEncounterLevel(this.encounterLevel, participant.monsterType);
+      return [
+        { label: "Skill", value: stats.skill },
+        { label: "Agility", value: stats.ag },
+        { label: "Aim", value: stats.aim },
+        { label: "Tactics", value: stats.tac },
+        { label: "Intellect", value: stats.int },
+        { label: "Will", value: stats.will },
+        { label: "Strength", value: stats.str },
+        { label: "Initiative", value: stats.init },
+        { label: "Toughness", value: stats.tough },
+        { label: "Block", value: stats.block },
+        { label: "Damage", value: stats.damage },
+        { label: "Health", value: stats.health },
+      ];
+    }
+
+    return [
+      { label: "Skill", value: "-" },
+      { label: "Agility", value: "-" },
+      { label: "Aim", value: "-" },
+      { label: "Tactics", value: "-" },
+      { label: "Intellect", value: "-" },
+      { label: "Will", value: "-" },
+      { label: "Strength", value: "-" },
+      { label: "Initiative", value: this.displayInitiative(participant) },
+      { label: "Toughness", value: participant.toughness },
+      { label: "Health", value: participant.maxHp },
+      { label: "Current HP", value: participant.hp },
+      { label: "Race / Class", value: this.linkedCharacter ? `${this.linkedCharacter.race.title} / ${this.linkedCharacter.class.title}` : "-" },
+    ];
+  }
 
   private saveEditModal = (): void => {
     const name = this.editNameDraft.trim();
@@ -894,6 +996,7 @@ export class EncounterParticipant extends LitElement {
             ${this.menuOpen
               ? html`
                   <div class="menu">
+                    <button type="button" @click=${this.handleViewStats}>View stats</button>
                     <button type="button" @click=${this.handleEditParticipant}>Edit participant</button>
                     ${canDuplicate
                       ? html`
@@ -1143,6 +1246,57 @@ export class EncounterParticipant extends LitElement {
                 <div class="modal-actions">
                   <button class="modal-btn" type="button" @click=${this.closeEditModal}>Cancel</button>
                   <button class="modal-btn primary" type="button" @click=${this.saveEditModal}>Save</button>
+                </div>
+              </div>
+            </div>
+          `
+        : nothing}
+      ${this.statsModalOpen
+        ? html`
+            <div
+              class="overlay"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="participant-stats-title"
+              @keydown=${this.handleModalKeyDown}
+              @click=${this.closeStatsModal}>
+              <div class="modal" @click=${(event: Event) => event.stopPropagation()}>
+                <div class="modal-header">
+                  <h3 class="modal-title" id="participant-stats-title">${p.name} Stats</h3>
+                </div>
+                <div class="stats-meta">
+                  <span class="stats-pill">${p.type === "monster" ? "Monster" : "Player"}</span>
+                  ${p.type === "monster" && p.monsterType
+                    ? html`
+                        <span class="stats-pill">${p.monsterType}</span>
+                      `
+                    : nothing}
+                  ${this.linkedCharacter
+                    ? html`
+                        <span class="stats-pill">${this.linkedCharacter.race.title}</span>
+                        <span class="stats-pill">${this.linkedCharacter.class.title}</span>
+                      `
+                    : nothing}
+                </div>
+                ${p.type === "player"
+                  ? html`
+                      <p class="stats-note">
+                        Player participants currently store encounter values and linked character metadata here. Full combat attributes like Skill and Agility are not tracked in the player model yet.
+                      </p>
+                    `
+                  : nothing}
+                <div class="stats-grid">
+                  ${this.statDetails.map(
+                    (stat) => html`
+                      <div class="stats-row">
+                        <span class="stats-label">${stat.label}</span>
+                        <span class="stats-value">${stat.value}</span>
+                      </div>
+                    `,
+                  )}
+                </div>
+                <div class="modal-actions">
+                  <button class="modal-btn primary" type="button" @click=${this.closeStatsModal}>Close</button>
                 </div>
               </div>
             </div>
