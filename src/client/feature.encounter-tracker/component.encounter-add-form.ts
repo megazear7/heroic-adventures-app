@@ -112,6 +112,7 @@ export class EncounterAddForm extends LitElement {
   @state() private monsterType: MonsterType = DEFAULT_MONSTER_TYPE;
   @state() private initiative = String(DEFAULT_MONSTER_STATS.init);
   @state() private maxHp = String(DEFAULT_MONSTER_STATS.health);
+  @state() private toughness = "0";
   @state() private selectedTemplateId = "";
   @state() private error: string | null = null;
   @property({ type: Array }) monsterTemplates: MonsterTemplate[] = [];
@@ -135,6 +136,7 @@ export class EncounterAddForm extends LitElement {
     const stats = getMonsterStatsForEncounterLevel(this.encounterLevel, monsterType);
     this.initiative = String(stats.init);
     this.maxHp = String(stats.health);
+    this.toughness = String(stats.tough);
   }
 
   private applyTemplate(templateId: string): void {
@@ -149,6 +151,7 @@ export class EncounterAddForm extends LitElement {
     this.monsterType = template.monsterType;
     this.initiative = String(template.initiative);
     this.maxHp = String(template.maxHp);
+    this.toughness = String(getMonsterStatsForEncounterLevel(this.encounterLevel, template.monsterType).tough);
   }
 
   private applyMonsterTypeDefault(monsterType: MonsterType): void {
@@ -162,6 +165,7 @@ export class EncounterAddForm extends LitElement {
 
     const hp = parseInt(this.maxHp, 10);
     const init = parseInt(this.initiative, 10);
+    const toughness = parseInt(this.toughness, 10);
 
     const candidate = {
       id: crypto.randomUUID(),
@@ -172,6 +176,8 @@ export class EncounterAddForm extends LitElement {
       initiative: isNaN(init) || init < 1 ? 1 : init > 99 ? 99 : init,
       hp: isNaN(hp) ? 10 : hp,
       maxHp: isNaN(hp) ? 10 : hp,
+      toughness: isNaN(toughness) || toughness < 0 ? 0 : toughness,
+      toughnessEnabled: true,
       notes: "",
       conditions: [],
     };
@@ -192,7 +198,8 @@ export class EncounterAddForm extends LitElement {
 
     this.name = "";
     this.monsterType = DEFAULT_MONSTER_TYPE;
-  this.applyMonsterTypeStats(DEFAULT_MONSTER_TYPE);
+    this.applyMonsterTypeStats(DEFAULT_MONSTER_TYPE);
+    this.toughness = "0";
     this.selectedTemplateId = "";
     (e.target as HTMLFormElement).reset();
   }
@@ -294,6 +301,16 @@ export class EncounterAddForm extends LitElement {
                 @input=${(e: Event) => (this.maxHp = (e.target as HTMLInputElement).value)}
                 placeholder="10"
                 required />
+            </label>
+            <label>
+              Toughness
+              <input
+                name="toughness"
+                type="number"
+                min="0"
+                .value=${this.toughness}
+                @input=${(e: Event) => (this.toughness = (e.target as HTMLInputElement).value)}
+                placeholder="0" />
             </label>
           </div>
           ${this.error

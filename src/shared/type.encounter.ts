@@ -195,6 +195,8 @@ export const ParticipantSchema = z.object({
   pendingInitiative: z.number().int().min(1).nullable().optional().default(null),
   hp: z.number().int(),
   maxHp: z.number().int().min(1),
+  toughness: z.number().int().min(0).optional().default(0),
+  toughnessEnabled: z.boolean().optional().default(true),
   notes: z.string(),
   conditions: z.array(z.string()),
 });
