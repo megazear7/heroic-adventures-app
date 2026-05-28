@@ -29,7 +29,10 @@ import {
   shuffleIds,
   syncTemplateMonsterNames,
 } from "../../shared/util.encounter.js";
-import { getDefaultMonsterTemplatesForLevel } from "../../shared/util.default-monster-templates.js";
+import {
+  getDefaultMonsterTemplatesForAllLevels,
+  getDefaultMonsterTemplatesForLevel,
+} from "../../shared/util.default-monster-templates.js";
 import { getMonsterStatsForEncounterLevel } from "../../shared/util.monster-stats.js";
 import { parseRouteParams } from "../../shared/util.route-params.js";
 import { searchIcon, leftArrowIcon, kebabIcon } from "../icons.js";
@@ -41,6 +44,7 @@ import {
 import { MonsterTemplate } from "../../shared/type.monster-template.js";
 import "./component.encounter-add-form.js";
 import "./component.encounter-participant.js";
+import "../component.toast.js";
 
 const DECK_SIZE = INITIATIVE_CARDS.length; // 10
 const MAX_ROSTER_SEARCH_RESULTS = 8;
@@ -632,33 +636,6 @@ export class PageEncounter extends LitElement {
     .roster-meta {
       color: var(--color-primary-text-muted, #8a8780);
       font-size: 0.82rem;
-    }
-
-    /* ---- Toast ---- */
-    .toast {
-      position: fixed;
-      bottom: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--color-1, #c9a84c);
-      color: #1a1a2e;
-      font-weight: 700;
-      font-size: 0.9rem;
-      padding: 0.6rem 1.5rem;
-      border-radius: 24px;
-      z-index: 9999;
-      pointer-events: none;
-      animation: toastIn 200ms ease;
-    }
-    @keyframes toastIn {
-      from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(8px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-      }
     }
     .not-found {
       padding: 2rem 1rem;
@@ -1301,7 +1278,10 @@ export class PageEncounter extends LitElement {
     const p = this.encounter.participants.find((x) => x.id === id);
     if (!p) return;
     const hp = Math.max(0, p.hp - resolveParticipantDamage(p, amount));
-    this.updateParticipant(id, { hp });
+    this.updateParticipant(id, {
+      hp,
+      toughnessEnabled: p.toughnessEnabled ? p.toughnessEnabled : true,
+    });
     this.updateLinkedCharacter(id, { health: hp });
     if (hp === 0) this.showToast(`${p.name} is down!`);
   }
@@ -1474,6 +1454,7 @@ export class PageEncounter extends LitElement {
       .filter((entry) => entry.round < enc.round)
       .slice()
       .reverse();
+    const rosterCharactersById = new Map(this.rosterCharacters.map((character) => [character.id, character]));
 
     const actionLabel =
       actionType === "bonus"
@@ -1640,6 +1621,8 @@ export class PageEncounter extends LitElement {
               (p, i) => html`
                 <encounter-participant
                   .participant=${p}
+                  .linkedCharacter=${p.characterId ? (rosterCharactersById.get(p.characterId) ?? null) : null}
+                  .encounterLevel=${enc.level}
                   .availableStatuses=${this.statuses}
                   .isActive=${activeIds.has(p.id)}
                   .isFirst=${i === 0}
@@ -1765,16 +1748,15 @@ export class PageEncounter extends LitElement {
       <!-- Add form -->
       <encounter-add-form
         .encounterLevel=${enc.level}
-        .monsterTemplates=${this.monsterTemplates}
+        .defaultMonsterTemplates=${getDefaultMonsterTemplatesForLevel(enc.level)}
+        .allLevelDefaultMonsterTemplates=${getDefaultMonsterTemplatesForAllLevels()}
+        .customMonsterTemplates=${getMonsterTemplates()}
+        .currentMonsters=${enc.participants}
         @participant-added=${this.handleParticipantAdded}></encounter-add-form>
       <a href="/monster-templates" class="back-link" style="margin-bottom: 0;">Manage monster templates</a>
 
       <!-- Toast notification -->
-      ${this.toast
-        ? html`
-            <div class="toast" role="status" aria-live="polite">${this.toast}</div>
-          `
-        : nothing}
+      <heroic-toast .message=${this.toast ?? ""}></heroic-toast>
     `;
   }
 }
