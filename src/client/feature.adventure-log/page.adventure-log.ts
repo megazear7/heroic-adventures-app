@@ -11,45 +11,45 @@ export class PageAdventureLog extends LitElement {
   static override styles = css`
     :host {
       display: block;
-      padding: 1.5rem 1rem;
+      padding: var(--size-xl) var(--size-md);
       min-height: 100vh;
-      background: var(--color-primary-surface, #0f0f1a);
+      background: var(--color-primary-surface);
     }
     h1 {
-      font-family: var(--font-family-display, serif);
-      font-size: 1.75rem;
-      color: var(--color-1, #c9a84c);
-      margin: 0 0 0.25rem;
+      font-family: var(--font-family-display);
+      font-size: var(--size-1-75);
+      color: var(--color-1);
+      margin: 0 0 var(--size-2xs);
     }
     .subtitle {
-      font-size: 0.875rem;
-      color: var(--color-primary-text-muted, #8a8780);
-      margin: 0 0 1.5rem;
+      font-size: var(--size-0-875);
+      color: var(--color-primary-text-muted);
+      margin: 0 0 var(--size-xl);
     }
     .section-title {
-      font-size: 1rem;
+      font-size: var(--size-md);
       font-weight: 600;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      margin: 2rem 0 0.75rem;
+      margin: var(--size-2xl) 0 var(--size-sm);
     }
     .logs-list {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: var(--size-md);
     }
     .empty {
-      color: var(--color-primary-text-muted, #8a8780);
-      font-size: 0.9rem;
-      padding: 0.5rem 0;
+      color: var(--color-primary-text-muted);
+      font-size: var(--size-0-9);
+      padding: var(--size-xs) 0;
     }
     @media (max-width: 600px) {
       :host {
-        padding: 0.75rem 0.25rem;
+        padding: var(--size-sm) var(--size-2xs);
       }
       h1 {
-        font-size: 1.4rem;
+        font-size: var(--size-1-4);
       }
     }
   `;

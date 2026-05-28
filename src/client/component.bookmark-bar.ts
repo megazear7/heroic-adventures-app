@@ -73,7 +73,7 @@ export class HeroicBookmarkBar extends LitElement {
         border-radius: var(--border-radius-small);
         text-decoration: none;
         color: var(--color-primary-text);
-        font-size: 0.8rem;
+        font-size: var(--size-0-8);
         font-weight: 500;
         transition: var(--transition-all);
         width: 100%;

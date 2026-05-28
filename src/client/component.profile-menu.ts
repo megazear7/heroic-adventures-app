@@ -33,7 +33,7 @@ export class HeroicProfileMenu extends LitElement {
       }
 
       .trigger-name {
-        font-size: 0.85rem;
+        font-size: var(--size-0-85);
         font-weight: 500;
         max-width: 100px;
         overflow: hidden;
@@ -66,7 +66,7 @@ export class HeroicProfileMenu extends LitElement {
         align-items: center;
         gap: 10px;
         padding: 10px 16px;
-        font-size: 0.85rem;
+        font-size: var(--size-0-85);
         color: var(--color-primary-text);
         cursor: pointer;
         transition: var(--transition-fast);

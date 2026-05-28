@@ -130,7 +130,7 @@ export class HeroicEntryPage extends HeroicAppProvider {
 
       .error {
         text-align: center;
-        padding: 2rem;
+        padding: var(--size-2xl);
         color: var(--color-primary-text-muted);
       }
     `,

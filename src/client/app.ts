@@ -89,7 +89,7 @@ export class HeroicApp extends LitElement {
         border-radius: 12px;
         background: rgba(201, 168, 76, 0.15);
         color: var(--color-primary-text-muted);
-        font-size: 0.75rem;
+        font-size: var(--size-sm);
         font-weight: 500;
         letter-spacing: 0.03em;
         opacity: 0;

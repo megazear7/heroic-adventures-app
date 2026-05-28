@@ -79,7 +79,7 @@ export class HeroicSearchBar extends LitElement {
         padding: 10px 14px;
         text-decoration: none;
         color: var(--color-primary-text);
-        font-size: 0.85rem;
+        font-size: var(--size-0-85);
         transition: var(--transition-fast);
         cursor: pointer;
         border-bottom: 1px solid rgba(201, 168, 76, 0.06);
@@ -119,7 +119,7 @@ export class HeroicSearchBar extends LitElement {
       }
 
       .dropdown-item .suggestion-category {
-        font-size: 0.75rem;
+        font-size: var(--size-sm);
         color: var(--color-primary-text-muted);
         white-space: nowrap;
         flex-shrink: 0;

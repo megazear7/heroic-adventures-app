@@ -58,7 +58,7 @@ export class HeroicCategoryPage extends HeroicAppProvider {
 
       .empty {
         text-align: center;
-        padding: 2rem;
+        padding: var(--size-2xl);
         color: var(--color-primary-text-muted);
       }
 

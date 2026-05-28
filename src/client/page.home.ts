@@ -101,6 +101,19 @@ export class HeroicHomePage extends HeroicAppProvider {
         margin: 0 auto 32px;
       }
 
+      .hero-logo {
+        margin-bottom: 16px;
+      }
+
+      .mcp-note {
+        margin-top: 18px;
+      }
+
+      .mcp-note-text {
+        color: var(--color-primary-text-muted);
+        font-size: 15px;
+      }
+
       .search-section {
         max-width: 500px;
         margin: 0 auto 40px;
@@ -149,13 +162,13 @@ export class HeroicHomePage extends HeroicAppProvider {
             alt="Heroic Adventures Logo"
             width="128"
             height="128"
-            style="margin-bottom: 16px;" />
+            class="hero-logo" />
           <h1>Heroic Adventures</h1>
           <p>
             Your companion for Heroic Adventures 2nd Edition. Browse chapters, rules, classes, spells, items, and more.
           </p>
-          <div style="margin-top: 18px;">
-            <small style="color: var(--color-primary-text-muted); font-size: 15px;">
+          <div class="mcp-note">
+            <small class="mcp-note-text">
               Want to connect your AI to Heroic Adventures? Take a look at the
               <a href="https://mcp.heroicadventures.app/" target="_blank" rel="noopener">Heroic Adventures MCP</a>
               .

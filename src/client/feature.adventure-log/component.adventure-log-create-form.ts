@@ -9,8 +9,8 @@ export class AdventureLogCreateForm extends LitElement {
       display: block;
       max-width: 600px;
       margin: 0 auto;
-      padding: 1.25rem;
-      background: var(--color-primary-surface-raised, #16162a);
+      padding: var(--size-lg);
+      background: var(--color-primary-surface-raised);
       border: 1px solid rgba(201, 168, 76, 0.15);
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -18,31 +18,31 @@ export class AdventureLogCreateForm extends LitElement {
     form {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: var(--size-md);
     }
     label {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
-      font-size: 0.875rem;
+      gap: var(--size-2xs);
+      font-size: var(--size-0-875);
       font-weight: 500;
-      color: var(--color-primary-text-muted, #8a8780);
+      color: var(--color-primary-text-muted);
     }
     input,
     textarea {
-      font-size: 1rem;
-      font-family: var(--font-family, sans-serif);
-      padding: 0.5rem 0.75rem;
+      font-size: var(--size-md);
+      font-family: var(--font-family);
+      padding: var(--size-xs) var(--size-sm);
       border-radius: 6px;
       border: 1px solid rgba(201, 168, 76, 0.2);
-      background: var(--color-primary-surface-overlay, #1e1e38);
-      color: var(--color-primary-text, #e2e0d6);
+      background: var(--color-primary-surface-overlay);
+      color: var(--color-primary-text);
       outline: none;
       transition: border-color 200ms ease;
     }
     input:focus,
     textarea:focus {
-      border-color: var(--color-1, #c9a84c);
+      border-color: var(--color-1);
     }
     textarea {
       min-height: 100px;
@@ -50,28 +50,28 @@ export class AdventureLogCreateForm extends LitElement {
     }
     .row {
       display: flex;
-      gap: 0.75rem;
+      gap: var(--size-sm);
     }
     .row label {
       flex: 1;
     }
     .hint {
-      font-size: 0.75rem;
-      color: var(--color-primary-text-muted, #8a8780);
-      margin-top: 0.125rem;
+      font-size: var(--size-sm);
+      color: var(--color-primary-text-muted);
+      margin-top: var(--size-3xs);
     }
     .error {
-      color: var(--color-error, #ff4444);
-      font-size: 0.85rem;
+      color: var(--color-error);
+      font-size: var(--size-0-85);
     }
     button[type="submit"] {
       align-self: flex-start;
-      padding: 0.5rem 1.25rem;
-      background: var(--color-1, #c9a84c);
+      padding: var(--size-xs) var(--size-lg);
+      background: var(--color-1);
       color: #1a1a2e;
       border: none;
       border-radius: 6px;
-      font-size: 0.95rem;
+      font-size: var(--size-0-95);
       font-weight: 600;
       cursor: pointer;
       transition: opacity 200ms ease;
@@ -81,13 +81,13 @@ export class AdventureLogCreateForm extends LitElement {
     }
     @media (max-width: 600px) {
       :host {
-        padding: 0.75rem;
+        padding: var(--size-sm);
         max-width: 100%;
         border-radius: 8px;
       }
       .row {
         flex-direction: column;
-        gap: 1rem;
+        gap: var(--size-md);
       }
     }
   `;

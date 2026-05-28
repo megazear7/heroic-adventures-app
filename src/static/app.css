@@ -1,36 +1,114 @@
-/* Modernized CSS for Heroic Adventures App */
-
-/* Design Tokens */
+/* Design tokens */
 :root {
-  /* Colors */
+  /* Core colors */
   --color-primary-surface: #0f0f1a;
+  --color-primary-surface-raised: #16162a;
+  --color-primary-surface-overlay: #1e1e38;
   --color-secondary-surface: #1a1a2e;
+  --color-primary-text: #e2e0d6;
+  --color-primary-text-bold: #e0e0e0;
+  --color-primary-text-muted: #8a8780;
+  --color-border: #333355;
   --color-accent-gold: #c9a84c;
   --color-accent-purple: #7b68ee;
-  --color-text-primary: #e0e0e0;
+  --color-error: #ff6b6b;
+  --color-1: var(--color-accent-gold);
+  --color-2: var(--color-accent-purple);
+  --color-text-primary: var(--color-primary-text-bold);
   --color-text-secondary: #b0b0b0;
-  --color-border: #333355;
-
-  /* Size Tokens - replacing rem values */
-  --size-xs: 0.25rem;
-  --size-sm: 0.5rem;
-  --size-md: 1rem;
-  --size-lg: 1.5rem;
-  --size-xl: 2rem;
-  --size-2xl: 3rem;
-  --size-3xl: 4rem;
 
   /* Typography */
-  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-size-base: 1rem;
-  --font-size-sm: 0.875rem;
-  --font-size-lg: 1.125rem;
+  --font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family-display: "Cinzel", "Times New Roman", serif;
+  --font-tiny: var(--size-sm);
+  --font-small: var(--size-0-85);
+  --font-medium: var(--size-0-95);
+  --font-large: var(--size-1-15);
+  --font-xl: var(--size-1-75);
+  --font-size-base: var(--size-md);
+  --font-size-sm: var(--size-0-875);
+  --font-size-lg: var(--size-1-125);
+  --line-height: 1.6;
 
-  /* Spacing */
+  /* Sizing tokens */
+  --size-3xs: 0.125rem;
+  --size-2xs: 0.25rem;
+  --size-xs: 0.5rem;
+  --size-sm: 0.75rem;
+  --size-md: 1rem;
+  --size-lg: 1.25rem;
+  --size-xl: 1.5rem;
+  --size-2xl: 2rem;
+  --size-3xl: 3rem;
+  --size-4xl: 4rem;
+  --size-0-15: 0.15rem;
+  --size-0-2: 0.2rem;
+  --size-0-3: 0.3rem;
+  --size-0-35: 0.35rem;
+  --size-0-4: 0.4rem;
+  --size-0-45: 0.45rem;
+  --size-0-55: 0.55rem;
+  --size-0-6: 0.6rem;
+  --size-0-65: 0.65rem;
+  --size-0-7: 0.7rem;
+  --size-0-72: 0.72rem;
+  --size-0-76: 0.76rem;
+  --size-0-78: 0.78rem;
+  --size-0-8: 0.8rem;
+  --size-0-82: 0.82rem;
+  --size-0-85: 0.85rem;
+  --size-0-875: 0.875rem;
+  --size-0-88: 0.88rem;
+  --size-0-9: 0.9rem;
+  --size-0-95: 0.95rem;
+  --size-1-05: 1.05rem;
+  --size-1-1: 1.1rem;
+  --size-1-125: 1.125rem;
+  --size-1-15: 1.15rem;
+  --size-1-4: 1.4rem;
+  --size-1-75: 1.75rem;
+
+  /* Legacy aliases */
+  --size-tiny: var(--size-xs);
+  --size-small: var(--size-sm);
+  --size-medium: var(--size-md);
+  --size-large: var(--size-xl);
+  --size-2x: var(--size-2xl);
   --space-xs: var(--size-xs);
   --space-sm: var(--size-sm);
   --space-md: var(--size-md);
   --space-lg: var(--size-lg);
+
+  /* Layout / borders / shadows */
+  --content-width: 1200px;
+  --sidebar-width: 280px;
+  --border-radius-small: 8px;
+  --border-radius-medium: 12px;
+  --border-radius-large: 16px;
+  --border-normal: 1px solid rgba(201, 168, 76, 0.15);
+  --shadow-normal: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --shadow-medium: 0 12px 28px rgba(0, 0, 0, 0.35);
+  --shadow-glow: 0 0 0 2px rgba(201, 168, 76, 0.15);
+  --shadow-active: 0 8px 20px rgba(0, 0, 0, 0.35);
+  --time-fast: 0.2s;
+  --time-normal: 0.3s;
+  --transition-fast: all var(--time-fast) ease;
+  --transition-all: all var(--time-normal) ease;
+
+  /* Component defaults (no fallbacks needed in component css) */
+  --modal-overlay-bg: rgba(0, 0, 0, 0.65);
+  --modal-max-width: 760px;
+  --modal-border: var(--border-normal);
+  --modal-padding: var(--size-large);
+  --modal-shadow: var(--shadow-medium);
+  --modal-gap: var(--size-medium);
+  --modal-actions-gap: var(--size-small);
+  --form-input-padding: 10px 12px;
+  --form-input-border: var(--border-normal);
+  --toast-bottom: var(--size-2xl);
+  --toast-background: var(--color-1);
+  --toast-color: #1a1a2e;
+  --scrollbar-thumb: rgba(201, 168, 76, 0.25);
 }
 
 html {
@@ -45,19 +123,32 @@ body {
   padding: 0;
 }
 
-/* Utility Classes */
+h1,
+h2,
+h3 {
+  color: var(--color-accent-gold);
+}
+
+/* Reusable utility classes */
 .card {
   background: var(--color-secondary-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--size-sm);
+  border-radius: var(--size-xs);
   padding: var(--space-md);
+}
+
+.panel {
+  background: var(--color-secondary-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-medium);
+  padding: var(--space-lg);
 }
 
 .button {
   background: var(--color-accent-gold);
   color: #000;
   padding: var(--space-sm) var(--space-md);
-  border-radius: var(--size-sm);
+  border-radius: var(--size-xs);
   border: none;
   cursor: pointer;
   font-weight: bold;
@@ -69,24 +160,29 @@ body {
 
 .tag {
   background: var(--color-accent-purple);
-  color: white;
-  padding: var(--size-xs) var(--size-sm);
+  color: #fff;
+  padding: var(--size-2xs) var(--size-xs);
   border-radius: 9999px;
   font-size: var(--font-size-sm);
 }
 
-/* Common Panels */
-.panel {
-  background: var(--color-secondary-surface);
-  border: 1px solid var(--color-border);
-  padding: var(--space-lg);
+.u-mb-0 {
+  margin-bottom: 0;
 }
 
-/* Remove inline styles and use classes in components */
-/* Additional styles for existing elements */
-
-h1, h2, h3 {
-  color: var(--color-accent-gold);
+.u-mt-0-875 {
+  margin-top: var(--size-0-875);
 }
 
-/* etc. - full modernization would continue here */
+.u-mb-md {
+  margin-bottom: var(--size-md);
+}
+
+.u-mt-lg {
+  margin-top: var(--size-lg);
+}
+
+.u-muted-small {
+  color: var(--color-primary-text-muted);
+  font-size: var(--size-0-95);
+}

@@ -15,7 +15,7 @@ export class HeroicProfileAvatar extends LitElement {
         justify-content: center;
         border-radius: 50%;
         font-weight: 700;
-        font-family: var(--font-family-display, sans-serif);
+        font-family: var(--font-family-display);
         letter-spacing: 0.04em;
         user-select: none;
         flex-shrink: 0;

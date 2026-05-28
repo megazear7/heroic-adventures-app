@@ -13,7 +13,7 @@ export const globalStyles = css`
     font-family: var(--font-family-display);
     font-size: var(--font-xl);
     color: var(--color-primary-text-bold);
-    margin: 0 0 1rem 0;
+    margin: 0 0 var(--size-md) 0;
     letter-spacing: 0.02em;
   }
 
@@ -21,19 +21,19 @@ export const globalStyles = css`
     font-family: var(--font-family-display);
     font-size: var(--font-large);
     color: var(--color-primary-text-bold);
-    margin: 0 0 0.75rem 0;
+    margin: 0 0 var(--size-sm) 0;
   }
 
   h3 {
     font-size: var(--font-medium);
     font-weight: 600;
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 var(--size-xs) 0;
   }
 
   p {
     font-size: var(--font-medium);
     line-height: var(--line-height);
-    margin: 0 0 1rem 0;
+    margin: 0 0 var(--size-md) 0;
   }
 
   a {
@@ -59,6 +59,29 @@ export const globalStyles = css`
     border-radius: var(--border-radius-medium);
     padding: var(--size-large);
     transition: var(--transition-all);
+  }
+
+  .panel {
+    background: var(--color-primary-surface-overlay);
+    border: var(--border-normal);
+    border-radius: var(--border-radius-medium);
+    padding: var(--size-large);
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    padding: var(--size-2xs) var(--size-xs);
+    font-size: var(--font-small);
+    color: var(--color-primary-text-muted);
+    background: rgba(201, 168, 76, 0.12);
+  }
+
+  .list-plain {
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
   .card:hover,
@@ -116,7 +139,7 @@ export const globalStyles = css`
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: var(--modal-overlay-bg, rgba(0, 0, 0, 0.65));
+    background: var(--modal-overlay-bg);
     z-index: 2000;
     display: flex;
     align-items: center;
@@ -125,14 +148,14 @@ export const globalStyles = css`
   }
 
   .modal-surface {
-    width: min(var(--modal-max-width, 760px), 100%);
+    width: min(var(--modal-max-width), 100%);
     background: var(--color-primary-surface-raised);
-    border: var(--modal-border, var(--border-normal));
+    border: var(--modal-border);
     border-radius: var(--border-radius-medium);
-    padding: var(--modal-padding, var(--size-large));
-    box-shadow: var(--modal-shadow, var(--shadow-medium));
+    padding: var(--modal-padding);
+    box-shadow: var(--modal-shadow);
     display: grid;
-    gap: var(--modal-gap, var(--size-medium));
+    gap: var(--modal-gap);
   }
 
   .modal-header {
@@ -152,15 +175,15 @@ export const globalStyles = css`
   .modal-actions {
     display: flex;
     justify-content: flex-end;
-    gap: var(--modal-actions-gap, var(--size-small));
+    gap: var(--modal-actions-gap);
   }
 
   .form-input {
     width: 100%;
     box-sizing: border-box;
-    padding: var(--form-input-padding, 10px 12px);
+    padding: var(--form-input-padding);
     border-radius: var(--border-radius-small);
-    border: var(--form-input-border, var(--border-normal));
+    border: var(--form-input-border);
     background: var(--color-primary-surface-overlay);
     color: var(--color-primary-text);
     font-family: var(--font-family);
