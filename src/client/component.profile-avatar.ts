@@ -24,7 +24,7 @@ export class HeroicProfileAvatar extends LitElement {
   ];
 
   @property({ type: String }) initials = "";
-  @property({ type: String }) color1 = "var(--color-accent-gold)";
+  @property({ type: String }) color1 = "#c9a84c";
   @property({ type: String }) color2 = "#5b8a72";
   @property({ type: Number }) size = 32;
 
