@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { MonsterType, Participant } from "../../shared/type.encounter.js";
-import { kebabIcon } from "../icons.js";
+import { kebabIcon, shieldIcon } from "../icons.js";
 
 @customElement("encounter-participant")
 export class EncounterParticipant extends LitElement {
@@ -250,6 +250,25 @@ export class EncounterParticipant extends LitElement {
     }
     .btn-heal:hover {
       background: rgba(110, 227, 110, 0.12);
+    }
+    .btn-toughness {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--color-primary-text-muted, #8a8780);
+      border-color: rgba(201, 168, 76, 0.25);
+      min-width: 58px;
+      justify-content: center;
+    }
+    .btn-toughness.active {
+      color: var(--color-1, #c9a84c);
+      background: rgba(201, 168, 76, 0.12);
+    }
+    .btn-toughness:not(.active) {
+      opacity: 0.72;
+    }
+    .btn-toughness svg {
+      flex-shrink: 0;
     }
     .menu-wrap {
       position: relative;
@@ -581,6 +600,7 @@ export class EncounterParticipant extends LitElement {
   @state() private editNameDraft = "";
   @state() private editHealthDraft = "1";
   @state() private editInitiativeDraft = "1";
+  @state() private editToughnessDraft = "0";
   @state() private editMonsterTypeDraft: MonsterType = "minion";
   @state() private statusPickerOpen = false;
   @state() private statusQuery = "";
@@ -624,6 +644,15 @@ export class EncounterParticipant extends LitElement {
 
   private handleMoveDown() {
     this.dispatch("participant-move-down", { id: this.participant.id });
+  }
+
+  private handleToughnessToggle() {
+    this.dispatch("participant-toggle-toughness", { id: this.participant.id });
+  }
+
+  private handleDuplicate() {
+    this.closeMenu();
+    this.dispatch("participant-duplicate", { id: this.participant.id });
   }
 
   override disconnectedCallback(): void {
@@ -768,6 +797,7 @@ export class EncounterParticipant extends LitElement {
     this.editNameDraft = p.name;
     this.editHealthDraft = String(p.maxHp);
     this.editInitiativeDraft = String(this.displayInitiative(p));
+    this.editToughnessDraft = String(p.toughness);
     this.editMonsterTypeDraft = p.monsterType ?? "minion";
     this.editModalOpen = true;
     void this.focusModalNameInput();
@@ -795,7 +825,16 @@ export class EncounterParticipant extends LitElement {
     const name = this.editNameDraft.trim();
     const health = parseInt(this.editHealthDraft, 10);
     const initiative = parseInt(this.editInitiativeDraft, 10);
-    if (!name || Number.isNaN(health) || health < 1 || Number.isNaN(initiative) || initiative < 1) {
+    const toughness = parseInt(this.editToughnessDraft, 10);
+    if (
+      !name ||
+      Number.isNaN(health) ||
+      health < 1 ||
+      Number.isNaN(initiative) ||
+      initiative < 1 ||
+      Number.isNaN(toughness) ||
+      toughness < 0
+    ) {
       return;
     }
     this.dispatch("participant-edit", {
@@ -803,6 +842,7 @@ export class EncounterParticipant extends LitElement {
       name,
       health,
       initiative,
+      toughness,
       monsterType: this.participant.type === "monster" ? this.editMonsterTypeDraft : undefined,
     });
     this.closeEditModal();
@@ -812,6 +852,7 @@ export class EncounterParticipant extends LitElement {
     const p = this.participant;
     const pct = Math.max(0, Math.min(1, p.hp / p.maxHp));
     const cls = this.hpClass();
+    const canDuplicate = p.type === "monster" || !p.characterId;
 
     return html`
       <div class="card ${this.isActive ? "active-turn" : ""} ${p.hp <= 0 ? "dead" : ""}">
@@ -854,6 +895,11 @@ export class EncounterParticipant extends LitElement {
               ? html`
                   <div class="menu">
                     <button type="button" @click=${this.handleEditParticipant}>Edit participant</button>
+                    ${canDuplicate
+                      ? html`
+                          <button type="button" @click=${this.handleDuplicate}>Duplicate</button>
+                        `
+                      : nothing}
                     <button type="button" ?disabled=${this.isFirst} @click=${this.handleMoveUp}>Move up</button>
                     <button type="button" ?disabled=${this.isLast} @click=${this.handleMoveDown}>Move down</button>
                     ${p.type === "monster"
@@ -889,6 +935,16 @@ export class EncounterParticipant extends LitElement {
                 this.adjustAmount = isNaN(v) || v < 1 ? 1 : v;
               }}
               aria-label="Amount" />
+            <button
+              class="btn btn-toughness ${p.toughnessEnabled ? "active" : ""}"
+              type="button"
+              title=${p.toughnessEnabled ? `Toughness ${p.toughness} active` : `Toughness ${p.toughness} ignored`}
+              aria-pressed=${String(p.toughnessEnabled)}
+              aria-label=${p.toughnessEnabled ? `Disable toughness ${p.toughness}` : `Enable toughness ${p.toughness}`}
+              @click=${this.handleToughnessToggle}>
+              ${shieldIcon}
+              <span>${p.toughness}</span>
+            </button>
             <button class="btn btn-damage" @click=${this.handleDamage}>Damage</button>
             <button class="btn btn-heal" @click=${this.handleHeal}>Heal</button>
           </div>
@@ -1020,13 +1076,6 @@ export class EncounterParticipant extends LitElement {
               <div class="modal" @click=${(event: Event) => event.stopPropagation()}>
                 <div class="modal-header">
                   <h3 class="modal-title" id="edit-participant-title">Edit Participant</h3>
-                  <button
-                    class="modal-close"
-                    type="button"
-                    aria-label="Close edit participant dialog"
-                    @click=${this.closeEditModal}>
-                    Close
-                  </button>
                 </div>
                 <div class="modal-form">
                   <label>
@@ -1056,6 +1105,16 @@ export class EncounterParticipant extends LitElement {
                       .value=${this.editInitiativeDraft}
                       @input=${(event: Event) => {
                         this.editInitiativeDraft = (event.target as HTMLInputElement).value;
+                      }} />
+                  </label>
+                  <label>
+                    Toughness
+                    <input
+                      type="number"
+                      min="0"
+                      .value=${this.editToughnessDraft}
+                      @input=${(event: Event) => {
+                        this.editToughnessDraft = (event.target as HTMLInputElement).value;
                       }} />
                   </label>
                   ${p.type === "monster"

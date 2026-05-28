@@ -99,6 +99,13 @@ export const kebabIcon: TemplateResult = html`
   </svg>
 `;
 
+export const shieldIcon: TemplateResult = html`
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
+    <path
+      d="M208,40H48A16,16,0,0,0,32,56c0,112,78.1,165.79,93.4,174.74a4,4,0,0,0,5.2,0C145.9,221.79,224,168,224,56A16,16,0,0,0,208,40Zm0,16c0,94.66-63.54,144-80,154.11C111.54,200,48,150.66,48,56Z"></path>
+  </svg>
+`;
+
 export const pencilIcon: TemplateResult = html`
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 256 256">
     <path

@@ -11,7 +11,11 @@ import {
 import { MonsterTemplate } from "../../shared/type.monster-template.js";
 import { MONSTER_TYPE_DEFAULT_INITIATIVE, MonsterType } from "../../shared/type.encounter.js";
 import { ENCOUNTERS_CHANGED_EVENT, getEncounter, getEncounters, upsertEncounter } from "../../shared/service.encounters.js";
-import { buildMonsterParticipantFromTemplate, syncTemplateMonsterNames } from "../../shared/util.encounter.js";
+import {
+  buildMonsterParticipantFromTemplate,
+  normalizeDuplicateParticipantNames,
+  syncTemplateMonsterNames,
+} from "../../shared/util.encounter.js";
 
 @customElement("page-monster-templates")
 export class PageMonsterTemplates extends LitElement {
@@ -338,8 +342,10 @@ export class PageMonsterTemplates extends LitElement {
       this.feedback = "Encounter not found.";
       return;
     }
-    const participant = buildMonsterParticipantFromTemplate(template, encounter.participants);
-    const participants = syncTemplateMonsterNames([...encounter.participants, participant], template.id, template.name);
+    const participant = buildMonsterParticipantFromTemplate(template, encounter.participants, encounter.level);
+    const participants = normalizeDuplicateParticipantNames(
+      syncTemplateMonsterNames([...encounter.participants, participant], template.id, template.name),
+    );
     upsertEncounter({
       ...encounter,
       participants,

@@ -22,6 +22,8 @@ import {
 import { STATUSES_CHANGED_EVENT, getStatuses, addStatus } from "../../shared/service.statuses.js";
 import {
   buildMonsterParticipantFromTemplate,
+  normalizeDuplicateParticipantNames,
+  resolveParticipantDamage,
   stripMonsterCounter,
   shuffleDeck,
   shuffleIds,
@@ -855,7 +857,7 @@ export class PageEncounter extends LitElement {
 
     const byId = new Map(this.rosterCharacters.map((character) => [character.id, character]));
     let changed = false;
-    const participants = this.encounter.participants.map((participant) => {
+    const participants = this.normalizeParticipants(this.encounter.participants.map((participant) => {
       if (!participant.characterId) {
         return participant;
       }
@@ -884,7 +886,7 @@ export class PageEncounter extends LitElement {
       }
 
       return nextParticipant;
-    });
+    }));
 
     if (changed) {
       this.encounter = { ...this.encounter, participants };
@@ -916,6 +918,10 @@ export class PageEncounter extends LitElement {
       updated = synced;
     }
     return changed ? updated : participants;
+  }
+
+  private normalizeParticipants(participants: Participant[]): Participant[] {
+    return normalizeDuplicateParticipantNames(this.syncTemplateParticipants(participants));
   }
 
   private get rosterResults(): Character[] {
@@ -1161,11 +1167,10 @@ export class PageEncounter extends LitElement {
       ? this.monsterTemplates.find((item) => item.id === incoming.monsterTemplateId)
       : null;
     const participant = this.applyMonsterEncounterStats(
-      template ? buildMonsterParticipantFromTemplate(template, this.encounter.participants) : incoming,
+      template ? buildMonsterParticipantFromTemplate(template, this.encounter.participants, this.encounter.level) : incoming,
       this.encounter.level,
     );
-    let updated = [...this.encounter.participants, participant];
-    updated = this.syncTemplateParticipants(updated);
+    const updated = this.normalizeParticipants([...this.encounter.participants, participant]);
     this.encounter = { ...this.encounter, participants: updated };
     this.saveEncounter();
   }
@@ -1187,13 +1192,15 @@ export class PageEncounter extends LitElement {
       pendingInitiative: null,
       hp: character.health,
       maxHp: character.health,
+      toughness: 0,
+      toughnessEnabled: true,
       notes: "",
       conditions: [],
     };
 
     this.encounter = {
       ...this.encounter,
-      participants: [...this.encounter.participants, participant],
+      participants: this.normalizeParticipants([...this.encounter.participants, participant]),
     };
     this.saveEncounter();
     this.showToast(`${character.name} added to encounter.`);
@@ -1259,7 +1266,9 @@ export class PageEncounter extends LitElement {
 
   private updateParticipant(id: string, changes: Partial<Participant>) {
     if (!this.encounter) return;
-    const participants = this.encounter.participants.map((p) => (p.id === id ? { ...p, ...changes } : p));
+    const participants = this.normalizeParticipants(
+      this.encounter.participants.map((p) => (p.id === id ? { ...p, ...changes } : p)),
+    );
     this.encounter = { ...this.encounter, participants };
     this.saveEncounter();
   }
@@ -1291,7 +1300,7 @@ export class PageEncounter extends LitElement {
     const { id, amount } = e.detail;
     const p = this.encounter.participants.find((x) => x.id === id);
     if (!p) return;
-    const hp = Math.max(0, p.hp - amount);
+    const hp = Math.max(0, p.hp - resolveParticipantDamage(p, amount));
     this.updateParticipant(id, { hp });
     this.updateLinkedCharacter(id, { health: hp });
     if (hp === 0) this.showToast(`${p.name} is down!`);
@@ -1309,9 +1318,39 @@ export class PageEncounter extends LitElement {
 
   private handleRemove(e: CustomEvent<{ id: string }>) {
     if (!this.encounter) return;
-    const participants = this.encounter.participants.filter((p) => p.id !== e.detail.id);
-    this.encounter = { ...this.encounter, participants: this.syncTemplateParticipants(participants) };
+    const participants = this.normalizeParticipants(this.encounter.participants.filter((p) => p.id !== e.detail.id));
+    this.encounter = { ...this.encounter, participants };
     this.saveEncounter();
+  }
+
+  private handleParticipantDuplicate(e: CustomEvent<{ id: string }>) {
+    if (!this.encounter) return;
+    const participant = this.encounter.participants.find((item) => item.id === e.detail.id);
+    if (!participant) return;
+    if (participant.type === "player" && participant.characterId) {
+      this.showToast(`${participant.name} is already linked from the character roster.`);
+      return;
+    }
+
+    const duplicate: Participant = {
+      ...participant,
+      id: crypto.randomUUID(),
+      conditions: [...participant.conditions],
+    };
+
+    this.encounter = {
+      ...this.encounter,
+      participants: this.normalizeParticipants([...this.encounter.participants, duplicate]),
+    };
+    this.saveEncounter();
+    this.showToast(`${stripMonsterCounter(participant.name)} duplicated.`);
+  }
+
+  private handleParticipantToughnessToggle(e: CustomEvent<{ id: string }>) {
+    if (!this.encounter) return;
+    const participant = this.encounter.participants.find((item) => item.id === e.detail.id);
+    if (!participant) return;
+    this.updateParticipant(e.detail.id, { toughnessEnabled: !participant.toughnessEnabled });
   }
 
   private handleConvertToTemplate(e: CustomEvent<{ id: string }>) {
@@ -1381,7 +1420,14 @@ export class PageEncounter extends LitElement {
   }
 
   private handleParticipantEdit(
-    e: CustomEvent<{ id: string; name: string; health: number; initiative: number; monsterType?: MonsterType }>,
+    e: CustomEvent<{
+      id: string;
+      name: string;
+      health: number;
+      initiative: number;
+      toughness: number;
+      monsterType?: MonsterType;
+    }>,
   ) {
     if (!this.encounter) return;
     const participant = this.encounter.participants.find((item) => item.id === e.detail.id);
@@ -1394,6 +1440,7 @@ export class PageEncounter extends LitElement {
       name: e.detail.name,
       hp: e.detail.health,
       maxHp: e.detail.health,
+      toughness: e.detail.toughness,
       pendingInitiative,
       monsterType: participant.type === "monster" ? (e.detail.monsterType ?? participant.monsterType) : undefined,
     });
@@ -1579,9 +1626,11 @@ export class PageEncounter extends LitElement {
         @participant-remove-condition=${this.handleRemoveCondition}
         @participant-add-condition=${this.handleAddCondition}
         @participant-create-status=${this.handleCreateStatus}
+        @participant-toggle-toughness=${this.handleParticipantToughnessToggle}
         @participant-move-up=${this.handleMoveUp}
         @participant-move-down=${this.handleMoveDown}
         @participant-edit=${this.handleParticipantEdit}
+        @participant-duplicate=${this.handleParticipantDuplicate}
         @participant-convert-to-template=${this.handleConvertToTemplate}>
         ${enc.participants.length === 0
           ? html`
