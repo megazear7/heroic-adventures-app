@@ -15,9 +15,43 @@ function dispatchEncountersChanged(): void {
   window.dispatchEvent(new CustomEvent(ENCOUNTERS_CHANGED_EVENT));
 }
 
-function saveEncounterList(encounters: Encounter[]): void {
+function saveEncounterList(encounters: Encounter[], shouldDispatch = true): void {
   localStorage.setItem(storageKey(), JSON.stringify(encounters));
-  dispatchEncountersChanged();
+  if (shouldDispatch) {
+    dispatchEncountersChanged();
+  }
+}
+
+function compareEncounterSequence(left: Encounter, right: Encounter): number {
+  return left.createdAt - right.createdAt || left.id.localeCompare(right.id);
+}
+
+function ensureEncounterSequenceNumbers(encounters: Encounter[]): Encounter[] {
+  const maxSequenceNumber = encounters.reduce(
+    (maxValue, encounter) => Math.max(maxValue, encounter.sequenceNumber ?? 0),
+    0,
+  );
+  const missing = encounters.filter((encounter) => encounter.sequenceNumber == null).sort(compareEncounterSequence);
+  if (missing.length === 0) {
+    return encounters;
+  }
+
+  let nextSequenceNumber = maxSequenceNumber;
+  const assignedSequenceNumbers = new Map<string, number>();
+  for (const encounter of missing) {
+    nextSequenceNumber += 1;
+    assignedSequenceNumbers.set(encounter.id, nextSequenceNumber);
+  }
+
+  return encounters.map((encounter) =>
+    assignedSequenceNumbers.has(encounter.id)
+      ? { ...encounter, sequenceNumber: assignedSequenceNumbers.get(encounter.id) }
+      : encounter,
+  );
+}
+
+function nextEncounterSequenceNumber(encounters: Encounter[]): number {
+  return encounters.reduce((maxValue, encounter) => Math.max(maxValue, encounter.sequenceNumber ?? 0), 0) + 1;
 }
 
 /** Migrate a single legacy encounter from the old single-slot key, if present. Saves to the new key and removes the old one. */
@@ -52,7 +86,11 @@ export function getEncounters(): Encounter[] {
       .map((item) => EncounterSchema.safeParse(item))
       .filter((result): result is { success: true; data: Encounter } => result.success)
       .map((result) => result.data);
-    return encounters;
+    const normalizedEncounters = ensureEncounterSequenceNumbers(encounters);
+    if (normalizedEncounters !== encounters) {
+      saveEncounterList(normalizedEncounters, false);
+    }
+    return normalizedEncounters;
   } catch {
     return [];
   }
@@ -66,13 +104,17 @@ export function upsertEncounter(encounter: Encounter): Encounter {
   const encounters = getEncounters();
   const next = [...encounters];
   const index = next.findIndex((e) => e.id === encounter.id);
+  const normalizedEncounter = {
+    ...encounter,
+    sequenceNumber: next[index]?.sequenceNumber ?? encounter.sequenceNumber ?? nextEncounterSequenceNumber(encounters),
+  };
   if (index >= 0) {
-    next[index] = encounter;
+    next[index] = normalizedEncounter;
   } else {
-    next.unshift(encounter);
+    next.unshift(normalizedEncounter);
   }
   saveEncounterList(next);
-  return encounter;
+  return normalizedEncounter;
 }
 
 export function deleteEncounter(id: string): void {
@@ -84,12 +126,29 @@ export function duplicateEncounter(encounter: Encounter): Encounter {
     ...encounter,
     id: crypto.randomUUID(),
     name: `${encounter.name} (copy)`,
+    sequenceNumber: undefined,
     archived: false,
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
-  upsertEncounter(copy);
-  return copy;
+  return upsertEncounter(copy);
+}
+
+export function formatEncounterSequenceNumber(sequenceNumber: number): string {
+  return `#${String(sequenceNumber).padStart(3, "0")}`;
+}
+
+export function getEncounterSequenceNumber(encounter: Encounter, encounters = getEncounters()): number {
+  if (encounter.sequenceNumber != null) {
+    return encounter.sequenceNumber;
+  }
+
+  const normalizedEncounters = ensureEncounterSequenceNumbers(encounters);
+  return normalizedEncounters.find((item) => item.id === encounter.id)?.sequenceNumber ?? nextEncounterSequenceNumber(encounters);
+}
+
+export function formatEncounterName(encounter: Encounter, encounters = getEncounters()): string {
+  return `${formatEncounterSequenceNumber(getEncounterSequenceNumber(encounter, encounters))} ${encounter.name}`;
 }
 
 export function setEncounterArchived(id: string, archived: boolean): Encounter | null {

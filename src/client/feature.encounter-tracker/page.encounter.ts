@@ -14,6 +14,8 @@ import {
 import { PROFILE_CHANGED_EVENT } from "../../shared/service.profile.js";
 import {
   ENCOUNTERS_CHANGED_EVENT,
+  formatEncounterSequenceNumber,
+  getEncounterSequenceNumber,
   getEncounter,
   upsertEncounter,
   duplicateEncounter,
@@ -181,9 +183,28 @@ export class PageEncounter extends LitElement {
       margin-bottom: 1.25rem;
       flex-wrap: wrap;
     }
+    .encounter-name-wrap {
+      flex: 1;
+      min-width: 220px;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .encounter-name-prefix {
+      flex: 0 0 auto;
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid rgba(201, 168, 76, 0.25);
+      background: rgba(201, 168, 76, 0.12);
+      color: var(--color-1, #c9a84c);
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
     .encounter-name-input {
       flex: 1;
-      min-width: 160px;
+      min-width: 0;
       font-size: 1rem;
       font-weight: 600;
       font-family: var(--font-family, sans-serif);
@@ -850,7 +871,7 @@ export class PageEncounter extends LitElement {
         name: character.name,
         hp: character.health,
         maxHp: character.health,
-        initiative: hasPendingInitiative ? participant.initiative : character.initiative,
+        initiative: hasPendingInitiative ? participant.initiative : Math.max(1, character.initiative),
       };
 
       if (
@@ -1165,7 +1186,7 @@ export class PageEncounter extends LitElement {
       characterId: character.id,
       name: character.name,
       type: "player",
-      initiative: character.initiative,
+      initiative: Math.max(1, character.initiative),
       pendingInitiative: null,
       hp: character.health,
       maxHp: character.health,
@@ -1471,12 +1492,15 @@ export class PageEncounter extends LitElement {
 
       <!-- Encounter name + round badge -->
       <div class="encounter-header">
-        <input
-          class="encounter-name-input"
-          .value=${enc.name}
-          @input=${this.handleNameChange}
-          aria-label="Encounter name"
-          placeholder="Encounter name" />
+        <div class="encounter-name-wrap">
+          <div class="encounter-name-prefix">${formatEncounterSequenceNumber(getEncounterSequenceNumber(enc))}</div>
+          <input
+            class="encounter-name-input"
+            .value=${enc.name}
+            @input=${this.handleNameChange}
+            aria-label="Encounter name"
+            placeholder="Encounter name" />
+        </div>
         <label class="level-input-wrap">
           Level
           <select class="level-select" @change=${this.handleLevelChange} aria-label="Encounter level">

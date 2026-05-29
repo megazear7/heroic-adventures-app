@@ -10,7 +10,13 @@ import {
 } from "../../shared/service.monster-templates.js";
 import { MonsterTemplate } from "../../shared/type.monster-template.js";
 import { MONSTER_TYPE_DEFAULT_INITIATIVE, MonsterType } from "../../shared/type.encounter.js";
-import { ENCOUNTERS_CHANGED_EVENT, getEncounter, getEncounters, upsertEncounter } from "../../shared/service.encounters.js";
+import {
+  ENCOUNTERS_CHANGED_EVENT,
+  formatEncounterName,
+  getEncounter,
+  getEncounters,
+  upsertEncounter,
+} from "../../shared/service.encounters.js";
 import {
   buildMonsterParticipantFromTemplate,
   normalizeDuplicateParticipantNames,
@@ -279,7 +285,7 @@ export class PageMonsterTemplates extends LitElement {
                   <option value="">Select encounter</option>
                   ${encounters.map(
                     (encounter) => html`
-                      <option value=${encounter.id}>${encounter.name}</option>
+                      <option value=${encounter.id}>${formatEncounterName(encounter, encounters)}</option>
                     `,
                   )}
                 </select>
@@ -351,7 +357,7 @@ export class PageMonsterTemplates extends LitElement {
       participants,
       updatedAt: Date.now(),
     });
-    this.feedback = `${template.name} added to ${encounter.name}.`;
+    this.feedback = `${template.name} added to ${formatEncounterName(encounter)}.`;
   }
 
   private startEdit(template: MonsterTemplate): void {
