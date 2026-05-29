@@ -7,18 +7,151 @@ import {
   CharacterContentLink,
   CharacterSchema,
   DEFAULT_CHARACTER_HEALTH,
+  DEFAULT_CHARACTER_STAT_VALUE,
   DEFAULT_CHARACTER_INITIATIVE,
+  DEFAULT_CHARACTER_WEAPON_TRAINING,
+  CharacterWeaponTraining,
+  WEAPON_TRAINING_TYPES,
+  WeaponTrainingType,
 } from "../../shared/type.character.js";
 import { clearCharacterDraft, getCharacterDraft, saveCharacterDraft } from "../../shared/service.characters.js";
 import "./component.character-entry-picker.js";
 import "./component.character-linked-entry-card.js";
 
-const STEPS = ["Identity", "Story", "Build", "Review"] as const;
+const STEPS = ["Identity", "Stats", "Build", "Review"] as const;
+
+const CHARACTER_NAME_PLACEHOLDERS = [
+  "Aldren of the White Peaks",
+  "Mira Ashvale",
+  "Torren Vale",
+  "Selka Dawnmere",
+  "Bram Thistleford",
+  "Ilya Stonewake",
+  "Corin Emberfall",
+  "Nessa Hollowbrook",
+  "Varric Moonfen",
+  "Liora Greenbloom",
+  "Garron Pike",
+  "Talia Mistwood",
+  "Fenric Blackmere",
+  "Sable Hart",
+  "Orin Glass",
+  "Kaela Starling",
+  "Doran Ashmark",
+  "Ysolde Bracken",
+  "Perrin Flint",
+  "Maelis Wintermere",
+  "Rook Halden",
+  "Celine Thorn",
+  "Jorren Wildbrook",
+  "Aeris Valecrest",
+  "Thorne Redfield",
+  "Isolde Ravenna",
+  "Cassian Drift",
+  "Brina Moss",
+  "Eldric Crowe",
+  "Nyra Silverfen",
+  "Tobin Crest",
+  "Vaela Stormrest",
+  "Hadrian Pike",
+  "Kestrel Dune",
+  "Maren Foxglove",
+  "Lucan Evermarch",
+  "Sera Whitlock",
+  "Bodin Reef",
+  "Elira Dawnfall",
+  "Ronan Vex",
+  "Tamsin Holloway",
+  "Cedric Valeborn",
+  "Lyra Moorwind",
+  "Hale Ironwood",
+  "Eira Snowmere",
+  "Quill Fenwick",
+  "Alina Frost",
+  "Dain Willow",
+  "Mira Thornfield",
+  "Vesper Locke",
+  "Arlen Greybriar",
+  "Sorin Highwater",
+  "Nyla Cinder",
+  "Bren Oakheart",
+  "Talin Wren",
+  "Keira Blackstone",
+  "Rowan Duskwell",
+  "Calista Reed",
+  "Dorian Westmere",
+  "Asha Winterthorn",
+  "Leoric Pine",
+  "Sera Moonlake",
+  "Torin Ashdown",
+  "Velda Rain",
+  "Corwen Bright",
+  "Nerys Flintvale",
+  "Gideon Marsh",
+  "Faye Alder",
+  "Magnus Thornkeep",
+  "Lena Starfall",
+  "Orrin Deepwell",
+  "Sylvi Ember",
+  "Tristan Vell",
+  "Maeve Briar",
+  "Evander Holt",
+  "Rhea Sunmere",
+  "Galen Mist",
+  "Petra Goldfern",
+  "Darian Frostvale",
+  "Iris Hollow",
+  "Bastian Crownhill",
+  "Lenora Swift",
+  "Cael Runebrook",
+  "Mila Thornwild",
+  "Jasper Mire",
+  "Odette Vale",
+  "Riven Skye",
+  "Anwen Stonebrook",
+  "Theron Gale",
+  "Junia Redleaf",
+  "Alaric Emberstone",
+  "Poppy Marshglow",
+  "Cyrus Nightwell",
+  "Elowen Pike",
+  "Kellan Frostbrook",
+  "Vita Cloudmere",
+  "Orla Fen",
+  "Remy Thornvale",
+  "Lucia Starcrest",
+  "Harkin Driftwood",
+] as const;
+
+const CHARACTER_STAT_FIELDS = [
+  { key: "health", label: "Health", min: 1 },
+  { key: "skill", label: "Skill", min: 0 },
+  { key: "agility", label: "Agility", min: 0 },
+  { key: "aim", label: "Aim", min: 0 },
+  { key: "tactics", label: "Tactics", min: 0 },
+  { key: "intelligence", label: "Intelligence", min: 0 },
+  { key: "willpower", label: "Willpower", min: 0 },
+  { key: "strength", label: "Strength", min: 0 },
+  { key: "initiative", label: "Initiative", min: 0 },
+] as const;
+
+const PRIMARY_STAT_FIELDS = CHARACTER_STAT_FIELDS.slice(1, 5);
+const SECONDARY_STAT_FIELDS = CHARACTER_STAT_FIELDS.slice(5);
+
+type CharacterNumericField = (typeof CHARACTER_STAT_FIELDS)[number]["key"];
 
 type CharacterDraft = {
   name: string;
   health: number;
+  skill: number;
+  agility: number;
+  aim: number;
+  tactics: number;
+  intelligence: number;
+  willpower: number;
+  strength: number;
   initiative: number;
+  weaponTraining: CharacterWeaponTraining;
   race?: CharacterContentLink;
   class?: CharacterContentLink;
   background?: CharacterContentLink;
@@ -30,16 +163,31 @@ type CharacterDraft = {
   gear: CharacterContentLink[];
 };
 
-const EMPTY_DRAFT: CharacterDraft = {
-  name: "",
-  health: DEFAULT_CHARACTER_HEALTH,
-  initiative: DEFAULT_CHARACTER_INITIATIVE,
-  spells: [],
-  features: [],
-  feats: [],
-  expertise: [],
-  gear: [],
-};
+function createEmptyDraft(): CharacterDraft {
+  return {
+    name: "",
+    health: DEFAULT_CHARACTER_HEALTH,
+    skill: DEFAULT_CHARACTER_STAT_VALUE,
+    agility: DEFAULT_CHARACTER_STAT_VALUE,
+    aim: DEFAULT_CHARACTER_STAT_VALUE,
+    tactics: DEFAULT_CHARACTER_STAT_VALUE,
+    intelligence: DEFAULT_CHARACTER_STAT_VALUE,
+    willpower: DEFAULT_CHARACTER_STAT_VALUE,
+    strength: DEFAULT_CHARACTER_STAT_VALUE,
+    initiative: DEFAULT_CHARACTER_INITIATIVE,
+    weaponTraining: { ...DEFAULT_CHARACTER_WEAPON_TRAINING },
+    spells: [],
+    features: [],
+    feats: [],
+    expertise: [],
+    gear: [],
+  };
+}
+
+function pickRandomCharacterNamePlaceholder(): string {
+  const index = Math.floor(Math.random() * CHARACTER_NAME_PLACEHOLDERS.length);
+  return CHARACTER_NAME_PLACEHOLDERS[index] ?? "Aldren of the White Peaks";
+}
 
 @customElement("character-create-form")
 export class CharacterCreateForm extends LitElement {
@@ -154,6 +302,96 @@ export class CharacterCreateForm extends LitElement {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      .stats-layout {
+        display: grid;
+        gap: var(--size-medium);
+      }
+
+      .stats-grid {
+        display: grid;
+        gap: var(--size-medium);
+      }
+
+      .stats-grid.single {
+        grid-template-columns: minmax(0, 220px);
+      }
+
+      .stats-grid.four-up {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .stat-field {
+        display: grid;
+        gap: var(--size-small);
+      }
+
+      .stat-field label,
+      .weapon-training-row label {
+        font-size: var(--font-small);
+        font-weight: 600;
+      }
+
+      .stat-field input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px 14px;
+        border-radius: var(--border-radius-small);
+        border: var(--border-normal);
+        background: var(--color-primary-surface-raised);
+        color: var(--color-primary-text);
+        font-size: var(--font-medium);
+        font-family: var(--font-family);
+      }
+
+      .weapon-training {
+        display: grid;
+        gap: var(--size-medium);
+      }
+
+      .weapon-training-grid {
+        display: grid;
+        gap: var(--size-medium);
+      }
+
+      .weapon-training-row {
+        display: grid;
+        grid-template-columns: minmax(100px, 140px) 1fr;
+        gap: var(--size-medium);
+        align-items: center;
+      }
+
+      .bubble-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .bubble-button {
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        border: 1px solid rgba(201, 168, 76, 0.28);
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--color-primary-text-muted);
+        font-size: var(--font-small);
+        font-weight: 700;
+        cursor: pointer;
+        transition: var(--transition-fast);
+      }
+
+      .bubble-button.active {
+        background: rgba(201, 168, 76, 0.18);
+        border-color: rgba(201, 168, 76, 0.52);
+        color: var(--color-primary-text);
+      }
+
+      .bubble-button:hover,
+      .bubble-button:focus-visible {
+        border-color: rgba(201, 168, 76, 0.52);
+        color: var(--color-primary-text);
+        outline: none;
+      }
+
       .summary-grid {
         display: grid;
         gap: var(--size-medium);
@@ -205,7 +443,9 @@ export class CharacterCreateForm extends LitElement {
 
       @media (max-width: 800px) {
         .grid.two-up,
-        .step-tabs {
+        .step-tabs,
+        .stats-grid.four-up,
+        .stats-grid.single {
           grid-template-columns: 1fr;
         }
       }
@@ -213,13 +453,15 @@ export class CharacterCreateForm extends LitElement {
   ];
 
   @state() private catalog: SearchIndexedEntry[] = [];
-  @state() private form: CharacterDraft = EMPTY_DRAFT;
+  @state() private form: CharacterDraft = createEmptyDraft();
   @state() private error: string | null = null;
   @state() private step = 0;
   @state() private loadingCatalog = true;
+  @state() private namePlaceholder = pickRandomCharacterNamePlaceholder();
 
   override connectedCallback(): void {
     super.connectedCallback();
+    this.namePlaceholder = pickRandomCharacterNamePlaceholder();
     this.loadDraft();
     void this.loadCatalog();
   }
@@ -299,10 +541,15 @@ export class CharacterCreateForm extends LitElement {
   }
 
   private loadDraft(): void {
-    const draft = getCharacterDraft<CharacterDraft>(EMPTY_DRAFT);
+    const emptyDraft = createEmptyDraft();
+    const draft = getCharacterDraft<CharacterDraft>(emptyDraft);
     this.form = {
-      ...EMPTY_DRAFT,
+      ...emptyDraft,
       ...draft,
+      weaponTraining: {
+        ...emptyDraft.weaponTraining,
+        ...(draft.weaponTraining ?? {}),
+      },
       spells: draft.spells ?? [],
       features: draft.features ?? [],
       feats: draft.feats ?? [],
@@ -317,7 +564,7 @@ export class CharacterCreateForm extends LitElement {
   }
 
   private clearDraft = (): void => {
-    this.form = EMPTY_DRAFT;
+    this.form = createEmptyDraft();
     this.step = 0;
     this.error = null;
     clearCharacterDraft();
@@ -332,7 +579,15 @@ export class CharacterCreateForm extends LitElement {
       id: crypto.randomUUID(),
       name: this.form.name.trim(),
       health: this.form.health,
+      skill: this.form.skill,
+      agility: this.form.agility,
+      aim: this.form.aim,
+      tactics: this.form.tactics,
+      intelligence: this.form.intelligence,
+      willpower: this.form.willpower,
+      strength: this.form.strength,
       initiative: this.form.initiative,
+      weaponTraining: this.form.weaponTraining,
       race: this.form.race,
       class: this.form.class,
       background: this.form.background,
@@ -347,7 +602,7 @@ export class CharacterCreateForm extends LitElement {
     });
 
     if (!result.success) {
-      this.error = "Complete the required identity and story selections before creating the character.";
+      this.error = "Complete the required identity and stats selections before creating the character.";
       return;
     }
 
@@ -365,14 +620,14 @@ export class CharacterCreateForm extends LitElement {
     if (step === 0) {
       return Boolean(
         this.form.name.trim() &&
-        this.form.health >= 1 &&
-        this.form.initiative >= 1 &&
         this.form.race &&
-        this.form.class,
+        this.form.class &&
+        this.form.background &&
+        this.form.flaw,
       );
     }
     if (step === 1) {
-      return Boolean(this.form.background && this.form.flaw);
+      return this.hasValidStats();
     }
     return true;
   }
@@ -418,7 +673,7 @@ export class CharacterCreateForm extends LitElement {
       return html`
         <div class="step-header">
           <h2>Identity</h2>
-          <p>Name the character, then choose race and class from the published content.</p>
+          <p>Name the character, then choose race, class, background, and flaw from the published content.</p>
         </div>
         <div class="name-field">
           <label for="character-name">Character Name</label>
@@ -426,27 +681,7 @@ export class CharacterCreateForm extends LitElement {
             id="character-name"
             .value=${this.form.name}
             @input=${this.handleNameInput}
-            placeholder="Aldren of the White Peaks" />
-        </div>
-        <div class="name-field">
-          <label for="character-health">Health</label>
-          <input
-            id="character-health"
-            type="number"
-            min="1"
-            .value=${String(this.form.health)}
-            @input=${this.handleHealthInput}
-            placeholder="10" />
-        </div>
-        <div class="name-field">
-          <label for="character-initiative">Initiative</label>
-          <input
-            id="character-initiative"
-            type="number"
-            min="1"
-            .value=${String(this.form.initiative)}
-            @input=${this.handleInitiativeInput}
-            placeholder="1" />
+            placeholder=${this.namePlaceholder} />
         </div>
         <div class="grid two-up">
           <character-entry-picker
@@ -465,17 +700,6 @@ export class CharacterCreateForm extends LitElement {
             .selected=${this.singleSelection(this.form.class)}
             @selection-change=${(event: CustomEvent<{ value: CharacterContentLink[] }>) =>
               this.handleSingleSelection("class", event)}></character-entry-picker>
-        </div>
-      `;
-    }
-
-    if (this.step === 1) {
-      return html`
-        <div class="step-header">
-          <h2>Story</h2>
-          <p>Anchor the build with background and flaw so later feature choices stay grounded in play style.</p>
-        </div>
-        <div class="grid two-up">
           <character-entry-picker
             label="Background"
             helper="Required"
@@ -493,6 +717,27 @@ export class CharacterCreateForm extends LitElement {
             @selection-change=${(event: CustomEvent<{ value: CharacterContentLink[] }>) =>
               this.handleSingleSelection("flaw", event)}></character-entry-picker>
         </div>
+      `;
+    }
+
+    if (this.step === 1) {
+      return html`
+        <div class="step-header">
+          <h2>Stats</h2>
+          <p>Fill in the character's combat stats, then set weapon training for blade, axe, blunt, polearm, and ranged.</p>
+        </div>
+        <div class="stats-layout">
+          <div class="stats-grid single">
+            ${this.renderStatInput("health", "Health", 1)}
+          </div>
+          <div class="stats-grid four-up">
+            ${PRIMARY_STAT_FIELDS.map((field) => this.renderStatInput(field.key, field.label, field.min))}
+          </div>
+          <div class="stats-grid four-up">
+            ${SECONDARY_STAT_FIELDS.map((field) => this.renderStatInput(field.key, field.label, field.min))}
+          </div>
+        </div>
+        ${this.renderWeaponTrainingSection()}
       `;
     }
 
@@ -567,12 +812,8 @@ export class CharacterCreateForm extends LitElement {
           <input class="summary-input" .value=${this.form.name} readonly />
         </label>
         <label>
-          Health
-          <input class="summary-input" .value=${String(this.form.health)} readonly />
-        </label>
-        <label>
-          Initiative
-          <input class="summary-input" .value=${String(this.form.initiative)} readonly />
+          Vitals
+          <input class="summary-input" .value=${`Health ${this.form.health}`} readonly />
         </label>
         <label>
           Identity
@@ -582,11 +823,12 @@ export class CharacterCreateForm extends LitElement {
             readonly />
         </label>
         <label>
-          Story
-          <input
-            class="summary-input"
-            .value=${[this.form.background?.title, this.form.flaw?.title].filter(Boolean).join(" • ")}
-            readonly />
+          Core Stats
+          <input class="summary-input" .value=${this.buildCoreStatsSummary()} readonly />
+        </label>
+        <label>
+          Weapon Training
+          <input class="summary-input" .value=${this.buildWeaponTrainingSummary()} readonly />
         </label>
       </div>
 
@@ -633,18 +875,18 @@ export class CharacterCreateForm extends LitElement {
     this.persistDraft({ ...this.form, name: input.value });
   };
 
-  private handleHealthInput = (event: Event): void => {
+  private handleNumericInput = (event: Event): void => {
     const input = event.target as HTMLInputElement;
+    const field = input.name as CharacterNumericField;
+    const min = field === "health" ? 1 : 0;
+    const fallback = field === "health"
+      ? DEFAULT_CHARACTER_HEALTH
+      : field === "initiative"
+        ? DEFAULT_CHARACTER_INITIATIVE
+        : DEFAULT_CHARACTER_STAT_VALUE;
     const parsed = parseInt(input.value, 10);
-    const health = Number.isNaN(parsed) ? DEFAULT_CHARACTER_HEALTH : Math.max(1, parsed);
-    this.persistDraft({ ...this.form, health });
-  };
-
-  private handleInitiativeInput = (event: Event): void => {
-    const input = event.target as HTMLInputElement;
-    const parsed = parseInt(input.value, 10);
-    const initiative = Number.isNaN(parsed) ? DEFAULT_CHARACTER_INITIATIVE : Math.max(1, parsed);
-    this.persistDraft({ ...this.form, initiative });
+    const value = Number.isNaN(parsed) ? fallback : Math.max(min, parsed);
+    this.persistDraft({ ...this.form, [field]: value });
   };
 
   private handleSingleSelection(
@@ -669,6 +911,106 @@ export class CharacterCreateForm extends LitElement {
 
   private singleSelection(value?: CharacterContentLink): CharacterContentLink[] {
     return value ? [value] : [];
+  }
+
+  private renderStatInput(key: CharacterNumericField, label: string, min: number): TemplateResult {
+    return html`
+      <div class="stat-field">
+        <label for=${`character-${key}`}>${label}</label>
+        <input
+          id=${`character-${key}`}
+          name=${key}
+          type="number"
+          min=${String(min)}
+          .value=${String(this.form[key])}
+          @input=${this.handleNumericInput}
+          placeholder=${min === 0 ? "0" : "1"} />
+      </div>
+    `;
+  }
+
+  private renderWeaponTrainingSection(): TemplateResult {
+    return html`
+      <div class="weapon-training">
+        <div class="step-header">
+          <h3>Weapon Training</h3>
+          <p>Clicking a rank fills up to that bubble. Each training type ranges from 0 to 5.</p>
+        </div>
+        <div class="weapon-training-grid">
+          ${WEAPON_TRAINING_TYPES.map((type) => this.renderWeaponTrainingRow(type))}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderWeaponTrainingRow(type: WeaponTrainingType): TemplateResult {
+    const value = this.form.weaponTraining[type];
+    return html`
+      <div class="weapon-training-row">
+        <label>${this.formatWeaponTrainingLabel(type)}</label>
+        <div class="bubble-row" role="group" aria-label=${`${this.formatWeaponTrainingLabel(type)} weapon training`}>
+          ${Array.from({ length: 6 }, (_, index) => index).map(
+            (rank) => html`
+              <button
+                type="button"
+                class="bubble-button ${rank <= value ? "active" : ""}"
+                @click=${() => this.handleWeaponTrainingChange(type, rank)}
+                aria-label=${`${this.formatWeaponTrainingLabel(type)} weapon training ${rank}`}>
+                ${rank}
+              </button>
+            `,
+          )}
+        </div>
+      </div>
+    `;
+  }
+
+  private handleWeaponTrainingChange(type: WeaponTrainingType, value: number): void {
+    this.persistDraft({
+      ...this.form,
+      weaponTraining: {
+        ...this.form.weaponTraining,
+        [type]: value,
+      },
+    });
+  }
+
+  private formatWeaponTrainingLabel(type: WeaponTrainingType): string {
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  }
+
+  private buildCoreStatsSummary(): string {
+    return [
+      `Skill ${this.form.skill}`,
+      `Agility ${this.form.agility}`,
+      `Aim ${this.form.aim}`,
+      `Tactics ${this.form.tactics}`,
+      `Intelligence ${this.form.intelligence}`,
+      `Willpower ${this.form.willpower}`,
+      `Strength ${this.form.strength}`,
+      `Initiative ${this.form.initiative}`,
+    ].join(" • ");
+  }
+
+  private buildWeaponTrainingSummary(): string {
+    return WEAPON_TRAINING_TYPES.map(
+      (type) => `${this.formatWeaponTrainingLabel(type)} ${this.form.weaponTraining[type]}`,
+    ).join(" • ");
+  }
+
+  private hasValidStats(): boolean {
+    return (
+      this.form.health >= 1 &&
+      this.form.skill >= 0 &&
+      this.form.agility >= 0 &&
+      this.form.aim >= 0 &&
+      this.form.tactics >= 0 &&
+      this.form.intelligence >= 0 &&
+      this.form.willpower >= 0 &&
+      this.form.strength >= 0 &&
+      this.form.initiative >= 0 &&
+      WEAPON_TRAINING_TYPES.every((type) => this.form.weaponTraining[type] >= 0 && this.form.weaponTraining[type] <= 5)
+    );
   }
 
   private filterEntries(predicate: (entry: SearchIndexedEntry) => boolean): SearchIndexedEntry[] {

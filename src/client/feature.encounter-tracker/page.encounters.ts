@@ -8,6 +8,7 @@ import {
   getEncounters,
   deleteEncounter,
   duplicateEncounter,
+  formatEncounterName,
   setEncounterArchived,
 } from "../../shared/service.encounters.js";
 
@@ -212,7 +213,7 @@ export class PageEncounters extends LitElement {
     return html`
       <div class="encounter-card">
         <div class="encounter-card-header">
-          <div class="encounter-name">${enc.name}</div>
+          <div class="encounter-name">${formatEncounterName(enc, this.encounters)}</div>
           <div class="encounter-meta">
             <span class="meta-badge">Level ${enc.level}</span>
             <span class="meta-badge">Round ${enc.round}</span>
@@ -251,7 +252,7 @@ export class PageEncounters extends LitElement {
   }
 
   private handleDelete(enc: Encounter): void {
-    if (!confirm(`Delete "${enc.name}"? This cannot be undone.`)) return;
+    if (!confirm(`Delete "${formatEncounterName(enc, this.encounters)}"? This cannot be undone.`)) return;
     deleteEncounter(enc.id);
   }
 

@@ -316,7 +316,21 @@ export class EncounterParticipant extends LitElement {
       font: inherit;
       font-size: 0.82rem;
     }
-    .menu button:hover {
+    .menu a {
+      width: 100%;
+      display: block;
+      text-align: left;
+      border: none;
+      background: none;
+      color: var(--color-primary-text, #e2e0d6);
+      padding: 10px 12px;
+      font: inherit;
+      font-size: 0.82rem;
+      box-sizing: border-box;
+      text-decoration: none;
+    }
+    .menu button:hover,
+    .menu a:hover {
       background: rgba(201, 168, 76, 0.08);
     }
     .notes-section {
@@ -888,6 +902,7 @@ export class EncounterParticipant extends LitElement {
 
   private get statDetails(): Array<{ label: string; value: string | number }> {
     const participant = this.participant;
+    const linkedCharacter = this.linkedCharacter;
 
     if (participant.type === "monster" && participant.monsterType) {
       const stats = getMonsterStatsForEncounterLevel(this.encounterLevel, participant.monsterType);
@@ -907,6 +922,27 @@ export class EncounterParticipant extends LitElement {
       ];
     }
 
+    if (linkedCharacter) {
+      return [
+        { label: "Skill", value: linkedCharacter.skill },
+        { label: "Agility", value: linkedCharacter.agility },
+        { label: "Aim", value: linkedCharacter.aim },
+        { label: "Tactics", value: linkedCharacter.tactics },
+        { label: "Intellect", value: linkedCharacter.intelligence },
+        { label: "Will", value: linkedCharacter.willpower },
+        { label: "Strength", value: linkedCharacter.strength },
+        { label: "Initiative", value: linkedCharacter.initiative },
+        { label: "Encounter Init", value: this.displayInitiative(participant) },
+        { label: "Toughness", value: participant.toughness },
+        { label: "Health", value: linkedCharacter.health },
+        { label: "Current HP", value: participant.hp },
+        {
+          label: "Race / Class",
+          value: `${linkedCharacter.race.title} / ${linkedCharacter.class.title}`,
+        },
+      ];
+    }
+
     return [
       { label: "Skill", value: "-" },
       { label: "Agility", value: "-" },
@@ -919,7 +955,7 @@ export class EncounterParticipant extends LitElement {
       { label: "Toughness", value: participant.toughness },
       { label: "Health", value: participant.maxHp },
       { label: "Current HP", value: participant.hp },
-      { label: "Race / Class", value: this.linkedCharacter ? `${this.linkedCharacter.race.title} / ${this.linkedCharacter.class.title}` : "-" },
+      { label: "Race / Class", value: "-" },
     ];
   }
 
@@ -997,6 +1033,11 @@ export class EncounterParticipant extends LitElement {
               ? html`
                   <div class="menu">
                     <button type="button" @click=${this.handleViewStats}>View stats</button>
+                    ${p.type === "player" && p.characterId
+                      ? html`
+                          <a href="/character/${p.characterId}" @click=${this.closeMenu}>View character sheet</a>
+                        `
+                      : nothing}
                     <button type="button" @click=${this.handleEditParticipant}>Edit participant</button>
                     ${canDuplicate
                       ? html`
@@ -1281,7 +1322,9 @@ export class EncounterParticipant extends LitElement {
                 ${p.type === "player"
                   ? html`
                       <p class="stats-note">
-                        Player participants currently store encounter values and linked character metadata here. Full combat attributes like Skill and Agility are not tracked in the player model yet.
+                        ${this.linkedCharacter
+                          ? "Showing the linked character's saved stats alongside the participant's current encounter values."
+                          : "This player participant is not linked to a saved character, so only encounter values are available here."}
                       </p>
                     `
                   : nothing}

@@ -8,7 +8,7 @@ import { AppContext, appContext } from "./context.js";
 import { ContentCategory } from "../shared/type.content.js";
 import { getFavorites, FAVORITES_CHANGED_EVENT } from "../shared/service.favorites.js";
 import { getRecentEntries, RECENTS_CHANGED_EVENT } from "../shared/service.recents.js";
-import { starIcon, clockIcon } from "./icons.js";
+import { bookIcon, clockIcon, shieldIcon, starIcon } from "./icons.js";
 import { SearchSuggestion } from "./component.search-bar.js";
 import { loadSearchIndex, scoreSearchEntry, SearchIndexedEntry } from "./service.search.js";
 import "../client/component.category-card.js";
@@ -172,27 +172,32 @@ export class HeroicHomePage extends HeroicAppProvider {
             @search-navigate=${this.handleSearchNavigate}></heroic-search-bar>
         </div>
 
-        ${this.favCount > 0 || this.recentCount > 0
-          ? html`
-              <h2 class="section-title">Your Stuff</h2>
-              <div class="grid">
-                ${this.favCount > 0
-                  ? html`
-                      <heroic-link-card href="/favorites" label="Favorites" .count=${this.favCount}>
-                        <span slot="icon">${starIcon}</span>
-                      </heroic-link-card>
-                    `
-                  : ""}
-                ${this.recentCount > 0
-                  ? html`
-                      <heroic-link-card href="/recent" label="Recently Viewed" .count=${this.recentCount}>
-                        <span slot="icon">${clockIcon}</span>
-                      </heroic-link-card>
-                    `
-                  : ""}
-              </div>
-            `
-          : ""}
+        <h2 class="section-title">Your Stuff</h2>
+        <div class="grid">
+          ${this.favCount > 0
+            ? html`
+                <heroic-link-card href="/favorites" label="Favorites" .count=${this.favCount}>
+                  <span slot="icon">${starIcon}</span>
+                </heroic-link-card>
+              `
+            : ""}
+          ${this.recentCount > 0
+            ? html`
+                <heroic-link-card href="/recent" label="Recently Viewed" .count=${this.recentCount}>
+                  <span slot="icon">${clockIcon}</span>
+                </heroic-link-card>
+              `
+            : ""}
+          <heroic-link-card href="/characters" label="Characters">
+            <span slot="icon">${shieldIcon}</span>
+          </heroic-link-card>
+          <heroic-link-card href="/encounters" label="Encounters">
+            <span slot="icon">${clockIcon}</span>
+          </heroic-link-card>
+          <heroic-link-card href="/adventure-log" label="Adventure Log">
+            <span slot="icon">${bookIcon}</span>
+          </heroic-link-card>
+        </div>
         ${core.length
           ? html`
               <h2 class="section-title">Core Rules</h2>

@@ -205,6 +205,7 @@ export type Participant = z.infer<typeof ParticipantSchema>;
 export const EncounterSchema = z.object({
   id: z.string(),
   name: z.string(),
+  sequenceNumber: z.number().int().min(1).optional(),
   archived: z.boolean().optional(),
   level: z.number().int().min(1).max(30).default(1),
   round: z.number().int().min(1),

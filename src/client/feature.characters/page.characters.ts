@@ -84,7 +84,8 @@ export class PageCharacters extends LitElement {
 
       .characters-list {
         display: grid;
-        gap: var(--size-medium);
+        gap: var(--size-large);
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       }
 
       .empty {
@@ -142,7 +143,6 @@ export class PageCharacters extends LitElement {
                 `
               : ""}
             <div class="hero-stat">Content-linked selections</div>
-            <div class="hero-stat">Profile-scoped local storage</div>
             <a class="btn btn-primary" href="/character/create">Create Character</a>
           </div>
         </section>
@@ -175,7 +175,7 @@ export class PageCharacters extends LitElement {
                   <div class="characters-list">
                     ${visibleCharacters.map(
                       (character) => html`
-                        <character-card .character=${character}></character-card>
+                        <character-card .character=${character} compact></character-card>
                       `,
                     )}
                   </div>
