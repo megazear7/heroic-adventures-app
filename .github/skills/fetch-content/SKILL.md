@@ -1,3 +1,8 @@
+---
+name: fetch-content
+description: 'Fetch and rebuild static Contentful content for the Heroic Adventures App using the project content pipeline.'
+---
+
 # fetch-content Skill
 
 **Purpose:**

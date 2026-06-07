@@ -1,3 +1,8 @@
+---
+name: add-shared-utility
+description: 'Add a new shared utility function or type, following project conventions for reusable logic and shared types.'
+---
+
 # add-shared-utility Skill
 
 **Purpose:**

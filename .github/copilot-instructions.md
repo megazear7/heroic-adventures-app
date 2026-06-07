@@ -24,6 +24,7 @@ This file provides project-wide Copilot instructions to ensure AI-generated code
 - Avoid direct DOM manipulation—use Lit's reactive model.
 - Prefer async/await for asynchronous code.
 - Write scripts to be idempotent and safe to re-run.
+- Always update `CACHE_NAME` in `src/static/sw.js` before committing changes to ensure users get the latest content.
 
 ## Copilot Agent Guidance
 - When asked to add features, follow the existing file/folder structure and naming conventions.
@@ -46,5 +47,5 @@ This file provides project-wide Copilot instructions to ensure AI-generated code
 - Validate all user and external input.
 
 ---
-For more details, see the project README and code comments.
 
+For more details, see the project README and code comments.

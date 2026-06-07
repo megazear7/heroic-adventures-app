@@ -1,3 +1,8 @@
+---
+name: write-smoke-test
+description: 'Add or update smoke tests that validate build output and content integrity for this project.'
+---
+
 # write-smoke-test Skill
 
 **Purpose:**

@@ -1,3 +1,8 @@
+---
+name: update-build-script
+description: 'Safely add or update build and test scripts in the scripts directory using project conventions.'
+---
+
 # update-build-script Skill
 
 **Purpose:**

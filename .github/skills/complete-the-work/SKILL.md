@@ -1,6 +1,6 @@
 ---
 name: complete-the-work
-description: Steps for completing new features, bug fixes, refactoring, or other code changes.
+description: 'Complete new features, bug fixes, refactoring, or other code changes with the project workflow.'
 ---
 
 Follow these steps:
