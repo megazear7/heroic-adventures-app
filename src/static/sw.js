@@ -1,7 +1,7 @@
 // @ts-nocheck
 /* eslint-disable */
 
-const CACHE_NAME = "heroic-v6";
+const CACHE_NAME = "heroic-v7";
 const APP_SHELL = [
   "/",
   "/index.html",
