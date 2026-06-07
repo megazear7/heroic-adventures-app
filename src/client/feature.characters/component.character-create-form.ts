@@ -5,6 +5,7 @@ import { loadSearchIndex, SearchIndexedEntry } from "../service.search.js";
 import {
   Character,
   CharacterContentLink,
+  CharacterEquipmentProfile,
   CharacterSchema,
   DEFAULT_CHARACTER_HEALTH,
   DEFAULT_CHARACTER_STAT_VALUE,
@@ -13,12 +14,19 @@ import {
   CharacterWeaponTraining,
   WEAPON_TRAINING_TYPES,
   WeaponTrainingType,
+  createDefaultEquipmentProfile,
+  formatEquipmentProfileDamage,
+  getActiveEquipmentProfile,
+  isArmorEntry,
+  isWeaponEntry,
 } from "../../shared/type.character.js";
 import { clearCharacterDraft, getCharacterDraft, saveCharacterDraft } from "../../shared/service.characters.js";
 import "./component.character-entry-picker.js";
+import "./component.character-equipment-profile-editor.js";
 import "./component.character-linked-entry-card.js";
+import type { EquipmentProfilesChangeDetail } from "./component.character-equipment-profile-editor.js";
 
-const STEPS = ["Identity", "Stats", "Build", "Review"] as const;
+const STEPS = ["Identity", "Stats", "Build", "Equipment Profiles", "Review"] as const;
 
 const CHARACTER_NAME_PLACEHOLDERS = [
   "Aldren of the White Peaks",
@@ -161,9 +169,12 @@ type CharacterDraft = {
   feats: CharacterContentLink[];
   expertise: CharacterContentLink[];
   gear: CharacterContentLink[];
+  equipmentProfiles: CharacterEquipmentProfile[];
+  activeEquipmentProfileId: string;
 };
 
 function createEmptyDraft(): CharacterDraft {
+  const equipmentProfile = createDefaultEquipmentProfile();
   return {
     name: "",
     health: DEFAULT_CHARACTER_HEALTH,
@@ -181,6 +192,42 @@ function createEmptyDraft(): CharacterDraft {
     feats: [],
     expertise: [],
     gear: [],
+    equipmentProfiles: [equipmentProfile],
+    activeEquipmentProfileId: equipmentProfile.id,
+  };
+}
+
+function migrateDraftEquipmentProfiles(
+  draft: Partial<CharacterDraft>,
+  emptyDraft: CharacterDraft,
+): Pick<CharacterDraft, "gear" | "equipmentProfiles" | "activeEquipmentProfileId"> {
+  if (draft.equipmentProfiles && draft.equipmentProfiles.length > 0) {
+    const activeProfile =
+      draft.equipmentProfiles.find((profile) => profile.id === draft.activeEquipmentProfileId) ?? draft.equipmentProfiles[0];
+    return {
+      gear: (draft.gear ?? []).filter((entry) => !isWeaponEntry(entry) && !isArmorEntry(entry)),
+      equipmentProfiles: draft.equipmentProfiles,
+      activeEquipmentProfileId: activeProfile.id,
+    };
+  }
+
+  const weaponEntries = (draft.gear ?? []).filter(isWeaponEntry);
+  const equipmentProfile: CharacterEquipmentProfile = {
+    ...createDefaultEquipmentProfile(),
+    primary: weaponEntries[0] ?? null,
+    secondary: weaponEntries[1] ?? null,
+    armor: (draft.gear ?? []).find(isArmorEntry) ?? null,
+    skill: draft.skill ?? emptyDraft.skill,
+    aim: draft.aim ?? emptyDraft.aim,
+    initiative: draft.initiative ?? emptyDraft.initiative,
+    agility: draft.agility ?? emptyDraft.agility,
+    tactics: draft.tactics ?? emptyDraft.tactics,
+  };
+
+  return {
+    gear: (draft.gear ?? []).filter((entry) => !isWeaponEntry(entry) && !isArmorEntry(entry)),
+    equipmentProfiles: [equipmentProfile],
+    activeEquipmentProfileId: equipmentProfile.id,
   };
 }
 
@@ -480,7 +527,7 @@ export class CharacterCreateForm extends LitElement {
           </div>
         </div>
 
-        <div class="step-tabs">
+        <div class="step-tabs" style=${`grid-template-columns: repeat(${STEPS.length}, minmax(0, 1fr));`}>
           ${STEPS.map(
             (label, index) => html`
               <button
@@ -543,6 +590,7 @@ export class CharacterCreateForm extends LitElement {
   private loadDraft(): void {
     const emptyDraft = createEmptyDraft();
     const draft = getCharacterDraft<CharacterDraft>(emptyDraft);
+    const equipmentState = migrateDraftEquipmentProfiles(draft, emptyDraft);
     this.form = {
       ...emptyDraft,
       ...draft,
@@ -554,7 +602,9 @@ export class CharacterCreateForm extends LitElement {
       features: draft.features ?? [],
       feats: draft.feats ?? [],
       expertise: draft.expertise ?? [],
-      gear: draft.gear ?? [],
+      gear: equipmentState.gear,
+      equipmentProfiles: equipmentState.equipmentProfiles,
+      activeEquipmentProfileId: equipmentState.activeEquipmentProfileId,
     };
   }
 
@@ -597,12 +647,14 @@ export class CharacterCreateForm extends LitElement {
       feats: this.form.feats,
       expertise: this.form.expertise,
       gear: this.form.gear,
+      equipmentProfiles: this.form.equipmentProfiles,
+      activeEquipmentProfileId: this.form.activeEquipmentProfileId,
       createdAt: now,
       updatedAt: now,
     });
 
     if (!result.success) {
-      this.error = "Complete the required identity and stats selections before creating the character.";
+      this.error = "Complete the required identity, stats, and equipment selections before creating the character.";
       return;
     }
 
@@ -628,6 +680,9 @@ export class CharacterCreateForm extends LitElement {
     }
     if (step === 1) {
       return this.hasValidStats();
+    }
+    if (step === 3) {
+      return this.hasValidEquipmentProfiles();
     }
     return true;
   }
@@ -746,8 +801,8 @@ export class CharacterCreateForm extends LitElement {
         <div class="step-header">
           <h2>Build</h2>
           <p>
-            Search published spells, features, feats, expertise, and gear. Every selection stays linked back to its
-            source entry.
+            Search published spells, features, feats, expertise, and carried gear. Weapons and armor are configured in
+            equipment profiles.
           </p>
         </div>
         <div class="grid two-up">
@@ -790,13 +845,26 @@ export class CharacterCreateForm extends LitElement {
         </div>
         <character-entry-picker
           label="Gear"
-          helper="Weapons, armor, shields, potions, scrolls"
+          helper="Shields, potions, scrolls, and other carried items"
           placeholder="Find items"
           .multiple=${true}
-          .entries=${this.filterEntries((entry) => entry.categoryId.startsWith("items-"))}
+          .entries=${this.filterEntries(
+            (entry) =>
+              entry.categoryId.startsWith("items-") && entry.categoryId !== "items-weapon" && entry.categoryId !== "items-armor",
+          )}
           .selected=${this.form.gear}
           @selection-change=${(event: CustomEvent<{ value: CharacterContentLink[] }>) =>
             this.handleMultiSelection("gear", event)}></character-entry-picker>
+      `;
+    }
+
+    if (this.step === 3) {
+      return html`
+        <character-equipment-profile-editor
+          .profiles=${this.form.equipmentProfiles}
+          .activeProfileId=${this.form.activeEquipmentProfileId}
+          .catalog=${this.catalog}
+          @profiles-change=${this.handleEquipmentProfilesChange}></character-equipment-profile-editor>
       `;
     }
 
@@ -830,6 +898,10 @@ export class CharacterCreateForm extends LitElement {
           Weapon Training
           <input class="summary-input" .value=${this.buildWeaponTrainingSummary()} readonly />
         </label>
+        <label>
+          Active Equipment
+          <input class="summary-input" .value=${this.buildActiveEquipmentSummary()} readonly />
+        </label>
       </div>
 
       <div class="grid two-up">
@@ -846,6 +918,40 @@ export class CharacterCreateForm extends LitElement {
         ${this.renderSelectionGroup("Spells", this.form.spells)}
       </div>
       ${this.renderSelectionGroup("Gear", this.form.gear)}
+      ${this.renderEquipmentProfilesReview()}
+    `;
+  }
+
+  private renderEquipmentProfilesReview(): TemplateResult {
+    const activeProfile = getActiveEquipmentProfile({
+      equipmentProfiles: this.form.equipmentProfiles,
+      activeEquipmentProfileId: this.form.activeEquipmentProfileId,
+    });
+
+    return html`
+      <div class="summary-group">
+        <h3>Equipment Profiles</h3>
+        <div class="selected-grid">
+          ${this.form.equipmentProfiles.map(
+            (profile, index) => html`
+              <div class="summary-group">
+                <h3>Profile ${index + 1}${profile.id === activeProfile.id ? " • Active" : ""}</h3>
+                <div class="muted">
+                  ${profile.primary?.title ?? "No primary"} • ${profile.secondary?.title ?? "No secondary"} •
+                  ${profile.armor?.title ?? "No armor"}
+                </div>
+                <div class="muted">
+                  Skill ${profile.skill} • Aim ${profile.aim} • Block ${profile.block} • Init ${profile.initiative}
+                </div>
+                <div class="muted">
+                  Agility ${profile.agility} • Tactics ${profile.tactics} • Toughness ${profile.toughness} • Damage
+                  ${formatEquipmentProfileDamage(profile.damage)}
+                </div>
+              </div>
+            `,
+          )}
+        </div>
+      </div>
     `;
   }
 
@@ -908,6 +1014,14 @@ export class CharacterCreateForm extends LitElement {
       [key]: event.detail.value,
     });
   }
+
+  private handleEquipmentProfilesChange = (event: CustomEvent<EquipmentProfilesChangeDetail>): void => {
+    this.persistDraft({
+      ...this.form,
+      equipmentProfiles: event.detail.profiles,
+      activeEquipmentProfileId: event.detail.activeProfileId,
+    });
+  };
 
   private singleSelection(value?: CharacterContentLink): CharacterContentLink[] {
     return value ? [value] : [];
@@ -998,6 +1112,22 @@ export class CharacterCreateForm extends LitElement {
     ).join(" • ");
   }
 
+  private buildActiveEquipmentSummary(): string {
+    const activeProfile = getActiveEquipmentProfile({
+      equipmentProfiles: this.form.equipmentProfiles,
+      activeEquipmentProfileId: this.form.activeEquipmentProfileId,
+    });
+
+    return [
+      activeProfile.primary?.title ?? "No primary",
+      activeProfile.secondary?.title ?? "No secondary",
+      activeProfile.armor?.title ?? "No armor",
+      `Init ${activeProfile.initiative}`,
+      `Block ${activeProfile.block}`,
+      `Damage ${formatEquipmentProfileDamage(activeProfile.damage)}`,
+    ].join(" • ");
+  }
+
   private hasValidStats(): boolean {
     return (
       this.form.health >= 1 &&
@@ -1010,6 +1140,20 @@ export class CharacterCreateForm extends LitElement {
       this.form.strength >= 0 &&
       this.form.initiative >= 0 &&
       WEAPON_TRAINING_TYPES.every((type) => this.form.weaponTraining[type] >= 0 && this.form.weaponTraining[type] <= 5)
+    );
+  }
+
+  private hasValidEquipmentProfiles(): boolean {
+    return (
+      this.form.equipmentProfiles.length >= 1 &&
+      this.form.equipmentProfiles.some((profile) => profile.id === this.form.activeEquipmentProfileId) &&
+      this.form.equipmentProfiles.every(
+        (profile) =>
+          profile.block >= 0 &&
+          profile.initiative >= 0 &&
+          profile.toughness >= 0 &&
+          profile.damage.diceCount >= 1,
+      )
     );
   }
 
@@ -1030,6 +1174,7 @@ export class CharacterCreateForm extends LitElement {
       ...this.form.expertise,
       ...this.form.spells,
       ...this.form.gear,
+      ...this.form.equipmentProfiles.flatMap((profile) => [profile.primary, profile.secondary, profile.armor]),
     ].filter(Boolean).length;
   }
 }

@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { CHARACTERS_CHANGED_EVENT, getCharacters, upsertCharacter } from "../../shared/service.characters.js";
-import { Character } from "../../shared/type.character.js";
+import { Character, getCharacterEquipmentStats } from "../../shared/type.character.js";
 import {
   Encounter,
   Participant,
@@ -865,20 +865,23 @@ export class PageEncounter extends LitElement {
         return participant;
       }
 
+      const equipmentStats = getCharacterEquipmentStats(character);
       const hasPendingInitiative = participant.pendingInitiative !== null;
       const nextParticipant: Participant = {
         ...participant,
         name: character.name,
         hp: character.health,
         maxHp: character.health,
-        initiative: hasPendingInitiative ? participant.initiative : Math.max(1, character.initiative),
+        initiative: hasPendingInitiative ? participant.initiative : Math.max(1, equipmentStats.initiative),
+        toughness: equipmentStats.toughness,
       };
 
       if (
         nextParticipant.name !== participant.name ||
         nextParticipant.hp !== participant.hp ||
         nextParticipant.maxHp !== participant.maxHp ||
-        nextParticipant.initiative !== participant.initiative
+        nextParticipant.initiative !== participant.initiative ||
+        nextParticipant.toughness !== participant.toughness
       ) {
         changed = true;
       }
@@ -1181,16 +1184,17 @@ export class PageEncounter extends LitElement {
       return;
     }
 
+    const equipmentStats = getCharacterEquipmentStats(character);
     const participant: Participant = {
       id: crypto.randomUUID(),
       characterId: character.id,
       name: character.name,
       type: "player",
-      initiative: Math.max(1, character.initiative),
+      initiative: Math.max(1, equipmentStats.initiative),
       pendingInitiative: null,
       hp: character.health,
       maxHp: character.health,
-      toughness: 0,
+      toughness: equipmentStats.toughness,
       toughnessEnabled: true,
       notes: "",
       conditions: [],
@@ -1273,7 +1277,7 @@ export class PageEncounter extends LitElement {
 
   private updateLinkedCharacter(
     participantId: string,
-    changes: Partial<Pick<Character, "name" | "health" | "initiative">>,
+    changes: Partial<Pick<Character, "name" | "health">>,
   ): void {
     if (!this.encounter) return;
     const participant = this.encounter.participants.find((item) => item.id === participantId);
@@ -1450,7 +1454,6 @@ export class PageEncounter extends LitElement {
       this.updateLinkedCharacter(e.detail.id, {
         name: e.detail.name,
         health: e.detail.health,
-        initiative: e.detail.initiative,
       });
     }
   }
