@@ -1,3 +1,8 @@
+---
+name: add-lit-component
+description: 'Add a new Lit component to the UI, following project conventions for structure, naming, and style.'
+---
+
 # add-lit-component Skill
 
 **Purpose:**

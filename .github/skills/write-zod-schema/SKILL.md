@@ -1,3 +1,8 @@
+---
+name: write-zod-schema
+description: 'Define and apply Zod schemas for validating external or complex data throughout the codebase.'
+---
+
 # write-zod-schema Skill
 
 **Purpose:**

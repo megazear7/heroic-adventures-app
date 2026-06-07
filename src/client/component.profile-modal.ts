@@ -1,7 +1,13 @@
 import { html, css, LitElement, TemplateResult, nothing } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, query, state } from "lit/decorators.js";
 import { globalStyles } from "./styles.global.js";
-import { getAllProfiles, createProfile, switchProfile, UserProfile } from "../shared/service.profile.js";
+import {
+  getAllProfiles,
+  createProfile,
+  switchProfile,
+  importProfileFromFileContent,
+  UserProfile,
+} from "../shared/service.profile.js";
 import "./component.profile-avatar.js";
 
 @customElement("heroic-profile-modal")
@@ -74,14 +80,15 @@ export class HeroicProfileModal extends LitElement {
         --modal-actions-gap: 10px;
       }
 
-      .existing-profiles {
-        margin-bottom: 24px;
-      }
-
       .existing-label {
         font-size: var(--font-small);
         color: var(--color-primary-text-muted);
         margin-bottom: 10px;
+      }
+
+      .existing-profiles {
+        display: grid;
+        gap: 8px;
       }
 
       .profile-list {
@@ -113,6 +120,13 @@ export class HeroicProfileModal extends LitElement {
         font-weight: 500;
       }
 
+      .profile-option-copy {
+        display: block;
+        margin-top: 4px;
+        font-size: var(--font-small);
+        color: var(--color-primary-text-muted);
+      }
+
       .divider {
         display: flex;
         align-items: center;
@@ -128,6 +142,61 @@ export class HeroicProfileModal extends LitElement {
         flex: 1;
         border-top: 1px solid rgba(201, 168, 76, 0.1);
       }
+
+      .import-panel {
+        display: grid;
+        gap: 16px;
+      }
+
+      .drop-zone {
+        background: var(--color-primary-surface-overlay);
+        border: 1px dashed rgba(201, 168, 76, 0.18);
+        border-radius: var(--border-radius-small);
+        padding: 18px;
+        text-align: center;
+        cursor: pointer;
+        transition: var(--transition-fast);
+      }
+
+      .drop-zone.drag-active,
+      .drop-zone:hover {
+        border-color: rgba(201, 168, 76, 0.35);
+        box-shadow: var(--shadow-glow);
+      }
+
+      .drop-zone-title {
+        font-family: var(--font-family-display);
+        font-size: var(--font-medium);
+        color: var(--color-primary-text);
+      }
+
+      .drop-zone-copy {
+        margin-top: 8px;
+        font-size: var(--font-small);
+        color: var(--color-primary-text-muted);
+        line-height: 1.5;
+      }
+
+      .import-error {
+        padding: 12px 14px;
+        border-radius: var(--border-radius-small);
+        border: 1px solid rgba(192, 57, 43, 0.4);
+        background: rgba(192, 57, 43, 0.08);
+        color: #f2b8b1;
+        font-size: var(--font-small);
+      }
+
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
     `,
   ];
 
@@ -136,10 +205,21 @@ export class HeroicProfileModal extends LitElement {
 
   @state() private name = "";
   @state() private profiles: UserProfile[] = [];
+  @state() private mode: "profiles" | "import" = "profiles";
+  @state() private importError = "";
+  @state() private importInProgress = false;
+  @state() private importDragActive = false;
+
+  @query("#profile-import-input") private importInput?: HTMLInputElement;
 
   override willUpdate(): void {
     if (this.open) {
       this.profiles = getAllProfiles();
+      if (!this.showExisting) {
+        this.mode = "profiles";
+      }
+    } else {
+      this.resetImportState();
     }
   }
 
@@ -147,18 +227,23 @@ export class HeroicProfileModal extends LitElement {
     if (!this.open) return nothing;
 
     const existingProfiles = this.showExisting ? this.profiles : [];
+    const isImportMode = this.showExisting && this.mode === "import";
 
     return html`
       <div class="modal-overlay overlay" @click=${this.handleOverlayClick}>
         <div class="modal-surface modal" @click=${(e: Event) => e.stopPropagation()}>
-          <h2>${this.showExisting ? "Switch Profile" : "Welcome, Adventurer!"}</h2>
+          <h2>${isImportMode ? "Import Profile" : this.showExisting ? "Switch Profile" : "Welcome, Adventurer!"}</h2>
           <p class="subtitle">
-            ${this.showExisting
+            ${isImportMode
+              ? "Create a new profile from an exported Heroic Adventures profile file. If the name already exists, a numbered suffix is added automatically."
+              : this.showExisting
               ? "Choose an existing profile or create a new one."
               : "Create a profile to get started."}
           </p>
 
-          ${existingProfiles.length > 0
+          ${isImportMode
+            ? this.renderImportPanel()
+            : existingProfiles.length > 0
             ? html`
                 <div class="existing-profiles">
                   <div class="existing-label">Existing profiles</div>
@@ -176,34 +261,81 @@ export class HeroicProfileModal extends LitElement {
                       `,
                     )}
                   </div>
+                  <div class="divider">or import profile</div>
+                  <button class="profile-option" @click=${this.handleOpenImport}>
+                    <span>
+                      <span class="profile-option-name">Import Profile</span>
+                    </span>
+                  </button>
                   <div class="divider">or create new</div>
                 </div>
               `
             : nothing}
 
-          <div class="form-group">
-            <label for="profile-name">Name</label>
-            <input
-              class="form-input"
-              id="profile-name"
-              type="text"
-              placeholder="Enter your name"
-              .value=${this.name}
-              @input=${(e: Event) => (this.name = (e.target as HTMLInputElement).value)}
-              @keydown=${this.handleKeydown} />
-          </div>
+          ${isImportMode
+            ? html`
+                <div class="modal-actions actions">
+                  <button class="btn" @click=${this.handleBackToProfiles}>Back</button>
+                  <button class="btn btn-primary" @click=${this.openImportPicker} ?disabled=${this.importInProgress}>
+                    Choose File
+                  </button>
+                </div>
+              `
+            : html`
+                <div class="form-group">
+                  <label for="profile-name">Name</label>
+                  <input
+                    class="form-input"
+                    id="profile-name"
+                    type="text"
+                    placeholder="Enter your name"
+                    .value=${this.name}
+                    @input=${(e: Event) => (this.name = (e.target as HTMLInputElement).value)}
+                    @keydown=${this.handleKeydown} />
+                </div>
 
-          <div class="modal-actions actions">
-            ${this.showExisting
-              ? html`
-                  <button class="btn" @click=${this.handleCancel}>Cancel</button>
-                `
-              : nothing}
-            <button class="btn btn-primary" ?disabled=${!this.name.trim()} @click=${this.handleCreate}>
-              Create Profile
-            </button>
+                <div class="modal-actions actions">
+                  ${this.showExisting
+                    ? html`
+                        <button class="btn" @click=${this.handleCancel}>Cancel</button>
+                      `
+                    : nothing}
+                  <button class="btn btn-primary" ?disabled=${!this.name.trim()} @click=${this.handleCreate}>
+                    Create Profile
+                  </button>
+                </div>
+              `}
+        </div>
+      </div>
+    `;
+  }
+
+  private renderImportPanel(): TemplateResult {
+    return html`
+      <div class="import-panel">
+        <input
+          id="profile-import-input"
+          class="visually-hidden"
+          type="file"
+          accept=".json,application/json"
+          @change=${this.handleImportInputChange} />
+
+        <div
+          class="drop-zone ${this.importDragActive ? "drag-active" : ""}"
+          @click=${this.openImportPicker}
+          @dragenter=${this.handleImportDragEnter}
+          @dragover=${this.handleImportDragOver}
+          @dragleave=${this.handleImportDragLeave}
+          @drop=${this.handleImportDrop}>
+          <div class="drop-zone-title">Drop profile export here</div>
+          <div class="drop-zone-copy">
+            ${this.importInProgress
+              ? "Importing profile..."
+              : "Drag and drop a profile export JSON file here, or click to choose one from your device."}
           </div>
         </div>
+
+        ${this.importError ? html`<div class="import-error">${this.importError}</div>` : nothing}
       </div>
     `;
   }
@@ -230,7 +362,83 @@ export class HeroicProfileModal extends LitElement {
     this.dispatchEvent(new CustomEvent("profile-modal-close", { bubbles: true, composed: true }));
   }
 
+  private handleOpenImport = (): void => {
+    this.mode = "import";
+    this.resetImportState();
+  };
+
+  private handleBackToProfiles = (): void => {
+    this.mode = "profiles";
+    this.resetImportState();
+  };
+
+  private openImportPicker = (): void => {
+    this.importInput?.click();
+  };
+
+  private handleImportInputChange = (event: Event): void => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (file) {
+      void this.importProfileFile(file);
+    }
+    input.value = "";
+  };
+
+  private handleImportDragEnter = (event: DragEvent): void => {
+    event.preventDefault();
+    this.importDragActive = true;
+  };
+
+  private handleImportDragOver = (event: DragEvent): void => {
+    event.preventDefault();
+    this.importDragActive = true;
+  };
+
+  private handleImportDragLeave = (event: DragEvent): void => {
+    event.preventDefault();
+    const nextTarget = event.relatedTarget as Node | null;
+    if (!nextTarget || !this.renderRoot.contains(nextTarget)) {
+      this.importDragActive = false;
+    }
+  };
+
+  private handleImportDrop = (event: DragEvent): void => {
+    event.preventDefault();
+    this.importDragActive = false;
+    const file = event.dataTransfer?.files?.[0];
+    if (file) {
+      void this.importProfileFile(file);
+    }
+  };
+
+  private async importProfileFile(file: File): Promise<void> {
+    this.importError = "";
+    this.importInProgress = true;
+
+    try {
+      importProfileFromFileContent(await file.text());
+      this.mode = "profiles";
+      this.resetImportState();
+      this.dispatchEvent(new CustomEvent("profile-switched", { bubbles: true, composed: true }));
+    } catch {
+      this.importError = "This file could not be imported. Use a Heroic Adventures profile export JSON file.";
+    } finally {
+      this.importInProgress = false;
+    }
+  }
+
+  private resetImportState(): void {
+    this.importError = "";
+    this.importInProgress = false;
+    this.importDragActive = false;
+  }
+
   private handleOverlayClick(): void {
+    if (this.showExisting && this.mode === "import") {
+      this.handleBackToProfiles();
+      return;
+    }
     if (this.showExisting) {
       this.handleCancel();
     }

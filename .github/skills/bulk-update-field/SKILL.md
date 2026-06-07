@@ -1,3 +1,8 @@
+---
+name: bulk-update-field
+description: 'Bulk update a Contentful field value with the provided script, including dry runs and publishing guidance.'
+---
+
 # Skill: Bulk Update Contentful Field
 
 ## Overview
