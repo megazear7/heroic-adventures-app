@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { Character } from "../../shared/type.character.js";
+import { Character, formatEquipmentProfileDamage, getActiveEquipmentProfile, getCharacterEquipmentStats } from "../../shared/type.character.js";
 import { MonsterType, Participant } from "../../shared/type.encounter.js";
 import { getMonsterStatsForEncounterLevel } from "../../shared/util.monster-stats.js";
 import { kebabIcon, shieldIcon } from "../icons.js";
@@ -923,19 +923,27 @@ export class EncounterParticipant extends LitElement {
     }
 
     if (linkedCharacter) {
+      const activeProfile = getActiveEquipmentProfile(linkedCharacter);
+      const equipmentStats = getCharacterEquipmentStats(linkedCharacter);
       return [
-        { label: "Skill", value: linkedCharacter.skill },
-        { label: "Agility", value: linkedCharacter.agility },
-        { label: "Aim", value: linkedCharacter.aim },
-        { label: "Tactics", value: linkedCharacter.tactics },
+        { label: "Skill", value: equipmentStats.skill },
+        { label: "Agility", value: equipmentStats.agility },
+        { label: "Aim", value: equipmentStats.aim },
+        { label: "Tactics", value: equipmentStats.tactics },
         { label: "Intellect", value: linkedCharacter.intelligence },
         { label: "Will", value: linkedCharacter.willpower },
         { label: "Strength", value: linkedCharacter.strength },
-        { label: "Initiative", value: linkedCharacter.initiative },
+        { label: "Initiative", value: equipmentStats.initiative },
         { label: "Encounter Init", value: this.displayInitiative(participant) },
-        { label: "Toughness", value: participant.toughness },
+        { label: "Block", value: equipmentStats.block },
+        { label: "Toughness", value: equipmentStats.toughness },
+        { label: "Damage", value: formatEquipmentProfileDamage(equipmentStats.damage) },
         { label: "Health", value: linkedCharacter.health },
         { label: "Current HP", value: participant.hp },
+        {
+          label: "Equipment",
+          value: `${activeProfile.primary?.title ?? "No primary"} / ${activeProfile.armor?.title ?? "No armor"}`,
+        },
         {
           label: "Race / Class",
           value: `${linkedCharacter.race.title} / ${linkedCharacter.class.title}`,

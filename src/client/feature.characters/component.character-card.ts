@@ -14,11 +14,14 @@ import {
   CharacterSingleSelectionKey,
   WEAPON_TRAINING_TYPES,
   WeaponTrainingType,
+  getActiveEquipmentProfile,
 } from "../../shared/type.character.js";
 import { loadSearchIndex, SearchIndexedEntry } from "../service.search.js";
 import { kebabIcon, pencilIcon, copyIcon } from "../icons.js";
 import "./component.character-linked-entry-card.js";
 import "./component.character-entry-picker.js";
+import "./component.character-equipment-profile-editor.js";
+import type { EquipmentProfilesChangeDetail } from "./component.character-equipment-profile-editor.js";
 
 @customElement("character-card")
 export class CharacterCard extends LitElement {
@@ -505,6 +508,7 @@ export class CharacterCard extends LitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     document.addEventListener("click", this.handleDocumentClick);
+    void this.loadCatalog();
   }
 
   override disconnectedCallback(): void {
@@ -601,6 +605,7 @@ export class CharacterCard extends LitElement {
           ${this.renderSection("Spells", "spells", true, c.spells)}
         </div>
         ${this.renderSection("Gear", "gear", true, c.gear)}
+        ${this.renderEquipmentProfilesSection(c)}
         ${this.renderWeaponTrainingSection(c)}
         ${this.feedback
           ? html`
@@ -663,7 +668,7 @@ export class CharacterCard extends LitElement {
           </div>
           <div class="preview-stat">
             <span class="preview-stat-label">Loadout</span>
-            <span class="preview-stat-value">${character.gear.length} gear • ${character.spells.length} spells</span>
+            <span class="preview-stat-value">${character.equipmentProfiles.length} profiles • ${character.gear.length} gear</span>
           </div>
           <div class="preview-stat">
             <span class="preview-stat-label">Build</span>
@@ -713,6 +718,19 @@ export class CharacterCard extends LitElement {
           ${WEAPON_TRAINING_TYPES.map((type) => this.renderWeaponTrainingRow(character, type))}
         </div>
       </section>
+    `;
+  }
+
+  private renderEquipmentProfilesSection(character: Character): TemplateResult {
+    const activeProfile = getActiveEquipmentProfile(character);
+    return html`
+      <character-equipment-profile-editor
+        .title=${"Equipment Profiles"}
+        .description=${`Active profile: ${activeProfile.primary?.title ?? "No primary"} • ${activeProfile.armor?.title ?? "No armor"}`}
+        .profiles=${character.equipmentProfiles}
+        .activeProfileId=${character.activeEquipmentProfileId ?? activeProfile.id}
+        .catalog=${this.catalog}
+        @profiles-change=${this.handleEquipmentProfilesChange}></character-equipment-profile-editor>
     `;
   }
 
@@ -1033,6 +1051,14 @@ export class CharacterCard extends LitElement {
     return type.charAt(0).toUpperCase() + type.slice(1);
   }
 
+  private async loadCatalog(): Promise<void> {
+    if (this.catalog.length > 0) {
+      return;
+    }
+
+    this.catalog = await loadSearchIndex();
+  }
+
   private removeCharacter = (): void => {
     this.menuOpen = false;
     deleteCharacter(this.character.id);
@@ -1086,8 +1112,18 @@ export class CharacterCard extends LitElement {
     if (key === "feats") return categoryId === "feats";
     if (key === "expertise") return categoryId === "expertise";
     if (key === "spells") return categoryId.startsWith("spells-");
-    return categoryId.startsWith("items-");
+    return categoryId.startsWith("items-") && categoryId !== "items-weapon" && categoryId !== "items-armor";
   }
+
+  private handleEquipmentProfilesChange = (event: CustomEvent<EquipmentProfilesChangeDetail>): void => {
+    upsertCharacter({
+      ...this.character,
+      equipmentProfiles: event.detail.profiles,
+      activeEquipmentProfileId: event.detail.activeProfileId,
+      updatedAt: Date.now(),
+    });
+    this.feedback = "Equipment profiles updated.";
+  };
 
   private handleModalSelection = (event: CustomEvent<{ value: CharacterContentLink[] }>): void => {
     this.modalSelection = event.detail.value;

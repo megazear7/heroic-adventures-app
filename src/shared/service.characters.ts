@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   Character,
   CharacterContentLink,
+  CharacterEquipmentProfile,
   DEFAULT_CHARACTER_INITIATIVE,
   DEFAULT_CHARACTER_STAT_VALUE,
   DEFAULT_CHARACTER_HEALTH,
@@ -10,6 +11,10 @@ import {
   CharacterSchema,
   CharacterSelectionKey,
   CharacterSingleSelectionKey,
+  createDefaultEquipmentProfile,
+  getActiveEquipmentProfile,
+  isArmorEntry,
+  isWeaponEntry,
 } from "./type.character.js";
 import { getActiveProfileId } from "./service.profile.js";
 
@@ -85,6 +90,7 @@ function legacyLink(title: string, categoryId: string, categoryName: string): Ch
 }
 
 function migrateLegacyCharacter(character: LegacyCharacter): Character {
+  const equipmentProfile = createDefaultEquipmentProfile();
   return {
     id: character.id,
     name: character.name,
@@ -115,15 +121,72 @@ function migrateLegacyCharacter(character: LegacyCharacter): Character {
     feats: character.feats.map((title) => legacyLink(title, "feats", "Feats")),
     expertise: character.expertise.map((title) => legacyLink(title, "expertise", "Expertise")),
     gear: character.gear.map((title) => legacyLink(title, "items-legacy", "Gear")),
+    equipmentProfiles: [equipmentProfile],
+    activeEquipmentProfileId: equipmentProfile.id,
     createdAt: character.createdAt,
     updatedAt: character.updatedAt,
   };
 }
 
+function hasExplicitEquipmentProfiles(value: unknown): value is { equipmentProfiles: unknown[] } {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    "equipmentProfiles" in value &&
+    Array.isArray((value as { equipmentProfiles?: unknown[] }).equipmentProfiles),
+  );
+}
+
+function buildProfileFromCharacter(character: Character): CharacterEquipmentProfile {
+  const weapons = character.gear.filter(isWeaponEntry);
+  const armor = character.gear.find(isArmorEntry) ?? null;
+  return {
+    ...createDefaultEquipmentProfile(),
+    primary: weapons[0] ?? null,
+    secondary: weapons[1] ?? null,
+    armor,
+    skill: character.skill,
+    aim: character.aim,
+    initiative: character.initiative,
+    agility: character.agility,
+    tactics: character.tactics,
+  };
+}
+
+function normalizeEquipmentProfiles(character: Character): Character {
+  const equipmentProfiles = character.equipmentProfiles.length > 0
+    ? character.equipmentProfiles
+    : [createDefaultEquipmentProfile()];
+  const activeEquipmentProfileId = getActiveEquipmentProfile({
+    equipmentProfiles,
+    activeEquipmentProfileId: character.activeEquipmentProfileId,
+  }).id;
+
+  return {
+    ...character,
+    equipmentProfiles,
+    activeEquipmentProfileId,
+  };
+}
+
+function migrateCharacterEquipment(value: unknown, character: Character): Character {
+  if (hasExplicitEquipmentProfiles(value)) {
+    return normalizeEquipmentProfiles(character);
+  }
+
+  const equipmentProfile = buildProfileFromCharacter(character);
+  return normalizeEquipmentProfiles({
+    ...character,
+    gear: character.gear.filter((entry) => !isWeaponEntry(entry) && !isArmorEntry(entry)),
+    equipmentProfiles: [equipmentProfile],
+    activeEquipmentProfileId: equipmentProfile.id,
+  });
+}
+
 function normalizeCharacter(value: unknown): Character | null {
   const parsed = CharacterSchema.safeParse(value);
   if (parsed.success) {
-    return parsed.data;
+    return migrateCharacterEquipment(value, parsed.data);
   }
 
   const legacy = LegacyCharacterSchema.safeParse(value);
@@ -248,6 +311,7 @@ export function getCharacterSelectionKeyForCategory(categoryId: string): Charact
   if (categoryId === "feats") return "feats";
   if (categoryId === "expertise") return "expertise";
   if (categoryId.startsWith("spells-")) return "spells";
+  if (categoryId === "items-weapon" || categoryId === "items-armor") return null;
   if (categoryId.startsWith("items-")) return "gear";
   return null;
 }
