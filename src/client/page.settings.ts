@@ -506,7 +506,7 @@ export class HeroicSettingsPage extends HeroicAppProvider {
     this.showDeleteConfirm = false;
   }
 
-  private openProfileDataModal(mode: "export" | "import"): void {
+  private openProfileDataModal(mode: "export"): void {
     this.profileDataModal = mode;
   }
 
@@ -546,5 +546,5 @@ export class HeroicSettingsPage extends HeroicAppProvider {
     }, 3000);
   }
 
-  private toastTimeout: number | null = null;
+  private toastTimeout: number | undefined;
 }
