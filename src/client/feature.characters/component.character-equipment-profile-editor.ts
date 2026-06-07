@@ -21,6 +21,8 @@ type EquipmentProfileLinkKey = "primary" | "secondary" | "armor";
 type EquipmentProfileStatKey = "skill" | "aim" | "block" | "initiative" | "agility" | "tactics" | "toughness";
 type EquipmentProfileDamageNumberKey = "diceCount" | "bonus";
 
+const SECONDARY_SLOT_CATEGORY_IDS = new Set<string>(["items-weapon", "items-shield"]);
+
 const PROFILE_STAT_FIELDS: Array<{ key: EquipmentProfileStatKey; label: string; min?: number }> = [
   { key: "skill", label: "Skill" },
   { key: "aim", label: "Aim" },
@@ -197,7 +199,7 @@ export class CharacterEquipmentProfileEditor extends LitElement {
   @property({ attribute: false }) catalog: SearchIndexedEntry[] = [];
   @property({ type: String }) override title = "Equipment Profiles";
   @property({ type: String }) description =
-    "Choose primary and secondary weapons, armor, and the combat stats for each profile. One profile must stay active.";
+    "Choose primary and secondary equipment, armor, and the combat stats for each profile. One profile must stay active.";
 
   override render(): TemplateResult {
     return html`
@@ -247,7 +249,7 @@ export class CharacterEquipmentProfileEditor extends LitElement {
 
         <div class="picker-grid">
           ${this.renderEntryPicker(profile, "primary", "Primary Weapon", "Choose from item > weapon")}
-          ${this.renderEntryPicker(profile, "secondary", "Secondary Weapon", "Choose from item > weapon")}
+          ${this.renderEntryPicker(profile, "secondary", "Secondary Slot", "Choose from item > weapon or item > shield")}
           ${this.renderEntryPicker(profile, "armor", "Armor", "Choose from item > armor")}
         </div>
 
@@ -315,7 +317,7 @@ export class CharacterEquipmentProfileEditor extends LitElement {
     label: string,
     helper: string,
   ): TemplateResult {
-    const entries = key === "armor" ? this.armorEntries : this.weaponEntries;
+    const entries = key === "armor" ? this.armorEntries : key === "secondary" ? this.secondaryEntries : this.weaponEntries;
     return html`
       <character-entry-picker
         .label=${label}
@@ -352,6 +354,10 @@ export class CharacterEquipmentProfileEditor extends LitElement {
 
   private get weaponEntries(): SearchIndexedEntry[] {
     return this.sortedEntries.filter((entry) => entry.categoryId === "items-weapon");
+  }
+
+  private get secondaryEntries(): SearchIndexedEntry[] {
+    return this.sortedEntries.filter((entry) => SECONDARY_SLOT_CATEGORY_IDS.has(entry.categoryId));
   }
 
   private get armorEntries(): SearchIndexedEntry[] {
